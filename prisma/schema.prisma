@@ -1,0 +1,887 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/mezathane_platform/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum AuctionStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum LotStatus {
+  PENDING
+  ACTIVE
+  SOLD
+  UNSOLD
+  CANCELLED
+}
+
+enum BidType {
+  MANUAL
+  PROXY
+  LIVE
+}
+
+enum ShippingType {
+  FREE_SELLER   // Kargo bizden (ücretsiz) - satıcı üstlenir
+  BUYER_PAYS    // Anlaşmalı kargo - alıcı karşı ödemeli öder
+}
+
+enum LedgerAccountType {
+  BUYER
+  SELLER
+  PLATFORM
+}
+
+enum LedgerEntryType {
+  DEBIT   // Borç
+  CREDIT  // Alacak
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum SellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  INFO_REQUESTED  // Admin eksik bilgi/düzeltme istedi
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  fullName      String
+  phone         String?       @unique
+  tcKimlikNo         String?
+  isCompany          Boolean   @default(false)
+  companyName        String?
+  taxOffice          String?
+  taxNumber          String?
+  address            String?
+  shippingAddress    String?
+  billingAddress     String?
+  city               String?
+  district           String?
+  postalCode         String?
+  resetToken         String?   @unique
+  resetTokenExpiry   DateTime?
+  emailVerifyCode    String?
+  emailVerifyExpiry  DateTime?
+  role               UserRole  @default(BUYER)
+  hasPaymentMethod   Boolean   @default(false)
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  emailVerified DateTime?
+  isEmailVerified Boolean  @default(false)
+  isPhoneVerified Boolean  @default(false)
+  hasAcceptedTerms Boolean @default(false)
+  hasKvkkConsent   Boolean @default(false)
+  kvkkConsentDate  DateTime?
+  deletedAt        DateTime?
+  dataRetentionUntil DateTime?
+  memberNumber  Int?      @unique // Alıcı numarası (otomatik artan)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sellerProfile SellerProfile?
+  bids          Bid[]
+  watchlist     Watchlist[]
+  notifications Notification[]
+  sellerReviews SellerReview[]
+  payments      Payment[]
+  sessions      Session[]
+  accounts      Account[]
+  proxyBids     ProxyBid[]
+  notificationPreference NotificationPreference?
+  disputesReported Dispute[] @relation("DisputeReporter")
+  disputesAgainst  Dispute[] @relation("DisputeAgainst")
+  buyerConversations Conversation[] @relation("BuyerConversations")
+  fieldChangeRequests FieldChangeRequest[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SellerProfile {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  companyName    String
+  companyAddress String?
+  taxOffice      String?
+  taxNumber      String?
+  description    String?
+  logoUrl        String?
+  iban           String?
+  taxDocumentUrl String?
+  taxDocumentPath String?
+  mersisNo       String?
+  contactEmail   String?
+  status         SellerStatus @default(PENDING)
+  commissionRate Float        @default(15.0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  adminNote      String?      @db.Text  // Admin'in eksik bilgi/düzeltme notu
+  adminNoteDate  DateTime?              // Not gönderim tarihi
+  sellerResponse String?      @db.Text  // Satıcı yanıtı
+  sellerResponseDate DateTime?          // Yanıt tarihi
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auctions       Auction[]
+  reviews        SellerReview[]
+  templates      AuctionTemplate[]
+  conversations  Conversation[]
+  additionalDocs SellerDocument[]
+  isVerified     Boolean      @default(false)
+  averageRating  Float        @default(0)
+  reviewCount    Int          @default(0)
+
+  @@index([status])
+}
+
+model SellerReview {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5
+  comment     String?
+  userId      String
+  sellerId    String
+  auctionId   String?
+  createdAt   DateTime @default(now())
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seller      SellerProfile  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sellerId])
+  @@index([sellerId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  lots              Lot[] @relation("PrimaryCategory")
+  secondaryLots     Lot[] @relation("SecondaryCategory")
+  lotCategories     LotCategory[]
+
+  @@index([slug])
+}
+
+model LotCategory {
+  id         String   @id @default(cuid())
+  lotId      String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  lot        Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, categoryId])
+  @@index([categoryId])
+  @@index([lotId])
+}
+
+model Auction {
+  id              String        @id @default(cuid())
+  title           String
+  description     String?
+  bannerUrl       String?
+  sellerId        String
+  status          AuctionStatus @default(DRAFT)
+  startDate       DateTime
+  endDate         DateTime?
+  liveStartDate   DateTime?
+  liveOnly        Boolean       @default(false)
+  liveDelayMinutes Int          @default(30)
+  waitingTime     Int           @default(20)
+  fairWaitingTime Int           @default(5)
+  commissionRate  Float         @default(15.0)
+  paymentDays     Int           @default(7)
+  isPublic        Boolean       @default(true)
+  viewCount       Int           @default(0)
+  currentLiveLotId String?
+  liveTimePerLot  Int           @default(30) // saniye
+  liveBidExtension Int          @default(10) // saniye
+  livePauseUntil  DateTime?     // Bir lot satıldıktan sonra SATILDI ara ekranının bitiş zamanı
+  livePausedLotId String?       // Duraklama sırasında SATILDI olarak gösterilecek lot
+  livePauseSeconds Int          @default(4) // SATILDI ara ekranı süresi (saniye), 0 = kapalı
+  liveReminderSent Boolean      @default(false) // Canlı müzayede hatırlatması gönderildi mi
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  seller          SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  lots            Lot[]
+
+  @@index([status])
+  @@index([startDate])
+  @@index([sellerId])
+}
+
+model Lot {
+  id              String    @id @default(cuid())
+  lotNumber       Int
+  title           String
+  description     String?
+  notes           String?
+  auctionId       String
+  categoryId      String?
+  secondaryCategoryId String?
+  startingPrice   Float
+  estimatedPrice  Float?
+  reservePrice    Float?
+  customBidIncrement Float?
+  currentPrice    Float     @default(0)
+  status          LotStatus @default(PENDING)
+  sortOrder       Int       @default(0)
+  viewCount       Int       @default(0)
+  bidCount        Int       @default(0)
+  watchCount      Int       @default(0)
+  winnerId        String?
+  soldPrice       Float?
+  liveEndTime     DateTime?
+  shippingType      ShippingType @default(BUYER_PAYS)
+  estimatedShipping Float?
+  kdvRate            Float       @default(20)
+  installmentEnabled Boolean     @default(false)
+  maxInstallments    Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  auction         Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  category        Category?  @relation("PrimaryCategory", fields: [categoryId], references: [id])
+  secondaryCategory Category? @relation("SecondaryCategory", fields: [secondaryCategoryId], references: [id])
+  lotCategories   LotCategory[]
+  images          LotImage[]
+  bids            Bid[]
+  watchlist       Watchlist[]
+  payments        Payment[]
+  proxyBids       ProxyBid[]
+  disputes        Dispute[]
+  conversations   Conversation[]
+  history         LotHistory[]
+  tags            LotTag[]
+
+  @@index([auctionId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([winnerId])
+}
+
+model LotImage {
+  id              String  @id @default(cuid())
+  lotId           String
+  imageUrl        String
+  cloudStoragePath String?
+  isPublic        Boolean @default(true)
+  sortOrder       Int     @default(0)
+  createdAt       DateTime @default(now())
+
+  lot             Lot     @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId])
+}
+
+model Bid {
+  id          String   @id @default(cuid())
+  amount      Float
+  maxAmount   Float?
+  userId      String
+  lotId       String
+  type        BidType  @default(MANUAL)
+  isWinning   Boolean  @default(false)
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lot         Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ProxyBid {
+  id          String   @id @default(cuid())
+  userId      String
+  lotId       String
+  maxAmount   Float
+  isActive    Boolean  @default(true)
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lot         Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lotId])
+  @@index([lotId, isActive])
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  lotId     String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lot       Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lotId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  userId             String
+  lotId              String
+  amount             Float
+  commissionAmount   Float
+  totalAmount        Float
+  buyerPremiumRate   Float         @default(10.0)
+  buyerPremiumAmount Float         @default(0)
+  buyerPremiumKDV    Float         @default(0)
+  gatewayFeeRate     Float         @default(0)
+  gatewayFeeAmount   Float         @default(0)
+  sellerNetAmount    Float         @default(0)
+  status             PaymentStatus @default(PENDING)
+  paymentMethod      String?
+  transactionId      String?
+  invoiceUrl         String?
+  invoicePath        String?
+  shippingName       String?
+  shippingAddress    String?
+  shippingPhone      String?
+  dueDate            DateTime?
+  paidAt             DateTime?
+  sellerInvoiceIssued   Boolean    @default(false)
+  platformInvoiceIssued Boolean    @default(false)
+  buyerPaymentReceived  Boolean    @default(false)
+  payoutCompleted       Boolean    @default(false)
+  adminNotes            String?
+  // Kargo takip
+  shippingStatus        ShippingStatus @default(PREPARING)
+  trackingNumber        String?
+  trackingCompany       String?
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  // Escrow / Teslim onay
+  buyerConfirmedAt      DateTime?     // Alıcı "Teslim Aldım" dediği tarih
+  autoConfirmDate       DateTime?     // Otomatik onay tarihi (shippedAt + 7 gün)
+  payoutRequestedAt     DateTime?     // Satıcı ödeme talep tarihi
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lot                Lot           @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PlatformSettings {
+  id                String  @id @default(cuid())
+  defaultCommission Float   @default(15.0)
+  defaultBuyerPremium Float  @default(10.0)
+  defaultWaitTime   Int     @default(10)
+  defaultFairWait   Int     @default(10)
+  defaultPaymentDays Int    @default(7)
+  platformName      String  @default("Mezathane.tr")
+  platformEmail     String?
+  platformPhone     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model SiteSettings {
+  id              String  @id @default("default")
+  // Logo & Branding
+  logoUrl         String?
+  logoCloudPath   String?
+  faviconUrl      String?
+  // Hero Banner
+  heroImageUrl    String?
+  heroCloudPath   String?
+  heroTitle       String  @default("Eşsiz Parçalar, Eşsiz Fırsatlar")
+  heroSubtitle    String  @default("Türkiye'nin Premium Açık Artırma Platformu")
+  heroDescription String  @default("Antika, tesbih ve koleksiyon ürünlerinin güvenli ve şeffaf açık artırma ile satışı.")
+  heroCta1Text    String  @default("Müzayedeleri Keşfet")
+  heroCta1Link    String  @default("/muzayedeler")
+  heroCta2Text    String  @default("Satıcı Ol")
+  heroCta2Link    String  @default("/satici-basvuru")
+  // Contact Info
+  contactEmail    String  @default("iletisim@mezathane.tr")
+  contactPhone    String  @default("+90 212 000 00 00")
+  contactAddress  String  @default("İstanbul, Türkiye")
+  // SEO
+  siteTitle       String  @default("Mezathane.tr - Türkiye'nin Premium Açık Artırma Platformu")
+  siteDescription String  @default("Antika, tesbih ve koleksiyon ürünlerinin güvenli müzayede platformu.")
+  // Announcement Banner
+  announcementText    String?
+  announcementLink    String?
+  announcementActive  Boolean @default(false)
+  // Footer description
+  footerDescription   String  @default("Türkiye'nin premium açık artırma platformu. Antika, tesbih ve koleksiyon ürünlerinin güvenli ve şeffaf müzayede deneyimi.")
+  // Banka / Ödeme Bilgileri
+  bankName            String  @default("")
+  bankAccountHolder   String  @default("")
+  bankIban            String  @default("")
+  updatedAt       DateTime @updatedAt
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  icon        String   @default("FileText")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model NotificationPreference {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  // E-posta bildirimleri
+  emailOutbid           Boolean  @default(true)  // Teklif geçildiğinde
+  emailAuctionWon       Boolean  @default(true)  // Müzayede kazanıldığında
+  emailPaymentReminder  Boolean  @default(true)  // Ödeme hatırlatması
+  emailWatchlistBid     Boolean  @default(true)  // Favori lota teklif gelince
+  emailAuctionStart     Boolean  @default(true)  // Müzayede başladığında
+  emailOrderStatus      Boolean  @default(true)  // Sipariş durumu değişince
+  emailLiveAuction      Boolean  @default(true)  // Canlı müzayede hatırlatması
+  // Uygulama içi bildirimler
+  inAppOutbid           Boolean  @default(true)
+  inAppAuctionWon       Boolean  @default(true)
+  inAppWatchlistBid     Boolean  @default(true)
+  inAppAuctionStart     Boolean  @default(true)
+  inAppOrderStatus      Boolean  @default(true)
+  inAppLiveAuction      Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum ShippingStatus {
+  PREPARING
+  SHIPPED
+  DELIVERED
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id            String        @id @default(cuid())
+  lotId         String
+  reporterId    String        // Şikayetçi kullanıcı
+  againstId     String?       // Şikayet edilen kullanıcı (satıcı/alıcı)
+  reason        String        // Kısa açıklama
+  description   String        @db.Text
+  status        DisputeStatus @default(OPEN)
+  adminNote     String?       @db.Text
+  resolution    String?       @db.Text
+  resolvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lot           Lot           @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  reporter      User          @relation("DisputeReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  against       User?         @relation("DisputeAgainst", fields: [againstId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([reporterId])
+  @@index([lotId])
+}
+
+model AuctionTemplate {
+  id           String        @id @default(cuid())
+  name         String
+  sellerId     String
+  templateData String        @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  seller       SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+}
+
+model Conversation {
+  id           String   @id @default(cuid())
+  buyerId      String
+  sellerId     String
+  lotId        String?
+  subject      String
+  lastMessage  String?  @db.Text
+  lastMessageAt DateTime @default(now())
+  buyerUnread  Int      @default(0)
+  sellerUnread Int      @default(0)
+  isArchived   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  buyer        User          @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller       SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  lot          Lot?          @relation(fields: [lotId], references: [id], onDelete: SetNull)
+  messages     Message[]
+
+  @@unique([buyerId, sellerId, lotId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  senderRole     String   // BUYER or SELLER
+  content        String   @db.Text
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// Elle girilen cari hareketler + kısmi tahsilat kayıtları (ön muhasebe)
+model LedgerEntry {
+  id            String            @id @default(cuid())
+  accountType   LedgerAccountType
+  userId        String?           // BUYER hesabı için alıcı user id
+  sellerId      String?           // SELLER hesabı için SellerProfile id
+  entryType     LedgerEntryType
+  amount        Float
+  description   String
+  category      String?           // tahsilat, odeme, iade, kesinti, avans, duzeltme, diger
+  paymentMethod String?           // havale, eft, elden, kredi_karti
+  bankName      String?
+  entryDate     DateTime          @default(now())
+  relatedLotId     String?
+  relatedPaymentId String?
+  createdById   String?           // işlemi yapan admin
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([accountType, userId])
+  @@index([accountType, sellerId])
+  @@index([entryDate])
+}
+
+// Taksit planı (satıcı ürün bazında taksit tanımlar)
+model InstallmentPlan {
+  id               String        @id @default(cuid())
+  lotId            String
+  userId           String        // alıcı
+  paymentId        String?
+  totalAmount      Float
+  installmentCount Int
+  note             String?
+  createdById      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  installments     Installment[]
+
+  @@index([lotId])
+  @@index([userId])
+}
+
+model Installment {
+  id          String   @id @default(cuid())
+  planId      String
+  seq         Int
+  amount      Float
+  dueDate     DateTime
+  paidAmount  Float    @default(0)
+  isPaid      Boolean  @default(false)
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plan        InstallmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@index([dueDate])
+}
+
+// Denetim Kaydı (Audit Log) — admin işlemlerini takip eder
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   // İşlemi yapan admin/kullanıcı
+  userName    String?
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity      String   // User, Auction, Lot, Payment, Seller, etc.
+  entityId    String?
+  details     String?  @db.Text // JSON detaylar
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Lot Durum Geçmişi — kronolojik olay kaydı
+model LotHistory {
+  id          String   @id @default(cuid())
+  lotId       String
+  event       String   // CREATED, ACTIVATED, BID_PLACED, OUTBID, SOLD, PAYMENT_RECEIVED, SHIPPED, DELIVERED
+  description String?
+  userId      String?
+  metadata    String?  @db.Text // JSON
+  createdAt   DateTime @default(now())
+
+  lot         Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId])
+  @@index([createdAt])
+}
+
+// Etiket (Tag) Sistemi — lotlara etiket ekleme
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  color     String?  // hex renk kodu
+  lotCount  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lots      LotTag[]
+
+  @@index([slug])
+}
+
+model LotTag {
+  id        String   @id @default(cuid())
+  lotId     String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  lot       Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, tagId])
+  @@index([tagId])
+}
+
+// E-posta Şablonları — admin tarafından özelleştirilebilir
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  key         String   @unique // benzersiz anahtar: outbid, auction_won, payment_reminder vb.
+  name        String   // Görünen ad: "Teklif Geçildi", "Müzayede Kazanıldı"
+  subject     String   // E-posta konu satırı (değişkenli: {{lotTitle}})
+  bodyHtml    String   @db.Text // HTML gövde (değişkenli)
+  isActive    Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @default("PERCENTAGE") // PERCENTAGE | FIXED
+  discountValue   Float     // yüzde veya sabit TL
+  minPurchase     Float?    // minimum alışveriş tutarı
+  maxDiscount     Float?    // maks indirim tutarı (yüzde için)
+  maxUsage        Int?      // toplam kullanım limiti
+  usedCount       Int       @default(0)
+  perUserLimit    Int       @default(1) // kullanıcı başı limit
+  assignedUserId  String?   // belirli kullanıcıya atanmış kupon (null = herkese açık)
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  usages          CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([assignedUserId])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  userId    String
+  lotId     String?  // hangi lot için kullanıldı
+  discount  Float    // uygulanan indirim tutarı
+  createdAt DateTime @default(now())
+
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([userId])
+}
+
+model Referral {
+  id             String    @id @default(cuid())
+  referrerUserId String    // davet eden
+  referredUserId String?   // davet edilen (kayıt olduktan sonra)
+  referralCode   String    @unique
+  referredEmail  String?   // davet edilen e-posta
+  status         String    @default("PENDING") // PENDING | REGISTERED | REWARDED
+  rewardCouponId String?   // ödül kuponu
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([referrerUserId])
+  @@index([referralCode])
+  @@index([referredUserId])
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  excerpt     String?   @db.Text
+  content     String    @db.Text
+  coverImage  String?
+  authorId    String
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  tags        String?   // virgülle ayrılmış etiketler
+  metaTitle   String?
+  metaDesc    String?
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([isPublished])
+}
+
+model SellerDocument {
+  id             String   @id @default(cuid())
+  sellerId       String
+  label          String   // Belge etiketi: "Antika Belgesi", "İşyeri Açma Belgesi" vb.
+  fileUrl        String?  // S3 URL (private)
+  filePath       String?  // cloud_storage_path
+  fileName       String?  // Orijinal dosya adı
+  contentType    String?  // MIME type
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  seller         SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model FieldChangeRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  fieldName     String   // örn: "iban", "companyName", "tcKimlikNo"
+  modelName     String   // "User" veya "SellerProfile"
+  currentValue  String?  @db.Text
+  requestedValue String  @db.Text
+  reason        String?  @db.Text
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNote     String?  @db.Text
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
