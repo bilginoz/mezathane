@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { triggerLiveUpdate } from '@/lib/pusher';
 
 // KVKK: Teklif verenlerin isimlerini gizle ("Bilgin ÖZ" -> "B... Ö...")
 function maskName(fullName?: string | null): string {
@@ -171,11 +172,13 @@ export async function GET(
             where: { id: auction.id },
             data: { currentLiveLotId: nextLot.id, livePauseUntil: null, livePausedLotId: null },
           });
+          triggerLiveUpdate(auction.id).catch(() => {});
         } else {
           await prisma.auction.update({
             where: { id: auction.id },
             data: { status: 'COMPLETED', currentLiveLotId: null, livePauseUntil: null, livePausedLotId: null },
           });
+          triggerLiveUpdate(auction.id).catch(() => {});
           return NextResponse.json({
             auction: { id: auction.id, title: auction.title, status: 'COMPLETED' },
             currentLot: null,
@@ -213,6 +216,7 @@ export async function GET(
                 livePausedLotId: currentLot.id,
               },
             });
+            triggerLiveUpdate(auction.id).catch(() => {});
             // Bu lotun güncel verisini çekip SATILDI kartını hemen döndür
             const soldLotFresh = await prisma.lot.findUnique({
               where: { id: currentLot.id },
@@ -255,6 +259,7 @@ export async function GET(
             } else {
               await prisma.auction.update({ where: { id: auction.id }, data: { status: 'COMPLETED', currentLiveLotId: null } });
             }
+            triggerLiveUpdate(auction.id).catch(() => {});
           }
         } else {
           // Lot SATILMADI -> hiçbir şey gösterme, anında sonraki lota geç
@@ -266,8 +271,10 @@ export async function GET(
             const liveEndTime = new Date(now + (auction.liveTimePerLot ?? 30) * 1000);
             await prisma.lot.update({ where: { id: nextLot.id }, data: { status: 'ACTIVE', liveEndTime } });
             await prisma.auction.update({ where: { id: auction.id }, data: { currentLiveLotId: nextLot.id } });
+            triggerLiveUpdate(auction.id).catch(() => {});
           } else {
             await prisma.auction.update({ where: { id: auction.id }, data: { status: 'COMPLETED', currentLiveLotId: null } });
+            triggerLiveUpdate(auction.id).catch(() => {});
             return NextResponse.json({
               auction: { id: auction.id, title: auction.title, status: 'COMPLETED' },
               currentLot: null,
@@ -289,6 +296,7 @@ export async function GET(
           const liveEndTime = new Date(now + (auction.liveTimePerLot ?? 30) * 1000);
           await prisma.lot.update({ where: { id: firstLot.id }, data: { status: 'ACTIVE', liveEndTime } });
           await prisma.auction.update({ where: { id: auction.id }, data: { currentLiveLotId: firstLot.id } });
+          triggerLiveUpdate(auction.id).catch(() => {});
         }
       }
     }

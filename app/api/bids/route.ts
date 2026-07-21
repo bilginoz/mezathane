@@ -9,6 +9,7 @@ import { createInAppNotification, sendCheckedNotificationEmail } from '@/lib/not
 import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 import { logLotEvent } from '@/lib/lot-history';
 import { getEmailTemplate } from '@/lib/email-templates';
+import { triggerLiveUpdate } from '@/lib/pusher';
 
 // Proxy bid otomatik teklif işlemi
 async function processProxyBids(lotId: string, currentBidAmount: number, currentBidderId: string, customBidIncrement?: number | null) {
@@ -323,6 +324,7 @@ export async function POST(request: Request) {
           } catch {}
 
           await handleAntiSniping(lot);
+          triggerLiveUpdate(lot.auctionId).catch(() => {});
           return NextResponse.json({ success: true, outbid: true, currentPrice: rivalBidAmount, proxySet: true });
         } else {
           finalAmount = rivalProxy.maxAmount + minIncrement;
@@ -348,6 +350,7 @@ export async function POST(request: Request) {
       // Lot geçmişine proxy teklif kaydı
       logLotEvent({ lotId, event: 'BID', description: `${finalAmount.toLocaleString('tr-TR')} ₺ otomatik teklif`, userId, metadata: { amount: finalAmount, type: 'PROXY' } });
 
+      triggerLiveUpdate(lot.auctionId).catch(() => {});
       return NextResponse.json({ success: true, bid, currentPrice: finalAmount, proxySet: true });
     }
 
@@ -412,6 +415,7 @@ export async function POST(request: Request) {
     // Lot geçmişine kaydet
     logLotEvent({ lotId, event: 'BID', description: `${finalPrice.toLocaleString('tr-TR')} ₺ teklif verildi`, userId, metadata: { amount: finalPrice, type: 'MANUAL' } });
 
+    triggerLiveUpdate(lot.auctionId).catch(() => {});
     return NextResponse.json({ success: true, bid, currentPrice: finalPrice, timeExtended });
   } catch (error: any) {
     console.error('Bid error:', error);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import Pusher from 'pusher-js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gavel, Clock, Users, TrendingUp, CheckCircle, XCircle, ArrowRight, ArrowLeft, Radio, Zap, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -53,12 +54,27 @@ export function LiveAuctionContent({ auctionId }: { auctionId: string }) {
     }
   }, [auctionId]);
 
-  // Poll every 2 seconds
+  // Anlık güncelleme: Pusher üzerinden "bir şey değişti" sinyali gelince hemen veri çek.
+  // Poll (8 saniyede bir) sadece güvence/yedek — Pusher bağlantısı kesilirse veya
+  // süre dolumu gibi kullanıcı etkileşimi olmayan geçişlerde devreye girer.
   useEffect(() => {
     fetchLiveData();
-    pollRef.current = setInterval(fetchLiveData, 2000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [fetchLiveData]);
+    pollRef.current = setInterval(fetchLiveData, 8000);
+
+    let pusher: Pusher | null = null;
+    if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+      pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      });
+      const channel = pusher.subscribe(`auction-${auctionId}`);
+      channel.bind('update', () => { fetchLiveData(); });
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (pusher) { pusher.unsubscribe(`auction-${auctionId}`); pusher.disconnect(); }
+    };
+  }, [auctionId, fetchLiveData]);
 
   // Timer countdown
   useEffect(() => {
