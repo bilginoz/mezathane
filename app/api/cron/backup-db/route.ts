@@ -44,6 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, key, tableCount: MODELS.length, sizeBytes: json.length });
   } catch (error: any) {
     console.error('DB backup error:', error);
-    return NextResponse.json({ error: 'Yedekleme başarısız', detail: error?.message, name: error?.name }, { status: 500 });
+    return NextResponse.json({ error: 'Yedekleme başarısız' }, { status: 500 });
   }
 }
