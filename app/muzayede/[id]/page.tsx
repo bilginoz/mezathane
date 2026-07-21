@@ -91,7 +91,7 @@ export default async function AuctionDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="min-h-screen flex flex-col">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(auctionJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(auctionJsonLd).replace(/</g, '\\u003c') }} />
       <Header />
       <AuctionDetailContent auction={auction} />
       <Footer />

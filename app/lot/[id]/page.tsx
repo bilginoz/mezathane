@@ -77,7 +77,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="min-h-screen flex flex-col">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <Header />
       <LotDetailContent lot={lot} />
       <Footer />
