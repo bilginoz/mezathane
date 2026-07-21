@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createInAppNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/mailer';
 
 /*
   Müzayede otomatik geçiş kontrolü:
@@ -229,19 +230,10 @@ export async function GET() {
 
           // E-posta
           try {
-            await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                deployment_token: process.env.ABACUSAI_API_KEY,
-                app_id: process.env.WEB_APP_ID,
-                notification_id: process.env.NOTIF_ID_CANL_MZAYEDE_HATRLATMAS,
-                subject: `🔴 ${auction.title} — Canlı müzayede 20 dk sonra!`,
-                body: htmlBody, is_html: true,
-                recipient_email: u.email,
-                sender_email: 'bilgi@mezathane.tr',
-                sender_alias: 'Mezathane',
-              }),
+            await sendEmail({
+              to: u.email,
+              subject: `🔴 ${auction.title} — Canlı müzayede 20 dk sonra!`,
+              html: htmlBody,
             });
             liveRemindersSent++;
           } catch (e) { console.error(`Live reminder email failed for ${u.email}:`, e); }

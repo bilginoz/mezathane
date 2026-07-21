@@ -59,16 +59,16 @@ export async function middleware(request: NextRequest) {
   // Esnek ama güvenli: inline script/style'a izin ver (Next.js gereksinimi), dış kaynakları sınırla
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apps.abacus.ai https://www.googletagmanager.com https://www.google-analytics.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://apps.abacus.ai https://www.google-analytics.com https://*.amazonaws.com",
-    "frame-src 'self' https://apps.abacus.ai",
+    "connect-src 'self' https://www.google-analytics.com https://*.amazonaws.com https://*.r2.cloudflarestorage.com wss://*.pusher.com https://*.pusher.com",
+    "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'self' https://*.abacusai.app https://apps.abacus.ai",
+    "frame-ancestors 'self'",
   ].join('; ');
   response.headers.set('Content-Security-Policy', csp);
 

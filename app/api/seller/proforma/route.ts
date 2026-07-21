@@ -1,10 +1,12 @@
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { formatPrice } from '@/lib/utils';
+import { htmlToPdfBuffer } from '@/lib/pdf';
 
 function generateProformaHTML(data: {
   seller: any;
@@ -163,54 +165,13 @@ export async function POST(request: Request) {
       date,
     });
 
-    // Call HTML2PDF API
-    const createRes = await fetch('https://apps.abacus.ai/api/createConvertHtmlToPdfRequest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        html_content: html,
-        pdf_options: { format: 'A4', print_background: true, margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } },
-      }),
+    const pdfBuffer = await htmlToPdfBuffer(html, { margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } });
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="proforma-${invoiceNo}.pdf"`,
+      },
     });
-
-    if (!createRes.ok) {
-      return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 });
-    }
-
-    const { request_id } = await createRes.json();
-    if (!request_id) {
-      return NextResponse.json({ error: 'PDF isteği oluşturulamadı' }, { status: 500 });
-    }
-
-    // Poll for completion
-    let attempts = 0;
-    const maxAttempts = 120;
-    while (attempts < maxAttempts) {
-      await new Promise(r => setTimeout(r, 1500));
-      const statusRes = await fetch('https://apps.abacus.ai/api/getConvertHtmlToPdfStatus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_id, deployment_token: process.env.ABACUSAI_API_KEY }),
-      });
-      const statusData = await statusRes.json();
-      const status = statusData?.status || 'FAILED';
-
-      if (status === 'SUCCESS' && statusData?.result?.result) {
-        const pdfBuffer = Buffer.from(statusData.result.result, 'base64');
-        return new NextResponse(pdfBuffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="proforma-${invoiceNo}.pdf"`,
-          },
-        });
-      } else if (status === 'FAILED') {
-        return NextResponse.json({ error: 'PDF oluşturma başarısız' }, { status: 500 });
-      }
-      attempts++;
-    }
-
-    return NextResponse.json({ error: 'PDF oluşturma zaman aşımına uğradı' }, { status: 500 });
   } catch (error: any) {
     console.error('Proforma generation error:', error);
     return NextResponse.json({ error: 'Proforma oluşturulamadı' }, { status: 500 });

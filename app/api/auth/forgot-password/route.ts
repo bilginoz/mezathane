@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { sendEmail } from '@/lib/mailer';
 
 export async function POST(request: Request) {
   try {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     });
 
     // Şifre sıfırlama URL'i
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://mezathane.abacusai.app';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://mezathane.tr';
     const resetUrl = `${baseUrl}/sifre-sifirla?token=${resetToken}`;
 
     // E-posta gönder
@@ -62,27 +63,14 @@ export async function POST(request: Request) {
       </div>
     `;
 
-    const senderEmail = 'bilgi@mezathane.tr';
-
-    const emailRes = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        app_id: process.env.WEB_APP_ID,
-        notification_id: process.env.NOTIF_ID_IFRE_SFRLAMA,
-        subject: 'Şifre Sıfırlama - Mezathane.tr',
-        body: htmlBody,
-        is_html: true,
-        recipient_email: user.email,
-        sender_email: senderEmail,
-        sender_alias: 'Mezathane.tr',
-      }),
+    const result = await sendEmail({
+      to: user.email,
+      subject: 'Şifre Sıfırlama - Mezathane.tr',
+      html: htmlBody,
     });
 
-    if (!emailRes.ok) {
-      const emailErr = await emailRes.text().catch(() => 'Unknown');
-      console.error('Password reset email send failed:', emailRes.status, emailErr);
+    if (!result.success) {
+      console.error('Password reset email send failed:', result.error);
     } else {
       console.log('Password reset email sent successfully to:', user.email);
     }

@@ -70,7 +70,6 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" defer />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

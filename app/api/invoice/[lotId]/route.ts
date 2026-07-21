@@ -1,10 +1,12 @@
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
+import { htmlToPdfBuffer } from '@/lib/pdf';
 
 function generateInvoiceHtml(data: any) {
   const { lot, auction, winner, seller, winningBid, payment } = data;
@@ -174,51 +176,13 @@ export async function GET(
     });
 
     // PDF oluştur
-    const createResponse = await fetch('https://apps.abacus.ai/api/createConvertHtmlToPdfRequest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        html_content: htmlContent,
-        pdf_options: { format: 'A4', print_background: true },
-      }),
+    const pdfBuffer = await htmlToPdfBuffer(htmlContent);
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="fatura-${lot.lotNumber ?? lot.id}.pdf"`,
+      },
     });
-
-    if (!createResponse.ok) {
-      return NextResponse.json({ error: 'PDF oluşturulamadı' }, { status: 500 });
-    }
-
-    const { request_id } = await createResponse.json();
-    if (!request_id) {
-      return NextResponse.json({ error: 'PDF istek ID alınamadı' }, { status: 500 });
-    }
-
-    // Poll for status
-    let attempts = 0;
-    while (attempts < 60) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const statusResponse = await fetch('https://apps.abacus.ai/api/getConvertHtmlToPdfStatus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_id, deployment_token: process.env.ABACUSAI_API_KEY }),
-      });
-      const statusResult = await statusResponse.json();
-
-      if (statusResult?.status === 'SUCCESS' && statusResult?.result?.result) {
-        const pdfBuffer = Buffer.from(statusResult.result.result, 'base64');
-        return new NextResponse(pdfBuffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="fatura-${lot.lotNumber ?? lot.id}.pdf"`,
-          },
-        });
-      } else if (statusResult?.status === 'FAILED') {
-        return NextResponse.json({ error: 'PDF oluşturma başarısız' }, { status: 500 });
-      }
-      attempts++;
-    }
-
-    return NextResponse.json({ error: 'PDF zaman aşımı' }, { status: 500 });
   } catch (error: any) {
     console.error('Invoice error:', error);
     return NextResponse.json({ error: 'Fatura oluşturulamadı' }, { status: 500 });

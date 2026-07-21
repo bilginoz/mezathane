@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { formatPrice } from '@/lib/utils';
+import { sendEmail } from '@/lib/mailer';
 
 /*
   Canlı müzayede başlamadan 20 dk önce bildirim gönder.
@@ -12,7 +13,7 @@ import { formatPrice } from '@/lib/utils';
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ABACUSAI_API_KEY}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -158,20 +159,10 @@ export async function POST(req: NextRequest) {
 
         // E-posta gönder
         try {
-          await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              deployment_token: process.env.ABACUSAI_API_KEY,
-              app_id: process.env.WEB_APP_ID,
-              notification_id: process.env.NOTIF_ID_CANL_MZAYEDE_HATRLATMAS,
-              subject: `🔴 ${auction.title} — Canlı müzayede 20 dk sonra başlıyor!`,
-              body: htmlBody,
-              is_html: true,
-              recipient_email: userData.email,
-              sender_email: 'bilgi@mezathane.tr',
-              sender_alias: 'Mezathane',
-            }),
+          await sendEmail({
+            to: userData.email,
+            subject: `🔴 ${auction.title} — Canlı müzayede 20 dk sonra başlıyor!`,
+            html: htmlBody,
           });
           emailsSent++;
         } catch (e) {

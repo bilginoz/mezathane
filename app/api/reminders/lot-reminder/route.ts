@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/mailer';
 
 // Called by scheduled task OR cron to send lot reminders 15 minutes before auction starts
 // Also called from client-side on homepage load for near-real-time checks
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     // Verify internal API key
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ABACUSAI_API_KEY}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -140,20 +141,10 @@ export async function POST(req: NextRequest) {
         `;
 
         try {
-          await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              deployment_token: process.env.ABACUSAI_API_KEY,
-              app_id: process.env.WEB_APP_ID,
-              notification_id: process.env.NOTIF_ID_LOT_HATRLATMA_15_DK,
-              subject: `\u23F0 ${auction.title} — 15 dakika sonra ba\u015fl\u0131yor!`,
-              body: htmlBody,
-              is_html: true,
-              recipient_email: userData.email,
-              sender_email: `noreply@${(() => { try { return new URL(process.env.NEXTAUTH_URL || '').hostname; } catch { return 'mezathane.tr'; } })()}`,
-              sender_alias: appName,
-            }),
+          await sendEmail({
+            to: userData.email,
+            subject: `\u23F0 ${auction.title} — 15 dakika sonra ba\u015fl\u0131yor!`,
+            html: htmlBody,
           });
           emailsSent++;
         } catch (e) {

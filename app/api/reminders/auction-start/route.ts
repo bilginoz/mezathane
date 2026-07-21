@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/mailer';
 
 // Called by scheduled task to send auction start reminders
 // Finds auctions starting within the next 1-2 hours and notifies users who have lots in their watchlist
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     // Verify internal API key
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ABACUSAI_API_KEY}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     let emailsSent = 0;
-    const appUrl = process.env.NEXTAUTH_URL || 'https://mezathane.abacusai.app';
+    const appUrl = process.env.NEXTAUTH_URL || 'https://mezathane.tr';
     const appName = 'Mezathane';
 
     for (const auction of upcomingAuctions) {
@@ -94,20 +95,10 @@ export async function POST(req: NextRequest) {
         `;
 
         try {
-          await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              deployment_token: process.env.ABACUSAI_API_KEY,
-              app_id: process.env.WEB_APP_ID,
-              notification_id: process.env.NOTIF_ID_MZAYEDE_BALANG_HATRLATMAS,
-              subject: `\u23F0 ${auction.title} - M\u00fczayede yakla\u015f\u0131yor!`,
-              body: htmlBody,
-              is_html: true,
-              recipient_email: userData.email,
-              sender_email: 'bilgi@mezathane.tr',
-              sender_alias: appName,
-            }),
+          await sendEmail({
+            to: userData.email,
+            subject: `\u23F0 ${auction.title} - M\u00fczayede yakla\u015f\u0131yor!`,
+            html: htmlBody,
           });
           emailsSent++;
         } catch (e) {

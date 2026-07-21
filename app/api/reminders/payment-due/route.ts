@@ -1,13 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/mailer';
 
 // Called by scheduled task to send payment due reminders
 // Finds unpaid orders where dueDate is approaching (within 24-48 hours)
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ABACUSAI_API_KEY}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
 
     let emailsSent = 0;
-    const appUrl = process.env.NEXTAUTH_URL || 'https://mezathane.abacusai.app';
+    const appUrl = process.env.NEXTAUTH_URL || 'https://mezathane.tr';
     const appName = 'Mezathane';
 
     for (const payment of pendingPayments) {
@@ -70,20 +71,10 @@ export async function POST(req: NextRequest) {
       `;
 
       try {
-        await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            deployment_token: process.env.ABACUSAI_API_KEY,
-            app_id: process.env.WEB_APP_ID,
-            notification_id: process.env.NOTIF_ID_DEME_SRESI_HATRLATMAS,
-            subject: `\uD83D\uDCB3 \u00d6deme hat\u0131rlatmas\u0131 - ${payment.lot.title}`,
-            body: htmlBody,
-            is_html: true,
-            recipient_email: payment.user.email,
-            sender_email: 'bilgi@mezathane.tr',
-            sender_alias: appName,
-          }),
+        await sendEmail({
+          to: payment.user.email,
+          subject: `\uD83D\uDCB3 \u00d6deme hat\u0131rlatmas\u0131 - ${payment.lot.title}`,
+          html: htmlBody,
         });
         emailsSent++;
       } catch (e) {
