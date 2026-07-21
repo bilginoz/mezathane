@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import Pusher from 'pusher-js';
+import * as Ably from 'ably';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gavel, Clock, Users, TrendingUp, CheckCircle, XCircle, ArrowRight, ArrowLeft, Radio, Zap, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -54,25 +54,23 @@ export function LiveAuctionContent({ auctionId }: { auctionId: string }) {
     }
   }, [auctionId]);
 
-  // Anlık güncelleme: Pusher üzerinden "bir şey değişti" sinyali gelince hemen veri çek.
-  // Poll (8 saniyede bir) sadece güvence/yedek — Pusher bağlantısı kesilirse veya
+  // Anlık güncelleme: Ably üzerinden "bir şey değişti" sinyali gelince hemen veri çek.
+  // Poll (8 saniyede bir) sadece güvence/yedek — Ably bağlantısı kesilirse veya
   // süre dolumu gibi kullanıcı etkileşimi olmayan geçişlerde devreye girer.
   useEffect(() => {
     fetchLiveData();
     pollRef.current = setInterval(fetchLiveData, 8000);
 
-    let pusher: Pusher | null = null;
-    if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
-      pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-      });
-      const channel = pusher.subscribe(`auction-${auctionId}`);
-      channel.bind('update', () => { fetchLiveData(); });
+    let ably: Ably.Realtime | null = null;
+    if (process.env.NEXT_PUBLIC_ABLY_KEY) {
+      ably = new Ably.Realtime({ key: process.env.NEXT_PUBLIC_ABLY_KEY });
+      const channel = ably.channels.get(`auction-${auctionId}`);
+      channel.subscribe('update', () => { fetchLiveData(); });
     }
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
-      if (pusher) { pusher.unsubscribe(`auction-${auctionId}`); pusher.disconnect(); }
+      if (ably) { ably.close(); }
     };
   }, [auctionId, fetchLiveData]);
 

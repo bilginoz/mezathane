@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { triggerLiveUpdate } from '@/lib/pusher';
+import { triggerLiveUpdate } from '@/lib/realtime';
 
 // KVKK: Teklif verenlerin isimlerini gizle ("Bilgin ÖZ" -> "B... Ö...")
 function maskName(fullName?: string | null): string {

@@ -9,7 +9,7 @@ import { createInAppNotification, sendCheckedNotificationEmail } from '@/lib/not
 import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 import { logLotEvent } from '@/lib/lot-history';
 import { getEmailTemplate } from '@/lib/email-templates';
-import { triggerLiveUpdate } from '@/lib/pusher';
+import { triggerLiveUpdate } from '@/lib/realtime';
 
 // Proxy bid otomatik teklif işlemi
 async function processProxyBids(lotId: string, currentBidAmount: number, currentBidderId: string, customBidIncrement?: number | null) {
