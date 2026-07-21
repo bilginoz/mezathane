@@ -27,6 +27,11 @@ export const metadata = {
   },
   description: 'Antika, tesbih ve koleksiyon ürünlerinin açık artırma ile satışı. Güvenli ve şeffaf müzayede deneyimi. Türkiye\'nin en güvenilir online müzayede platformu.',
   metadataBase: new URL(process.env.NEXTAUTH_URL ?? 'http://localhost:3000'),
+  // Site gerçek verilerle canlıya alınana kadar Google'da görünmesin.
+  // Açılışa hazır olunca Vercel'de NEXT_PUBLIC_ALLOW_INDEXING=true eklenip yeniden deploy edilmeli.
+  robots: process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true'
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
   keywords: ['müzayede', 'açık artırma', 'antika', 'tesbih', 'koleksiyon', 'online müzayede', 'mezat', 'mezathane'],
   authors: [{ name: 'Mezathane.tr' }],
   creator: 'Mezathane.tr',
