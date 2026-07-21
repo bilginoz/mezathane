@@ -68,11 +68,12 @@ function findNextLot(allLots: any[], afterLotId: string) {
 // Canlı müzayede durumunu sorgula ve gerekirse sonraki lota geç
 export async function GET(
   request: Request,
-  { params }: { params: { auctionId: string } }
+  { params }: { params: Promise<{ auctionId: string }> }
 ) {
   try {
+    const { auctionId } = await params;
     const auction = await prisma.auction.findUnique({
-      where: { id: params.auctionId },
+      where: { id: auctionId },
       include: {
         lots: {
           orderBy: { sortOrder: 'asc' },
@@ -294,7 +295,7 @@ export async function GET(
 
     // ----- Güncel verileri tekrar çek ve döndür -----
     const updatedAuction = await prisma.auction.findUnique({
-      where: { id: params.auctionId },
+      where: { id: auctionId },
       include: {
         lots: {
           orderBy: { sortOrder: 'asc' },

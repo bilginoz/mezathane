@@ -8,15 +8,14 @@ import { prisma } from '@/lib/prisma';
 // Admin: Bir alıcının/kullanıcının detayı — kazandığı lotlar, ödeme durumları, teklif geçmişi
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: userId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'ADMIN') {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
     }
-
-    const userId = params.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

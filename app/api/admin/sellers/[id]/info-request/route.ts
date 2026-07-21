@@ -9,9 +9,10 @@ import { sendNotificationEmail } from '@/lib/notifications';
 // Admin "Eksik Bilgi / Düzeltme İste" gönderir
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
@@ -23,14 +24,14 @@ export async function POST(
     }
 
     const seller = await prisma.sellerProfile.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: { select: { id: true, email: true, fullName: true } } },
     });
     if (!seller) return NextResponse.json({ error: 'Satıcı bulunamadı' }, { status: 404 });
 
     // Durumu INFO_REQUESTED olarak güncelle
     await prisma.sellerProfile.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: 'INFO_REQUESTED',
         adminNote: note.trim(),

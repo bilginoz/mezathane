@@ -7,10 +7,11 @@ import { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
+    const { id } = await params;
     const auction = await prisma.auction.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { title: true, description: true, bannerUrl: true, seller: { select: { companyName: true } } },
     });
     if (!auction) return {};
@@ -27,11 +28,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   } catch { return {}; }
 }
 
-export default async function AuctionDetailPage({ params }: { params: { id: string } }) {
+export default async function AuctionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   let auction: any = null;
   try {
     auction = await prisma.auction.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: { select: { id: true, companyName: true, logoUrl: true, description: true, commissionRate: true, status: true, isVerified: true } },
         lots: {
@@ -52,7 +54,7 @@ export default async function AuctionDetailPage({ params }: { params: { id: stri
       },
     });
     if (auction) {
-      await prisma.auction.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } });
+      await prisma.auction.update({ where: { id }, data: { viewCount: { increment: 1 } } });
     }
   } catch (e) {
     console.error('Auction detail error:', e);

@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { lotId: string } }
+  { params }: { params: Promise<{ lotId: string }> }
 ) {
   try {
+    const { lotId } = await params;
     const history = await prisma.lotHistory.findMany({
-      where: { lotId: params.lotId },
+      where: { lotId },
       orderBy: { createdAt: 'asc' },
     });
 

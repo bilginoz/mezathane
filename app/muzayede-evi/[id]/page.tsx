@@ -6,13 +6,14 @@ import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SellerProfilePage({ params }: { params: { id: string } }) {
+export default async function SellerProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   let seller: any = null;
   let stats: any = null;
 
   try {
     seller = await prisma.sellerProfile.findUnique({
-      where: { id: params.id, status: 'APPROVED' },
+      where: { id, status: 'APPROVED' },
       select: {
         id: true,
         companyName: true,

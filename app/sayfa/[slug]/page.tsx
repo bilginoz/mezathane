@@ -30,8 +30,9 @@ function renderContent(content: string) {
   );
 }
 
-export default async function DynamicPage({ params }: { params: { slug: string } }) {
-  const page = await prisma.page.findUnique({ where: { slug: params.slug } });
+export default async function DynamicPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const page = await prisma.page.findUnique({ where: { slug } });
   if (!page || !page.isActive) return notFound();
 
   const IconComp = ICONS[page.icon] ?? FileText;

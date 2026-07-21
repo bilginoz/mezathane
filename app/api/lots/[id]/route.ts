@@ -7,11 +7,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const lot = await prisma.lot.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         auction: {
           include: {
@@ -35,7 +36,7 @@ export async function GET(
     }
 
     await prisma.lot.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { viewCount: { increment: 1 } },
     });
 
@@ -48,16 +49,17 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 });
     const userId = (session.user as any).id;
     const userRole = (session.user as any).role;
 
     const lot = await prisma.lot.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: { auction: { include: { seller: true } } },
     });
     if (!lot) return NextResponse.json({ error: 'Lot bulunamadı' }, { status: 404 });
@@ -96,7 +98,7 @@ export async function PATCH(
     if (status) updateData.status = status;
 
     const updatedLot = await prisma.lot.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: { images: true, category: true, lotCategories: { include: { category: true } } },
     });
@@ -104,23 +106,23 @@ export async function PATCH(
     // Çoklu kategori güncelleme
     if (categoryIds !== undefined) {
       // Mevcut kategori ilişkilerini sil ve yenilerini oluştur
-      await prisma.lotCategory.deleteMany({ where: { lotId: params.id } });
+      await prisma.lotCategory.deleteMany({ where: { lotId: id } });
       if (categoryIds.length > 0) {
         await prisma.lotCategory.createMany({
-          data: categoryIds.map((catId: string) => ({ lotId: params.id, categoryId: catId })),
+          data: categoryIds.map((catId: string) => ({ lotId: id, categoryId: catId })),
           skipDuplicates: true,
         });
       }
       // Eski alanları da güncelle (uyumluluk)
       await prisma.lot.update({
-        where: { id: params.id },
+        where: { id: id },
         data: { categoryId: categoryIds[0] ?? null, secondaryCategoryId: categoryIds[1] ?? null },
       });
     }
 
     // Update image if provided
     if (imageUrl !== undefined) {
-      const existingImages = await prisma.lotImage.findMany({ where: { lotId: params.id } });
+      const existingImages = await prisma.lotImage.findMany({ where: { lotId: id } });
       if (existingImages.length > 0) {
         await prisma.lotImage.update({
           where: { id: existingImages[0].id },
@@ -128,7 +130,7 @@ export async function PATCH(
         });
       } else if (imageUrl) {
         await prisma.lotImage.create({
-          data: { lotId: params.id, imageUrl, isPublic: true, sortOrder: 0 },
+          data: { lotId: id, imageUrl, isPublic: true, sortOrder: 0 },
         });
       }
     }

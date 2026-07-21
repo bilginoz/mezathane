@@ -6,12 +6,12 @@ import { prisma } from '@/lib/prisma';
 import { checkMessageForContactInfo } from '@/lib/message-filter';
 
 // GET: Get messages for a conversation
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id: conversationId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const user = session.user as any;
-    const conversationId = params.id;
 
     // Get conversation and verify access
     const conversation = await prisma.conversation.findUnique({
@@ -80,12 +80,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST: Send a message in conversation
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id: conversationId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const user = session.user as any;
-    const conversationId = params.id;
 
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },

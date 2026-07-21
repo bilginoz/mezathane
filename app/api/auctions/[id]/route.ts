@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const auction = await prisma.auction.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: { select: { id: true, companyName: true, logoUrl: true, userId: true } },
         lots: {
@@ -29,7 +30,7 @@ export async function GET(
     }
 
     await prisma.auction.update({
-      where: { id: params.id },
+      where: { id },
       data: { viewCount: { increment: 1 } },
     });
 

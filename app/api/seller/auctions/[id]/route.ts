@@ -5,8 +5,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 });
     const userId = (session.user as any).id;
@@ -14,7 +15,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!seller) return NextResponse.json({ error: 'Satıcı profili yok' }, { status: 403 });
 
     const auction = await prisma.auction.findFirst({
-      where: { id: params.id, sellerId: seller.id },
+      where: { id, sellerId: seller.id },
       include: {
         lots: {
           orderBy: { sortOrder: 'asc' },
@@ -43,15 +44,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 });
     const userId = (session.user as any).id;
     const seller = await prisma.sellerProfile.findUnique({ where: { userId } });
     if (!seller) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-    const existing = await prisma.auction.findFirst({ where: { id: params.id, sellerId: seller.id } });
+    const existing = await prisma.auction.findFirst({ where: { id, sellerId: seller.id } });
     if (!existing) return NextResponse.json({ error: 'Müzayede bulunamadı' }, { status: 404 });
 
     const body = await request.json();
@@ -81,7 +83,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     const auction = await prisma.auction.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(isDraft && title && { title }),
         ...(isDraft && description !== undefined && { description }),

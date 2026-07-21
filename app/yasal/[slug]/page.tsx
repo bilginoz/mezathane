@@ -172,8 +172,9 @@ const SIDEBAR_ORDER = [
 
 const ICONS: Record<string, any> = { Scale, Shield, FileText, Cookie, Lock, Gavel, BookOpen, CreditCard, RotateCcw, Info, Banknote, Ban };
 
-export default function LegalPage({ params }: { params: { slug: string } }) {
-  const page = LEGAL_PAGES[params.slug];
+export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug: currentSlug } = await params;
+  const page = LEGAL_PAGES[currentSlug];
   if (!page) return notFound();
   const IconComp = ICONS[page.icon] ?? FileText;
 
@@ -191,7 +192,7 @@ export default function LegalPage({ params }: { params: { slug: string } }) {
               <nav className="sticky top-24 space-y-1">
                 {SIDEBAR_ORDER.filter(s => LEGAL_PAGES[s]).map(slug => {
                   const p = LEGAL_PAGES[slug];
-                  const isActive = slug === params.slug;
+                  const isActive = slug === currentSlug;
                   const SideIcon = ICONS[p.icon] ?? FileText;
                   return (
                     <Link

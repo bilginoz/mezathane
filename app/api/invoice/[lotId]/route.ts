@@ -114,9 +114,10 @@ function generateInvoiceHtml(data: any) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { lotId: string } }
+  { params }: { params: Promise<{ lotId: string }> }
 ) {
   try {
+    const { lotId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
@@ -125,7 +126,7 @@ export async function GET(
     const userRole = (session.user as any).role;
 
     const lot = await prisma.lot.findUnique({
-      where: { id: params.lotId },
+      where: { id: lotId },
       include: {
         auction: {
           include: {
@@ -148,7 +149,7 @@ export async function GET(
 
     // Payment verisini al (alıcı komisyonu bilgileri için)
     const payment = await prisma.payment.findFirst({
-      where: { lotId: params.lotId },
+      where: { lotId },
       select: { buyerPremiumRate: true, buyerPremiumAmount: true, buyerPremiumKDV: true, totalAmount: true },
     });
 

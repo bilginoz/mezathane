@@ -8,9 +8,10 @@ import { prisma } from '@/lib/prisma';
 // Satıcı fatura yükler (alıcıya kestiği ürün faturası)
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     const user = session.user as any;
@@ -24,7 +25,7 @@ export async function PATCH(
 
     // Satıcının kendi siparişi olduğunu kontrol et
     const payment = await prisma.payment.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         lot: {
           include: { auction: { include: { seller: true } } },
@@ -40,7 +41,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.payment.update({
-      where: { id: params.id },
+      where: { id },
       data: { invoiceUrl, invoicePath },
     });
 

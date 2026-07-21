@@ -8,9 +8,10 @@ import { logAudit } from '@/lib/audit';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'ADMIN') {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
@@ -28,7 +29,7 @@ export async function PATCH(
     if (body.isVerified !== undefined) updateData.isVerified = Boolean(body.isVerified);
 
     const seller = await prisma.sellerProfile.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: { user: { select: { fullName: true } } },
     });
@@ -38,7 +39,7 @@ export async function PATCH(
       userName: (session.user as any).fullName || (session.user as any).email,
       action: body.status === 'APPROVED' ? 'APPROVE' : body.status === 'REJECTED' ? 'REJECT' : 'UPDATE',
       entity: 'Seller',
-      entityId: params.id,
+      entityId: id,
       details: { companyName: seller.companyName, ...updateData },
     });
 

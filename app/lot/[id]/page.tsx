@@ -7,10 +7,11 @@ import { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
+    const { id } = await params;
     const lot = await prisma.lot.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { title: true, description: true, startingPrice: true, images: { take: 1, orderBy: { sortOrder: 'asc' } }, auction: { select: { title: true } } },
     });
     if (!lot) return {};
@@ -28,11 +29,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   } catch { return {}; }
 }
 
-export default async function LotDetailPage({ params }: { params: { id: string } }) {
+export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   let lot: any = null;
   try {
     lot = await prisma.lot.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         auction: {
           include: {
@@ -50,7 +52,7 @@ export default async function LotDetailPage({ params }: { params: { id: string }
       },
     });
     if (lot) {
-      await prisma.lot.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } });
+      await prisma.lot.update({ where: { id }, data: { viewCount: { increment: 1 } } });
     }
   } catch (e) {
     console.error('Lot detail error:', e);

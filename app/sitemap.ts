@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('x-forwarded-host') || process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '') || 'mezathane.tr';
   const siteUrl = `https://${host}`;
 
