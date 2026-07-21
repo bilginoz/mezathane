@@ -39,8 +39,7 @@ export async function generatePresignedUploadUrl(
   // Generate public URL for public files
   let publicUrl: string | undefined;
   if (isPublic) {
-    const region = process.env.AWS_REGION ?? 'us-east-1';
-    publicUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${cloud_storage_path}`;
+    publicUrl = `${process.env.R2_PUBLIC_URL}/${cloud_storage_path}`;
   }
 
   return { uploadUrl, cloud_storage_path, publicUrl };
@@ -53,8 +52,7 @@ export async function getFileUrl(
 ) {
   const { bucketName } = getBucketConfig();
   if (isPublic) {
-    const region = process.env.AWS_REGION ?? "us-east-1";
-    return `https://${bucketName}.s3.${region}.amazonaws.com/${cloud_storage_path}`;
+    return `${process.env.R2_PUBLIC_URL}/${cloud_storage_path}`;
   }
   const command = new GetObjectCommand({
     Bucket: bucketName,
