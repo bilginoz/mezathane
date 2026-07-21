@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/mailer';
 
 /**
  * 6 haneli doğrulama kodu üret ve DB'ye kaydet
@@ -43,32 +44,14 @@ export async function sendVerificationEmail(email: string, fullName: string, cod
     </div>
   `;
 
-  const senderEmail = 'bilgi@mezathane.tr';
-
-  try {
-    console.log(`[EMAIL-VERIFY] Sending verification email to: ${email}, notification_id: ${process.env.NOTIF_ID_EPOSTA_DORULAMA}, app_id: ${process.env.WEB_APP_ID}`);
-    const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        app_id: process.env.WEB_APP_ID,
-        notification_id: process.env.NOTIF_ID_EPOSTA_DORULAMA,
-        subject: 'E-posta Doğrulama Kodu - Mezathane.tr',
-        body: htmlBody,
-        is_html: true,
-        recipient_email: email,
-        sender_email: senderEmail,
-        sender_alias: 'Mezathane.tr',
-      }),
-    });
-    const responseText = await response.text();
-    if (!response.ok) {
-      console.error(`[EMAIL-VERIFY] API error (${response.status}): ${responseText}`);
-    } else {
-      console.log(`[EMAIL-VERIFY] Email sent successfully to ${email}. Response: ${responseText}`);
-    }
-  } catch (error) {
-    console.error('[EMAIL-VERIFY] Network/send error:', error);
+  const result = await sendEmail({
+    to: email,
+    subject: 'E-posta Doğrulama Kodu - Mezathane.tr',
+    html: htmlBody,
+  });
+  if (!result.success) {
+    console.error(`[EMAIL-VERIFY] Send error for ${email}:`, result.error);
+  } else {
+    console.log(`[EMAIL-VERIFY] Email sent successfully to ${email}. messageId: ${result.messageId}`);
   }
 }

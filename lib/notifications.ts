@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/mailer';
 
 // Kullanıcının bildirim tercihini kontrol et
 export async function checkNotificationPreference(
@@ -78,32 +79,10 @@ export async function sendNotificationEmail(options: {
   body: string;
   replyTo?: string;
 }) {
-  try {
-    const appUrl = process.env.NEXTAUTH_URL ?? '';
-    const appName = 'Mezathane.tr';
-    // Doğrulanmış özel alan adından gönder (Zoho: bilgi@mezathane.tr)
-    const senderEmail = 'bilgi@mezathane.tr';
-
-    const response = await fetch('https://apps.abacus.ai/api/sendNotificationEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        app_id: process.env.WEB_APP_ID,
-        notification_id: options.notificationId,
-        subject: options.subject,
-        body: options.body,
-        is_html: true,
-        recipient_email: options.recipientEmail,
-        reply_to: options.replyTo,
-        sender_email: senderEmail,
-        sender_alias: appName,
-      }),
-    });
-    const result = await response.json();
-    return result;
-  } catch (error: any) {
-    console.error('Email notification error:', error);
-    return { success: false, error: error?.message };
-  }
+  return sendEmail({
+    to: options.recipientEmail,
+    subject: options.subject,
+    html: options.body,
+    replyTo: options.replyTo,
+  });
 }
