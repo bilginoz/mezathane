@@ -87,7 +87,7 @@ function generateProformaHTML(data: {
       <h3>Platform Bilgileri</h3>
       <p><strong>Mezathane.tr</strong></p>
       <p>info@mezathane.tr</p>
-      <p>Komisyon Oranı: %${seller.commissionRate ?? 15}</p>
+      <p>Komisyon Oranı: %${seller.commissionRate ?? 0}</p>
     </div>
   </div>
 

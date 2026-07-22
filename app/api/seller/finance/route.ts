@@ -67,7 +67,7 @@ export async function GET() {
           const commissionRate = auction.commissionRate / 100;
           // Komisyon = satış fiyatı × oran (matrah), KDV ayrıca eklenir
           const commissionMatrah = salePrice * commissionRate;
-          const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+          const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
           const commissionKDV = commissionMatrah * lotKdvRate;
           const grossCommission = commissionMatrah + commissionKDV;
           const netCommission = commissionMatrah;

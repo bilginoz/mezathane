@@ -131,10 +131,10 @@ export async function GET(request: Request) {
           ['Lot', 'Müzayede', 'Satıcı', 'Alıcı', 'Alıcı Tel', 'Satış Fiyatı', 'Komisyon Oranı %', 'Komisyon Matrah', 'KDV', 'Brüt Komisyon', 'Satıcı Hak Edişi', 'Durum', 'Alıcı Ödedi', 'Satıcıya Ödendi', 'Ödeme Yöntemi', 'Tarih'],
           fPayments.map(p => {
             const lot = p.lot as any;
-            const rate = lot?.auction?.commissionRate ?? 10;
+            const rate = lot?.auction?.commissionRate ?? 0;
             const salePrice = lot?.salePrice ?? p.amount;
             const matrah = Math.round(salePrice * rate) / 100;
-            const lotKdvRate = (lot?.kdvRate ?? 20) / 100;
+            const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
             const kdv = Math.round(matrah * lotKdvRate * 100) / 100;
             const gross = Math.round((matrah + kdv) * 100) / 100;
             const payout = Math.round((salePrice - gross) * 100) / 100;

@@ -11,10 +11,10 @@ import { htmlToPdfBuffer } from '@/lib/pdf';
 function generateInvoiceHtml(data: any) {
   const { lot, auction, winner, seller, winningBid, payment } = data;
   const amount = winningBid?.amount ?? lot.currentPrice ?? 0;
-  const buyerPremiumRate = payment?.buyerPremiumRate ?? 10;
-  const buyerPremiumAmount = payment?.buyerPremiumAmount ?? (amount * 0.10);
-  const lotKdvRate = (lot.kdvRate ?? 20) / 100;
-  const buyerPremiumKDV = payment?.buyerPremiumKDV ?? (buyerPremiumAmount * lotKdvRate);
+  const buyerPremiumRate = payment?.buyerPremiumRate ?? 7;
+  const buyerPremiumAmount = payment?.buyerPremiumAmount ?? (amount * 0.07);
+  const serviceKdvRate = 0.20; // Hizmet bedeli KDV'si sabit %20 (hizmet), ürün oranından bağımsız
+  const buyerPremiumKDV = payment?.buyerPremiumKDV ?? (buyerPremiumAmount * serviceKdvRate);
   const total = payment?.totalAmount ?? (amount + buyerPremiumAmount + buyerPremiumKDV);
   const invoiceNo = `MZT-${new Date().getFullYear()}-${lot.lotNumber ?? '000'}`;
   const date = new Date().toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
@@ -94,7 +94,7 @@ function generateInvoiceHtml(data: any) {
         <td class="amount">${buyerPremiumAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>
       </tr>
       <tr>
-        <td>KDV (%${lot.kdvRate ?? 20}, hizmet bedeli üzerinden)</td>
+        <td>KDV (%20, hizmet bedeli üzerinden)</td>
         <td></td>
         <td></td>
         <td class="amount">${buyerPremiumKDV.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>

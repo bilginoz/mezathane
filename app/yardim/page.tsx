@@ -38,7 +38,7 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         q: 'Mezathane.tr\'yi kullanmak ücretsiz mi?',
-        a: 'Platforma üye olmak, müzayedeleri incelemek ve takip etmek tamamen ücretsizdir. Müzayede kazandığınızda satış bedeline ek olarak %10 hizmet bedeli ve bu bedelin KDV\'si eklenir. Toplam tutar teklif verme ekranında açıkça gösterilir.',
+        a: 'Platforma üye olmak, müzayedeleri incelemek ve takip etmek tamamen ücretsizdir. Müzayede kazandığınızda satış bedeline ek olarak %7 hizmet bedeli ve bu bedel üzerinden %20 KDV eklenir. Toplam tutar teklif verme ekranında açıkça gösterilir.',
       },
     ],
   },
@@ -122,7 +122,7 @@ const FAQ_DATA: FAQCategory[] = [
     questions: [
       {
         q: 'Hizmet bedeli nedir?',
-        a: 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Kazanan alıcı, satış bedeline ek olarak %10 hizmet bedeli ve bu bedelin KDV\'sini (ürüne göre %1, %10 veya %20) öder. Örnek (%20 KDV): 20.000 TL kazanan teklif için toplam ödeme 22.400 TL\'dir (20.000 + 2.000 hizmet bedeli + 400 KDV). Toplam tutar teklif verme ekranında her zaman açıkça gösterilir.',
+        a: 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Kazanan alıcı, satış bedeline ek olarak %7 hizmet bedeli ve bu hizmet bedeli üzerinden %20 KDV öder. Örnek: 20.000 TL kazanan teklif için toplam ödeme 21.680 TL\'dir (20.000 + 1.400 hizmet bedeli + 280 KDV). Toplam tutar teklif verme ekranında her zaman açıkça gösterilir.',
       },
       {
         q: 'Ödemeyi nasıl yaparım?',
@@ -191,7 +191,7 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         q: 'Satıcı komisyon oranı nedir?',
-        a: 'Platform, satıcılardan hizmet komisyonu almaktadır. Komisyon oranı satıcı onayı sırasında platform ile satıcı arasında belirlenir ve satıcı panelinde görüntülenebilir. Alıcılardan ayrıca %10 hizmet bedeli + KDV alınır.',
+        a: 'Platform, satıcılardan hizmet komisyonu almaktadır. Komisyon oranı satıcı onayı sırasında platform ile satıcı arasında belirlenir ve satıcı panelinde görüntülenebilir. Alıcılardan ayrıca %7 hizmet bedeli + %20 KDV alınır.',
       },
       {
         q: 'Satıcıya nasıl soru sorabilirim?',

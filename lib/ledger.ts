@@ -253,9 +253,9 @@ export async function buildSellerLedger(sellerId: string): Promise<LedgerResult 
   for (const lot of lots) {
     if (!lot.soldPrice) continue;
     soldCount++;
-    const rate = (lot.auction?.commissionRate ?? 15) / 100;
+    const rate = (lot.auction?.commissionRate ?? 0) / 100;
     const matrah = lot.soldPrice * rate;
-    const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+    const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
     const kdv = matrah * lotKdvRate;
     const grossCommission = round(matrah + kdv);
     const netPayout = round(lot.soldPrice - grossCommission);
@@ -338,9 +338,9 @@ export async function buildPlatformLedger(): Promise<LedgerResult> {
   for (const lot of lots) {
     if (!lot.soldPrice) continue;
     soldCount++;
-    const rate = (lot.auction?.commissionRate ?? 15) / 100;
+    const rate = (lot.auction?.commissionRate ?? 0) / 100;
     const matrah = lot.soldPrice * rate;
-    const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+    const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
     const kdv = matrah * lotKdvRate;
     const grossCommission = round(matrah + kdv);
     const payment = lot.payments?.[0];

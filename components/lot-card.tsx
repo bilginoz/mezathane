@@ -216,7 +216,7 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
             {/* Hızlı Teklif */}
             {showQuickBid && canBid && !((session?.user as any)?.sellerProfileId && (session?.user as any)?.sellerProfileId === (lot?.auction?.sellerId || lot?.auction?.seller?.id)) && (
               <div className="pt-1" onClick={(e) => e.preventDefault()}>
-                <p className="text-[8px] sm:text-[9px] text-muted-foreground text-center mb-0.5">+%10 hizmet bedeli + KDV uygulanır</p>
+                <p className="text-[8px] sm:text-[9px] text-muted-foreground text-center mb-0.5">+%7 hizmet bedeli + %20 KDV uygulanır</p>
                 {!showBidInput ? (
                   <button
                     onClick={handleQuickBid}

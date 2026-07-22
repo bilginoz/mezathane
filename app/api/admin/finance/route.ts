@@ -69,7 +69,7 @@ export async function GET(request: Request) {
             const commissionRate = auction.commissionRate / 100;
             // Komisyon = satış fiyatı × oran (matrah), KDV ayrıca eklenir
             const commissionMatrah = salePrice * commissionRate;
-            const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+            const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
             const commissionKDV = commissionMatrah * lotKdvRate;
             const grossCommission = commissionMatrah + commissionKDV;
             const netCommission = commissionMatrah;
@@ -249,9 +249,9 @@ export async function PATCH(request: Request) {
     const adminId = (session.user as any).id;
     const lot = existingPayment.lot;
     const salePrice = lot?.soldPrice ?? existingPayment.amount ?? 0;
-    const commissionRate = (lot?.auction?.commissionRate ?? 15) / 100;
+    const commissionRate = (lot?.auction?.commissionRate ?? 0) / 100;
     const commissionMatrah = salePrice * commissionRate;
-    const lotKdvRatePatch = (lot?.kdvRate ?? 20) / 100;
+    const lotKdvRatePatch = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
     const commissionKDV = commissionMatrah * lotKdvRatePatch;
     const grossCommission = Math.round((commissionMatrah + commissionKDV) * 100) / 100;
     const sellerPayout = Math.round((salePrice - grossCommission) * 100) / 100;

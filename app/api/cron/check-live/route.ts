@@ -75,12 +75,12 @@ export async function GET() {
         const highestBid = lot.bids?.[0];
         if (highestBid && highestBid.amount >= lot.startingPrice) {
           // Lot satıldı
-          const commRate = (auction.seller?.commissionRate ?? 15) / 100;
+          const commRate = (auction.seller?.commissionRate ?? 0) / 100;
           const commAmt = highestBid.amount * commRate;
           // Alıcı komisyonu (buyer premium) hesapla
-          const buyerPremiumRate = 10.0;
+          const buyerPremiumRate = 7.0;
           const buyerPremiumAmount = highestBid.amount * (buyerPremiumRate / 100);
-          const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+          const lotKdvRate = 0.20; // Hizmet bedeli bir hizmettir; KDV'si ürün oranından bağımsız, sabit %20
           const buyerPremiumKDV = Math.round(buyerPremiumAmount * lotKdvRate * 100) / 100;
           const buyerTotalAmount = highestBid.amount + buyerPremiumAmount + buyerPremiumKDV;
           const dueDate = new Date(now.getTime() + (auction.paymentDays ?? 7) * 24 * 60 * 60 * 1000);

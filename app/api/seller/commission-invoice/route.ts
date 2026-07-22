@@ -194,7 +194,7 @@ export async function POST(request: Request) {
 
     const salePrice = payment.amount;
     const commissionRate = payment.lot.auction.commissionRate;
-    const lotKdvRate = (payment.lot.kdvRate ?? 20) / 100;
+    const lotKdvRate = 0.20; // Aracılık komisyonu bir hizmettir; KDV'si ürün oranından bağımsız, sabit %20
     const commissionMatrah = salePrice * (commissionRate / 100);
     const commissionKDV = commissionMatrah * lotKdvRate;
     const grossCommission = commissionMatrah + commissionKDV;

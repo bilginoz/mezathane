@@ -54,7 +54,7 @@ export function SellerAnalytics() {
     { icon: Activity, label: 'Ort. Teklif/Lot', value: o.avgBidsPerLot ?? 0, color: 'text-pink-400' },
     { icon: Eye, label: 'Toplam Görüntülenme', value: o.totalViews ?? 0, color: 'text-sky-400' },
     { icon: Heart, label: 'Favori Sayısı', value: o.watchlistCount ?? 0, color: 'text-red-400' },
-    { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 15}`, color: 'text-[#d4af37]' },
+    { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 0}`, color: 'text-[#d4af37]' },
   ];
 
   return (

@@ -103,7 +103,7 @@ const STEPS: Step[] = [
     title: '7. Komisyon Sistemi',
     items: [
       'Platform, satış üzerinden hizmet komisyonu alır. Komisyon oranınız panelinizde yazar.',
-      'Komisyon matrahı satış bedeli üzerinden hesaplanır, üzerine lotün KDV oranı (%1, %10 veya %20) eklenir.',
+      'Komisyon matrahı satış bedeli üzerinden hesaplanır, üzerine %20 KDV eklenir (aracılık hizmeti KDV oranı).',
       'Alıcıdan komisyon alınmaz — alıcı yalnızca kazanan teklif tutarını öder.',
       'Net ödemeniz = Satış bedeli − (Komisyon + KDV) şeklinde hesaplanır.',
       'Tüm tutarları "Cari Hesabım" ekranından şeffaf şekilde görebilirsiniz.',

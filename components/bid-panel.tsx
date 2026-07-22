@@ -309,16 +309,16 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
                   <span className="font-mono">{formatPrice(bidAmount)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] sm:text-xs">
-                  <span className="text-muted-foreground">Hizmet Bedeli (%10)</span>
-                  <span className="font-mono">{formatPrice(bidAmount * 0.10)}</span>
+                  <span className="text-muted-foreground">Hizmet Bedeli (%7)</span>
+                  <span className="font-mono">{formatPrice(bidAmount * 0.07)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] sm:text-xs">
-                  <span className="text-muted-foreground">KDV (%{lot?.kdvRate ?? 20}, hizmet bedeli üzerinden)</span>
-                  <span className="font-mono">{formatPrice(bidAmount * 0.10 * ((lot?.kdvRate ?? 20) / 100))}</span>
+                  <span className="text-muted-foreground">KDV (%20, hizmet bedeli üzerinden)</span>
+                  <span className="font-mono">{formatPrice(bidAmount * 0.07 * 0.20)}</span>
                 </div>
                 <div className="border-t border-border pt-1 mt-1 flex justify-between text-xs sm:text-sm font-bold">
                   <span className="text-foreground">Toplam Ödenecek</span>
-                  <span className="text-[#d4af37] font-mono">{formatPrice(bidAmount + bidAmount * 0.10 + bidAmount * 0.10 * ((lot?.kdvRate ?? 20) / 100))}</span>
+                  <span className="text-[#d4af37] font-mono">{formatPrice(bidAmount + bidAmount * 0.07 + bidAmount * 0.07 * 0.20)}</span>
                 </div>
               </div>
             )}
@@ -392,7 +392,7 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
                     </div>
                     <div className="border-t border-border pt-1 mt-1 flex justify-between text-xs sm:text-sm font-bold">
                       <span className="text-foreground">Maks. Ödenecek</span>
-                      <span className="text-[#d4af37] font-mono">{formatPrice(maxBidAmount + maxBidAmount * 0.10 + maxBidAmount * 0.10 * ((lot?.kdvRate ?? 20) / 100))}</span>
+                      <span className="text-[#d4af37] font-mono">{formatPrice(maxBidAmount + maxBidAmount * 0.07 + maxBidAmount * 0.07 * 0.20)}</span>
                     </div>
                   </div>
                 )}

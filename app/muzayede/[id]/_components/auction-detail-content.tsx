@@ -221,29 +221,29 @@ export function AuctionDetailContent({ auction }: { auction: any }) {
               <Info className="h-5 w-5 text-[#d4af37] mt-0.5 flex-shrink-0" />
               <div className="space-y-3 flex-1">
                 <p className="text-sm text-foreground">
-                  Alıcılardan çekiç fiyatı üzerine <strong className="text-[#d4af37]">%10 hizmet bedeli</strong> ve bu bedel üzerine <strong className="text-[#d4af37]">KDV</strong> (lotün KDV oranına göre %1 / %10 / %20) ilave alınacaktır.
+                  Alıcılardan çekiç fiyatı üzerine <strong className="text-[#d4af37]">%7 hizmet bedeli</strong> ve bu bedel üzerine <strong className="text-[#d4af37]">%20 KDV</strong> ilave alınacaktır.
                 </p>
                 <div className="rounded-lg bg-card/80 border border-border p-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Örnek hesaplama (%20 KDV):</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Örnek hesaplama:</p>
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Çekiç Fiyatı (KDV dahil)</span>
                       <span className="font-mono">100 ₺</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Komisyon %10</span>
-                      <span className="font-mono">10 ₺</span>
+                      <span className="text-muted-foreground">Hizmet Bedeli %7</span>
+                      <span className="font-mono">7 ₺</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Komisyon KDV %20</span>
-                      <span className="font-mono">2 ₺</span>
+                      <span className="text-muted-foreground">Hizmet Bedeli KDV %20</span>
+                      <span className="font-mono">1,40 ₺</span>
                     </div>
                     <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
                       <span>Toplam</span>
-                      <span className="text-[#d4af37] font-mono">112 ₺</span>
+                      <span className="text-[#d4af37] font-mono">108,40 ₺</span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">KDV oranı lot bazında değişebilir. Teklif verirken gerçek tutarı göreceksiniz.</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">Hizmet bedeli üzerinden %20 KDV alınır. Teklif verirken ödeyeceğiniz gerçek tutarı göreceksiniz.</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">

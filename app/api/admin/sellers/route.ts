@@ -80,7 +80,7 @@ export async function GET(request: Request) {
           const salePrice = lot.soldPrice ?? 0;
           const rate = (lot.auction?.commissionRate ?? 0) / 100;
           const matrah = salePrice * rate;
-          const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+          const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
           const gross = matrah + matrah * lotKdvRate;
           const payout = salePrice - gross;
           totalSales += salePrice;

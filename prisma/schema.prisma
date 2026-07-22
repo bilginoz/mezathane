@@ -165,7 +165,7 @@ model SellerProfile {
   mersisNo       String?
   contactEmail   String?
   status         SellerStatus @default(PENDING)
-  commissionRate Float        @default(15.0)
+  commissionRate Float        @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -248,7 +248,7 @@ model Auction {
   liveDelayMinutes Int          @default(30)
   waitingTime     Int           @default(20)
   fairWaitingTime Int           @default(5)
-  commissionRate  Float         @default(15.0)
+  commissionRate  Float         @default(0)
   paymentDays     Int           @default(7)
   isPublic        Boolean       @default(true)
   viewCount       Int           @default(0)
@@ -405,7 +405,7 @@ model Payment {
   amount             Float
   commissionAmount   Float
   totalAmount        Float
-  buyerPremiumRate   Float         @default(10.0)
+  buyerPremiumRate   Float         @default(7.0)
   buyerPremiumAmount Float         @default(0)
   buyerPremiumKDV    Float         @default(0)
   gatewayFeeRate     Float         @default(0)
@@ -448,8 +448,8 @@ model Payment {
 
 model PlatformSettings {
   id                String  @id @default(cuid())
-  defaultCommission Float   @default(15.0)
-  defaultBuyerPremium Float  @default(10.0)
+  defaultCommission Float   @default(0)
+  defaultBuyerPremium Float  @default(7.0)
   defaultWaitTime   Int     @default(10)
   defaultFairWait   Int     @default(10)
   defaultPaymentDays Int    @default(7)

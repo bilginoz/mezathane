@@ -152,6 +152,7 @@ export async function POST(request: Request) {
           contactEmail: contactEmail?.trim() ?? null,
           description: description ?? null,
           status: 'PENDING',
+          commissionRate: 0, // Varsayılan 0; oran satıcı onay sürecinde admin tarafından belirlenir
         },
       });
 

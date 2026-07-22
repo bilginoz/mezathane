@@ -202,11 +202,11 @@ export async function POST(request: Request) {
       // Yeni alıcı için ödeme kaydı
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + (lot.auction?.paymentDays ?? 5));
-      const commAmt = nextBid.amount * ((lot.auction?.commissionRate ?? 15) / 100);
+      const commAmt = nextBid.amount * ((lot.auction?.commissionRate ?? 0) / 100);
       // Alıcı komisyonu (buyer premium) hesapla
-      const buyerPremiumRate = 10.0;
+      const buyerPremiumRate = 7.0;
       const buyerPremiumAmount = nextBid.amount * (buyerPremiumRate / 100);
-      const lotKdvRate = (lot.kdvRate ?? 20) / 100;
+      const lotKdvRate = 0.20; // Hizmet bedeli KDV'si sabit %20 (hizmet), ürün oranından bağımsız
       const buyerPremiumKDV = Math.round(buyerPremiumAmount * lotKdvRate * 100) / 100;
       const buyerTotalAmount = nextBid.amount + buyerPremiumAmount + buyerPremiumKDV;
       const buyer = await prisma.user.findUnique({
