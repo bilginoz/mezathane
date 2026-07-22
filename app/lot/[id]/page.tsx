@@ -60,19 +60,56 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
 
   if (!lot || lot.auction?.seller?.status === 'SUSPENDED') return notFound();
 
+  const siteUrl = process.env.NEXTAUTH_URL ?? 'https://www.mezathane.tr';
+  const sellerName = lot.auction?.seller?.companyName || 'Mezathane.tr';
+
+  // Kargo bedelini yalnızca gerçekten bildiğimizde belirtiyoruz (uydurma yok):
+  // - Satıcı üstleniyorsa ücretsiz (0), - Alıcı ödemeli + tahmini varsa o değer,
+  // - Alıcı ödemeli ama tahmin yoksa (karşı ödemeli, tutar değişken) kargo bloğu eklenmez.
+  const shippingRateValue =
+    lot.shippingType === 'FREE_SELLER'
+      ? 0
+      : typeof lot.estimatedShipping === 'number'
+        ? lot.estimatedShipping
+        : null;
+
+  const offer: any = {
+    '@type': 'Offer',
+    priceCurrency: 'TRY',
+    price: lot.currentPrice || lot.startingPrice || 0,
+    availability: lot.status === 'SOLD' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+    url: `${siteUrl}/lot/${lot.id}`,
+    seller: { '@type': 'Organization', name: sellerName },
+    // Müzayede satışları 6502 s. Kanun 53/ç ve Mesafeli Sözleşmeler Yön. 15/ç
+    // gereği cayma hakkı istisnası kapsamında — iade kabul edilmez (yasal olarak doğru).
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'TR',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+    },
+  };
+
+  if (shippingRateValue !== null) {
+    offer.shippingDetails = {
+      '@type': 'OfferShippingDetails',
+      shippingRate: { '@type': 'MonetaryAmount', value: shippingRateValue, currency: 'TRY' },
+      shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'TR' },
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 5, unitCode: 'DAY' },
+        transitTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 7, unitCode: 'DAY' },
+      },
+    };
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: lot.title,
     description: lot.description?.slice(0, 300) || lot.title,
     image: lot.images?.map((i: any) => i.imageUrl).filter(Boolean),
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'TRY',
-      price: lot.currentPrice || lot.startingPrice || 0,
-      availability: lot.status === 'SOLD' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
-    },
-    brand: { '@type': 'Organization', name: lot.auction?.seller?.companyName || 'Mezathane.tr' },
+    brand: { '@type': 'Brand', name: sellerName },
+    offers: offer,
   };
 
   return (
