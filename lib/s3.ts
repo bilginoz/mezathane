@@ -24,9 +24,9 @@ export async function generatePresignedUploadUrl(
   contentType: string,
   isPublic: boolean = false
 ) {
-  const { bucketName, folderPrefix } = getBucketConfig();
+  const { bucketName } = getBucketConfig();
   const prefix = isPublic ? "public/uploads" : "uploads";
-  const cloud_storage_path = `${folderPrefix}${prefix}/${Date.now()}-${fileName}`;
+  const cloud_storage_path = `${prefix}/${Date.now()}-${fileName}`;
 
   const command = new PutObjectCommand({
     Bucket: bucketName,
@@ -74,9 +74,9 @@ export async function initiateMultipartUpload(
   contentType: string,
   isPublic: boolean
 ) {
-  const { bucketName, folderPrefix } = getBucketConfig();
+  const { bucketName } = getBucketConfig();
   const prefix = isPublic ? "public/uploads" : "uploads";
-  const cloud_storage_path = `${folderPrefix}${prefix}/${Date.now()}-${fileName}`;
+  const cloud_storage_path = `${prefix}/${Date.now()}-${fileName}`;
   const command = new CreateMultipartUploadCommand({
     Bucket: bucketName,
     Key: cloud_storage_path,
