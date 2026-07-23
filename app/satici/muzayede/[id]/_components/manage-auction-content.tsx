@@ -25,6 +25,8 @@ interface LotData {
   title: string;
   description: string | null;
   notes: string | null;
+  condition?: string | null;
+  provenance?: string | null;
   startingPrice: number;
   currentPrice: number;
   estimatedPrice: number | null;
@@ -107,6 +109,8 @@ export default function ManageAuctionContent() {
     title: '',
     description: '',
     notes: '',
+    condition: '',
+    provenance: '',
     categoryIds: [] as string[],
     startingPrice: '',
     estimatedPrice: '',
@@ -198,6 +202,8 @@ export default function ManageAuctionContent() {
     title: '',
     description: '',
     notes: '',
+    condition: '',
+    provenance: '',
     categoryIds: [] as string[],
     startingPrice: '',
     estimatedPrice: '',
@@ -252,6 +258,8 @@ export default function ManageAuctionContent() {
       title: lot.title,
       description: lot.description ?? '',
       notes: lot.notes ?? '',
+      condition: lot.condition ?? '',
+      provenance: lot.provenance ?? '',
       categoryIds: lot.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.categoryId) : (lot.category?.id ? [lot.category.id] : []),
       startingPrice: String(lot.startingPrice),
       estimatedPrice: lot.estimatedPrice ? String(lot.estimatedPrice) : '',
@@ -277,6 +285,8 @@ export default function ManageAuctionContent() {
           title: editLot.title,
           description: editLot.description || null,
           notes: editLot.notes || null,
+          condition: editLot.condition || null,
+          provenance: editLot.provenance || null,
           categoryIds: editLot.categoryIds,
           startingPrice: editLot.startingPrice,
           estimatedPrice: editLot.estimatedPrice || null,
@@ -386,6 +396,8 @@ export default function ManageAuctionContent() {
           title: newLot.title,
           description: newLot.description || null,
           notes: newLot.notes || null,
+          condition: newLot.condition || null,
+          provenance: newLot.provenance || null,
           categoryIds: newLot.categoryIds,
           startingPrice: parseFloat(newLot.startingPrice),
           estimatedPrice: newLot.estimatedPrice ? parseFloat(newLot.estimatedPrice) : null,
@@ -399,7 +411,7 @@ export default function ManageAuctionContent() {
       if (!res.ok) throw new Error();
       toast.success('Lot başarıyla eklendi');
       setShowAddLot(false);
-      setNewLot({ title: '', description: '', notes: '', categoryIds: [], startingPrice: '', estimatedPrice: '', customBidIncrement: '', shippingType: 'BUYER_PAYS', estimatedShipping: '', kdvRate: '20' });
+      setNewLot({ title: '', description: '', notes: '', condition: '', provenance: '', categoryIds: [], startingPrice: '', estimatedPrice: '', customBidIncrement: '', shippingType: 'BUYER_PAYS', estimatedShipping: '', kdvRate: '20' });
       setLotImages([]);
       fetchAuction();
     } catch {
@@ -862,6 +874,31 @@ export default function ManageAuctionContent() {
                   placeholder="Lot hakkında detaylı açıklama"
                 />
               </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Durum / Kondisyon</label>
+                <select
+                  value={newLot.condition}
+                  onChange={e => setNewLot(p => ({ ...p, condition: e.target.value }))}
+                  className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                >
+                  <option value="">Belirtilmemiş</option>
+                  <option value="Mükemmel">Mükemmel</option>
+                  <option value="Çok İyi">Çok İyi</option>
+                  <option value="İyi">İyi</option>
+                  <option value="Orta">Orta</option>
+                  <option value="Restore Edilmiş">Restore Edilmiş</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm text-muted-foreground mb-1 block">Menşe / Köken <span className="text-xs">(isteğe bağlı)</span></label>
+                <textarea
+                  value={newLot.provenance}
+                  onChange={e => setNewLot(p => ({ ...p, provenance: e.target.value }))}
+                  rows={2}
+                  className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                  placeholder="Eserin geçmişi, sahiplik zinciri, sertifika/ekspertiz bilgisi vb."
+                />
+              </div>
               <div className="sm:col-span-2">
                 <label className="text-sm text-muted-foreground mb-1 block">Görseller (max 6)</label>
                 <div className="space-y-3">
@@ -1154,6 +1191,31 @@ export default function ManageAuctionContent() {
                             onChange={e => setEditLot(p => ({ ...p, description: e.target.value }))}
                             rows={3}
                             className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Durum / Kondisyon</label>
+                          <select
+                            value={editLot.condition}
+                            onChange={e => setEditLot(p => ({ ...p, condition: e.target.value }))}
+                            className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                          >
+                            <option value="">Belirtilmemiş</option>
+                            <option value="Mükemmel">Mükemmel</option>
+                            <option value="Çok İyi">Çok İyi</option>
+                            <option value="İyi">İyi</option>
+                            <option value="Orta">Orta</option>
+                            <option value="Restore Edilmiş">Restore Edilmiş</option>
+                          </select>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-sm text-muted-foreground mb-1 block">Menşe / Köken <span className="text-xs">(isteğe bağlı)</span></label>
+                          <textarea
+                            value={editLot.provenance}
+                            onChange={e => setEditLot(p => ({ ...p, provenance: e.target.value }))}
+                            rows={2}
+                            className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                            placeholder="Eserin geçmişi, sahiplik zinciri, sertifika/ekspertiz bilgisi vb."
                           />
                         </div>
                         <div className="sm:col-span-2">

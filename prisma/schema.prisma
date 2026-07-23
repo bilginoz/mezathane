@@ -276,6 +276,8 @@ model Lot {
   title           String
   description     String?
   notes           String?
+  condition       String?   // Durum/kondisyon: eserin fiziksel durumu (ör. Mükemmel, Çok İyi, İyi, Orta, Restore Edilmiş)
+  provenance      String?   // Menşe/köken: eserin geçmişi, sahiplik zinciri, sertifika bilgisi
   auctionId       String
   categoryId      String?
   secondaryCategoryId String?

@@ -76,12 +76,14 @@ export async function PATCH(
       // Sadece status değişikliği ise izin ver (admin tarafından tetiklenecek)
       return NextResponse.json({ error: 'Lotlar sadece müzayede taslak durumundayken düzenlenebilir.' }, { status: 400 });
     }
-    const { title, description, notes, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, shippingType, estimatedShipping, kdvRate } = body;
+    const { title, description, notes, condition, provenance, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, shippingType, estimatedShipping, kdvRate } = body;
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description || null;
     if (notes !== undefined) updateData.notes = notes || null;
+    if (condition !== undefined) updateData.condition = condition?.trim() || null;
+    if (provenance !== undefined) updateData.provenance = provenance?.trim() || null;
     // Eski uyumluluk
     if (categoryId) updateData.categoryId = categoryId;
     if (startingPrice !== undefined) {

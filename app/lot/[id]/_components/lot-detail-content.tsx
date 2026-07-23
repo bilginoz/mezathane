@@ -383,6 +383,22 @@ export function LotDetailContent({ lot }: { lot: any }) {
               {lot?.notes && (
                 <p className="text-xs text-muted-foreground italic border-t border-border pt-3">{lot.notes}</p>
               )}
+              {(lot?.condition || lot?.provenance) && (
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-3 mt-1 space-y-2">
+                  {lot?.condition && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-muted-foreground">Durum / Kondisyon</span>
+                      <span className="text-sm font-semibold">{lot.condition}</span>
+                    </div>
+                  )}
+                  {lot?.provenance && (
+                    <div className="border-t border-border pt-2">
+                      <span className="text-xs text-muted-foreground block mb-1">Menşe / Köken</span>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{lot.provenance}</p>
+                    </div>
+                  )}
+                </div>
+              )}
               {lot?.estimatedPrice != null && lot.estimatedPrice > 0 && (
                 <div className="flex items-center justify-between rounded-lg border border-[#d4af37]/20 bg-[#d4af37]/5 px-3 py-2 mt-1">
                   <span className="text-xs text-muted-foreground">Tahmini Değer</span>

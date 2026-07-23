@@ -94,6 +94,8 @@ export async function POST(request: Request) {
           title: lot.title,
           description: lot.description,
           notes: lot.notes,
+          condition: lot.condition,
+          provenance: lot.provenance,
           categoryId: lot.categoryId,
           secondaryCategoryId: lot.secondaryCategoryId,
           startingPrice: lot.startingPrice,

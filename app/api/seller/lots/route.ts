@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!seller || seller.status !== 'APPROVED') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
     const body = await request.json();
-    const { auctionId, title, description, notes, categoryId, secondaryCategoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, images, shippingType, estimatedShipping, kdvRate } = body;
+    const { auctionId, title, description, notes, condition, provenance, categoryId, secondaryCategoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, images, shippingType, estimatedShipping, kdvRate } = body;
     // categoryIds: yeni çoklu kategori sistemi, categoryId/secondaryCategoryId: eski uyumluluk
     const resolvedCategoryIds: string[] = categoryIds?.length ? categoryIds : [categoryId, secondaryCategoryId].filter(Boolean);
 
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
         title,
         description: description ?? null,
         notes: notes ?? null,
+        condition: condition?.trim() ? condition.trim() : null,
+        provenance: provenance?.trim() ? provenance.trim() : null,
         auctionId,
         categoryId: resolvedCategoryIds[0] ?? null,
         secondaryCategoryId: resolvedCategoryIds[1] ?? null,
