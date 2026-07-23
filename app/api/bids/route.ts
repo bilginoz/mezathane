@@ -201,6 +201,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Lot ID ve teklif tutarı gerekli' }, { status: 400 });
     }
 
+    // Tutarların gerçekten pozitif sayı olduğunu doğrula (sayı olmayan/negatif/NaN girişleri engelle)
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ error: 'Geçersiz teklif tutarı' }, { status: 400 });
+    }
+    if (maxAmount !== undefined && maxAmount !== null &&
+        (typeof maxAmount !== 'number' || !Number.isFinite(maxAmount) || maxAmount <= 0)) {
+      return NextResponse.json({ error: 'Geçersiz maksimum teklif tutarı' }, { status: 400 });
+    }
+
     const lot = await prisma.lot.findUnique({
       where: { id: lotId },
       include: {
