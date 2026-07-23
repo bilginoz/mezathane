@@ -128,6 +128,15 @@ export function BuyerDashboard() {
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-[#d4af37] transition-colors" />
             </div>
           </Link>
+          <Link href="/panel/aramalarim" className="rounded-xl border border-border bg-card p-4 hover:border-[#d4af37]/50 transition-colors group">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Kayıtlı Aramalarım</h3>
+                <p className="text-xs text-muted-foreground">Yeni lot çıkınca haber alın</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-[#d4af37] transition-colors" />
+            </div>
+          </Link>
           <Link href="/panel/anlasmazliklar" className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 hover:border-red-500/50 transition-colors group">
             <div className="flex items-center justify-between">
               <div>

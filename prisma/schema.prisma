@@ -102,10 +102,15 @@ model User {
   deletedAt        DateTime?
   dataRetentionUntil DateTime?
   memberNumber  Int?      @unique // Alıcı numarası (otomatik artan)
+  // İki adımlı doğrulama (2FA / TOTP)
+  twoFactorEnabled     Boolean @default(false)
+  twoFactorSecret      String? // base32 TOTP secret (yalnızca 2FA açıkken dolu)
+  twoFactorBackupCodes String? // JSON dizi: hash'lenmiş tek kullanımlık yedek kodlar
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   sellerProfile SellerProfile?
+  savedSearches SavedSearch[]
   bids          Bid[]
   watchlist     Watchlist[]
   notifications Notification[]
@@ -122,6 +127,24 @@ model User {
 
   @@index([email])
   @@index([role])
+}
+
+// Kayıtlı arama + alarm: kullanıcı bir arama kriterini kaydeder; alertEnabled ise
+// eşleşen yeni lot çıktığında cron ile e-posta/uygulama içi bildirim alır.
+model SavedSearch {
+  id            String   @id @default(cuid())
+  userId        String
+  keyword       String?  // başlıkta aranan kelime
+  categoryId    String?  // belirli kategori (opsiyonel)
+  minPrice      Float?   // güncel fiyat alt sınırı (opsiyonel)
+  maxPrice      Float?   // güncel fiyat üst sınırı (opsiyonel)
+  alertEnabled  Boolean  @default(true)
+  lastCheckedAt DateTime @default(now()) // alarm taramasında bu tarihten sonra eklenen lotlara bak
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {
