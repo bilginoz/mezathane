@@ -53,18 +53,12 @@ export async function POST(request: Request) {
     const adminUserId = 'cmqqfig5p0000ry08n4onlth4';
     try {
       console.log('[Seller Apply] Sending notification for:', body.companyName);
-      const notifId = process.env.NOTIF_ID_YENI_SATC_BAVURUSU;
-      if (!notifId) {
-        console.error('[Seller Apply] NOTIF_ID_YENI_SATC_BAVURUSU env var is not set!');
-      } else {
-        const emailResult = await sendNotificationEmail({
-          notificationId: notifId,
-          recipientEmail: 'bilginoz@icloud.com',
-          subject: `Yeni Satıcı Başvurusu - ${body.companyName}`,
-          body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${body.companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${session.user?.email ?? 'Bilinmiyor'}</p>${body.contactEmail ? `<p><strong>Firma E-posta:</strong> ${body.contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
-        });
-        console.log('[Seller Apply] Email result:', JSON.stringify(emailResult));
-      }
+      const emailResult = await sendNotificationEmail({
+        recipientEmail: 'bilginoz@icloud.com',
+        subject: `Yeni Satıcı Başvurusu - ${body.companyName}`,
+        body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${body.companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${session.user?.email ?? 'Bilinmiyor'}</p>${body.contactEmail ? `<p><strong>Firma E-posta:</strong> ${body.contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
+      });
+      console.log('[Seller Apply] Email result:', JSON.stringify(emailResult));
     } catch (notifError: any) {
       console.error('[Seller Apply] Notification email failed:', notifError?.message ?? notifError);
     }

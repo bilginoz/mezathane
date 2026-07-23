@@ -128,7 +128,6 @@ async function notifyOutbidUser(previousBidder: any, lotTitle: string, lotId: st
     if (outbidTmpl) {
       await sendCheckedNotificationEmail({
         userId: bidderUserId,
-        notificationId: process.env.NOTIF_ID_TEKLIF_GEILDI ?? '',
         recipientEmail: previousBidder?.user?.email ?? '',
         subject: outbidTmpl.subject,
         body: outbidTmpl.body,
@@ -162,7 +161,6 @@ async function notifyWatchlistUsers(lotId: string, lotTitle: string, bidderUserI
       if (wTmpl) {
         await sendCheckedNotificationEmail({
           userId: watcher.userId,
-          notificationId: process.env.NOTIF_ID_FAVORI_LOT_TEKLIF_BILDIRIMI ?? '',
           recipientEmail: watcher.user.email,
           subject: wTmpl.subject,
           body: wTmpl.body,

@@ -53,17 +53,14 @@ export async function POST(
     });
 
     // Satıcıya e-posta gönder
-    if (process.env.NOTIF_ID_SATC_EKSIK_BILGI_DZELTME_STEI) {
-      try {
-        await sendNotificationEmail({
-          notificationId: process.env.NOTIF_ID_SATC_EKSIK_BILGI_DZELTME_STEI,
-          recipientEmail: seller.user.email,
-          subject: 'Satıcı Başvurunuz Hakkında Düzeltme İstendi',
-          body: `<p>Merhaba <strong>${seller.user.fullName}</strong>,</p><p>Satıcı başvurunuz incelendi ve aşağıdaki düzeltme/ek bilgi istenmektedir:</p><blockquote style="border-left: 3px solid #d4af37; padding-left: 12px; color: #666;">${note.trim()}</blockquote><p>Lütfen satıcı panelinize giriş yaparak gerekli belgeleri yükleyin veya bilgileri güncelleyin.</p><p><a href="${process.env.NEXTAUTH_URL}/satici">Satıcı Paneline Git</a></p>`,
-        });
-      } catch (emailErr) {
-        console.error('Seller info request email error:', emailErr);
-      }
+    try {
+      await sendNotificationEmail({
+        recipientEmail: seller.user.email,
+        subject: 'Satıcı Başvurunuz Hakkında Düzeltme İstendi',
+        body: `<p>Merhaba <strong>${seller.user.fullName}</strong>,</p><p>Satıcı başvurunuz incelendi ve aşağıdaki düzeltme/ek bilgi istenmektedir:</p><blockquote style="border-left: 3px solid #d4af37; padding-left: 12px; color: #666;">${note.trim()}</blockquote><p>Lütfen satıcı panelinize giriş yaparak gerekli belgeleri yükleyin veya bilgileri güncelleyin.</p><p><a href="${process.env.NEXTAUTH_URL}/satici">Satıcı Paneline Git</a></p>`,
+      });
+    } catch (emailErr) {
+      console.error('Seller info request email error:', emailErr);
     }
 
     return NextResponse.json({ success: true });

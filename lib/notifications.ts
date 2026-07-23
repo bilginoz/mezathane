@@ -51,7 +51,6 @@ export async function createInAppNotification(options: {
 // E-posta bildirimi gönder (tercih kontrollü)
 export async function sendCheckedNotificationEmail(options: {
   userId: string;
-  notificationId: string;
   recipientEmail: string;
   subject: string;
   body: string;
@@ -61,7 +60,6 @@ export async function sendCheckedNotificationEmail(options: {
     const allowed = await checkNotificationPreference(options.userId, 'email', options.preferenceType);
     if (!allowed) return { success: true, skipped: true };
     return await sendNotificationEmail({
-      notificationId: options.notificationId,
       recipientEmail: options.recipientEmail,
       subject: options.subject,
       body: options.body,
@@ -73,7 +71,6 @@ export async function sendCheckedNotificationEmail(options: {
 }
 
 export async function sendNotificationEmail(options: {
-  notificationId: string;
   recipientEmail: string;
   subject: string;
   body: string;

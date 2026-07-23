@@ -103,18 +103,15 @@ export async function POST(req: NextRequest) {
       }
 
       // Admin'e e-posta bildirimi gönder
-      if (process.env.NOTIF_ID_BILGI_DEIIKLIK_TALEBI) {
-        for (const admin of admins) {
-          try {
-            await sendNotificationEmail({
-              notificationId: process.env.NOTIF_ID_BILGI_DEIIKLIK_TALEBI,
-              recipientEmail: admin.email,
-              subject: `Bilgi Değişiklik Talebi: ${label}`,
-              body: `<p><strong>${user?.fullName || user?.email}</strong> kullanıcısı <strong>"${label}"</strong> alanı için değişiklik talep etti.</p><p>Yeni değer: <strong>${requestedValue}</strong></p><p><a href="${process.env.NEXTAUTH_URL}/admin/degisiklik-talepleri">Talebi İncele</a></p>`,
-            });
-          } catch (emailErr) {
-            console.error('Admin email notification error:', emailErr);
-          }
+      for (const admin of admins) {
+        try {
+          await sendNotificationEmail({
+            recipientEmail: admin.email,
+            subject: `Bilgi Değişiklik Talebi: ${label}`,
+            body: `<p><strong>${user?.fullName || user?.email}</strong> kullanıcısı <strong>"${label}"</strong> alanı için değişiklik talep etti.</p><p>Yeni değer: <strong>${requestedValue}</strong></p><p><a href="${process.env.NEXTAUTH_URL}/admin/degisiklik-talepleri">Talebi İncele</a></p>`,
+          });
+        } catch (emailErr) {
+          console.error('Admin email notification error:', emailErr);
         }
       }
     } catch (e) {

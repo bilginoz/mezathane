@@ -173,15 +173,11 @@ export async function POST(request: Request) {
     // Admin bildirimi — e-posta
     const adminUserId = 'cmqqfig5p0000ry08n4onlth4';
     try {
-      const notifId = process.env.NOTIF_ID_YENI_SATC_BAVURUSU;
-      if (notifId) {
-        await sendNotificationEmail({
-          notificationId: notifId,
-          recipientEmail: 'bilginoz@icloud.com',
-          subject: `Yeni Satıcı Başvurusu - ${companyName}`,
-          body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${email}</p>${contactEmail ? `<p><strong>Firma E-posta:</strong> ${contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
-        });
-      }
+      await sendNotificationEmail({
+        recipientEmail: 'bilginoz@icloud.com',
+        subject: `Yeni Satıcı Başvurusu - ${companyName}`,
+        body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${email}</p>${contactEmail ? `<p><strong>Firma E-posta:</strong> ${contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
+      });
     } catch (notifError: any) {
       console.error('[SellerRegister] Notification email failed:', notifError?.message ?? notifError);
     }

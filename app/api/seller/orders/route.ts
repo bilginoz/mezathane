@@ -202,14 +202,11 @@ export async function PATCH(request: Request) {
     });
 
     if (payment.user.email) {
-      const notifId = process.env.NOTIF_ID_SIPARI_DURUMU_BILDIRIMI;
-      if (notifId) {
-        await sendCheckedNotificationEmail({
-          userId: payment.user.id,
-          notificationId: notifId,
-          recipientEmail: payment.user.email,
-          subject: notifTitle.replace(/[📦✅🔄]/g, '').trim(),
-          body: `<div style="font-family:sans-serif;color:#333;">
+      await sendCheckedNotificationEmail({
+        userId: payment.user.id,
+        recipientEmail: payment.user.email,
+        subject: notifTitle.replace(/[📦✅🔄]/g, '').trim(),
+        body: `<div style="font-family:sans-serif;color:#333;">
             <h2 style="color:#d4af37;">Kargo Durumu Güncellendi</h2>
             <p>Sayın ${payment.user.fullName},</p>
             <p><strong>"${lotTitle}"</strong> ürününüzün kargo durumu güncellendi:</p>
@@ -221,9 +218,8 @@ export async function PATCH(request: Request) {
             <p>Siparişlerinizi <a href="${process.env.NEXTAUTH_URL}/panel/siparislerim" style="color:#d4af37;">buradan</a> takip edebilirsiniz.</p>
             <p style="color:#888;font-size:12px;">Mezathane.tr</p>
           </div>`,
-          preferenceType: 'OrderStatus',
-        });
-      }
+        preferenceType: 'OrderStatus',
+      });
     }
 
     return NextResponse.json({ success: true });

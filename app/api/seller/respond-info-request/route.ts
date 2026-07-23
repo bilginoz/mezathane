@@ -48,18 +48,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Admin'e e-posta
-    if (process.env.NOTIF_ID_SATC_DZELTME_YANT) {
-      for (const admin of admins) {
-        try {
-          await sendNotificationEmail({
-            notificationId: process.env.NOTIF_ID_SATC_DZELTME_YANT,
-            recipientEmail: admin.email,
-            subject: `Satıcı Düzeltme Yanıtı: ${seller.companyName}`,
-            body: `<p><strong>${seller.companyName}</strong> (${seller.user.fullName}) düzeltme isteğinize yanıt verdi.</p><p>Yanıt: ${response?.trim() || 'Belgeler güncellendi.'}</p><p><a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcıyı İncele</a></p>`,
-          });
-        } catch (emailErr) {
-          console.error('Admin response email error:', emailErr);
-        }
+    for (const admin of admins) {
+      try {
+        await sendNotificationEmail({
+          recipientEmail: admin.email,
+          subject: `Satıcı Düzeltme Yanıtı: ${seller.companyName}`,
+          body: `<p><strong>${seller.companyName}</strong> (${seller.user.fullName}) düzeltme isteğinize yanıt verdi.</p><p>Yanıt: ${response?.trim() || 'Belgeler güncellendi.'}</p><p><a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcıyı İncele</a></p>`,
+        });
+      } catch (emailErr) {
+        console.error('Admin response email error:', emailErr);
       }
     }
 
