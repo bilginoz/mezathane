@@ -80,7 +80,7 @@ function generateCommissionInvoiceHTML(data: {
       <h3>Hizmeti Veren (Platform)</h3>
       <p><strong>Mezathane Bilişim Teknolojileri A.Ş.</strong></p>
       <p>İstanbul, Türkiye</p>
-      <p>info@mezathane.tr</p>
+      <p>bilgi@mezathane.tr</p>
     </div>
     <div class="party">
       <h3>Hizmeti Alan (Satıcı)</h3>

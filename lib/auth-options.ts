@@ -13,6 +13,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'E-posta veya Telefon', type: 'text' },
         password: { label: 'Şifre', type: 'password' },
+        totp: { label: 'Doğrulama kodu', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -39,6 +40,39 @@ export const authOptions: NextAuthOptions = {
           if (!user || !user.isActive) return null;
           const isValid = await bcrypt.compare(credentials.password, user.password);
           if (!isValid) return null;
+
+          // İki adımlı doğrulama (2FA). Kapalıysa davranış eskisiyle birebir aynı.
+          if (user.twoFactorEnabled) {
+            const code = ((credentials as any).totp ?? '').toString().trim();
+            if (!code) return null; // kod gelmeden giriş yok
+            let passed = false;
+
+            // 1) Authenticator kodu
+            if (user.twoFactorSecret && verifyTOTP(code, user.twoFactorSecret)) {
+              passed = true;
+            } else if (user.twoFactorBackupCodes) {
+              // 2) Tek kullanımlık yedek kod — eşleşirse tüketilir (bir daha kullanılamaz)
+              const normalized = code.replace(/[\s-]/g, '').toUpperCase();
+              try {
+                const hashes: string[] = JSON.parse(user.twoFactorBackupCodes);
+                for (let i = 0; i < hashes.length; i++) {
+                  if (await bcrypt.compare(normalized, hashes[i])) {
+                    hashes.splice(i, 1);
+                    await prisma.user.update({
+                      where: { id: user.id },
+                      data: { twoFactorBackupCodes: JSON.stringify(hashes) },
+                    });
+                    passed = true;
+                    break;
+                  }
+                }
+              } catch {
+                // bozuk kayıt — yedek kodla giriş yapılamaz, authenticator kullanılmalı
+              }
+            }
+            if (!passed) return null;
+          }
+
           return {
             id: user.id,
             email: user.email,

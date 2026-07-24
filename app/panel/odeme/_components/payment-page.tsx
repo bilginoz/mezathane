@@ -144,7 +144,7 @@ export function PaymentPage() {
               <div className="text-sm space-y-1.5">
                 <p><span className="text-muted-foreground">Firma:</span> {bankInfo.bankAccountHolder || 'Mezathane Bilişim Teknolojileri A.Ş.'}</p>
                 <p><span className="text-muted-foreground">Adres:</span> {bankInfo.contactAddress || 'İstanbul, Türkiye'}</p>
-                <p><span className="text-muted-foreground">E-posta:</span> {bankInfo.contactEmail || 'info@mezathane.tr'}</p>
+                <p><span className="text-muted-foreground">E-posta:</span> {bankInfo.contactEmail || 'bilgi@mezathane.tr'}</p>
               </div>
             </div>
           </div>

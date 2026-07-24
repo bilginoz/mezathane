@@ -58,12 +58,17 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-[#d4af37] mt-0.5" />
-                <div><p className="font-medium">E-posta</p><p className="text-sm text-muted-foreground">{settings?.contactEmail || 'info@mezathane.tr'}</p></div>
+                <div><p className="font-medium">E-posta</p><p className="text-sm text-muted-foreground">{settings?.contactEmail || 'bilgi@mezathane.tr'}</p></div>
               </div>
-              <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-[#d4af37] mt-0.5" />
-                <div><p className="font-medium">WhatsApp Hattı</p><p className="text-sm text-muted-foreground">{settings?.contactPhone || '+90 (212) 555 00 00'}</p></div>
-              </div>
+              {/* Sabit telefon yok — iletişim WhatsApp üzerinden. Yalnızca site
+                  ayarlarında gerçek bir numara tanımlıysa gösterilir; yoksa hiç
+                  gösterilmez (önceden burada sahte bir örnek numara görünüyordu). */}
+              {settings?.contactPhone && (
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 text-[#d4af37] mt-0.5" />
+                  <div><p className="font-medium">WhatsApp Hattı</p><p className="text-sm text-muted-foreground">{settings.contactPhone}</p></div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-[#d4af37] mt-0.5" />
                 <div><p className="font-medium">Adres</p><p className="text-sm text-muted-foreground">{settings?.contactAddress || 'İstanbul, Türkiye'}</p></div>

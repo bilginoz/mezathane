@@ -108,7 +108,7 @@ function generateInvoiceHtml(data: any) {
 
   <div class="footer">
     <p>Bu fatura Mezathane.tr müzayede platformu tarafından otomatik olarak oluşturulmuştur.</p>
-    <p>mezathane.tr | info@mezathane.tr</p>
+    <p>mezathane.tr | bilgi@mezathane.tr</p>
   </div>
 </body>
 </html>`;

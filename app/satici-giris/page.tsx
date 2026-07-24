@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Store, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Store, Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SellerLoginPage() {
@@ -13,6 +13,41 @@ export default function SellerLoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // İki adımlı doğrulama: şifre doğrulandıktan sonra kod adımına geçilir
+  const [needsTotp, setNeedsTotp] = useState(false);
+  const [totp, setTotp] = useState('');
+
+  const afterLogin = async () => {
+    const sessionRes = await fetch('/api/auth/session');
+    const sessionData = await sessionRes.json();
+    const user = sessionData?.user as any;
+
+    if (user && !user.isEmailVerified) {
+      toast.info('Lütfen e-posta adresinizi doğrulayın.');
+      router.replace('/dogrulama');
+    } else if (user?.role === 'SELLER' || user?.role === 'ADMIN') {
+      toast.success('Satıcı girişi başarılı!');
+      router.replace('/satici');
+    } else {
+      toast.error('Bu hesap bir satıcı hesabı değildir. Satıcı başvurusu yapabilirsiniz.');
+      await signOut({ redirect: false });
+      router.replace('/satici-basvuru');
+    }
+  };
+
+  const doSignIn = async (code?: string) => {
+    const result = await signIn('credentials', {
+      email: identifier,
+      password,
+      totp: code ?? '',
+      redirect: false,
+    });
+    if (result?.error) {
+      toast.error(code ? 'Doğrulama kodu hatalı veya süresi geçmiş' : 'E-posta/telefon veya şifre hatalı');
+      return;
+    }
+    await afterLogin();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,31 +57,33 @@ export default function SellerLoginPage() {
     }
     setLoading(true);
     try {
-      const result = await signIn('credentials', {
-        email: identifier,
-        password,
-        redirect: false,
-      });
-      if (result?.error) {
-        toast.error('E-posta/telefon veya şifre hatalı');
-      } else {
-        // Session'dan rol ve doğrulama durumunu kontrol et
-        const sessionRes = await fetch('/api/auth/session');
-        const sessionData = await sessionRes.json();
-        const user = sessionData?.user as any;
-
-        if (user && !user.isEmailVerified) {
-          toast.info('Lütfen e-posta adresinizi doğrulayın.');
-          router.replace('/dogrulama');
-        } else if (user?.role === 'SELLER' || user?.role === 'ADMIN') {
-          toast.success('Satıcı girişi başarılı!');
-          router.replace('/satici');
-        } else {
-          toast.error('Bu hesap bir satıcı hesabı değildir. Satıcı başvurusu yapabilirsiniz.');
-          await signOut({ redirect: false });
-          router.replace('/satici-basvuru');
+      // 2. adım: kod girildi
+      if (needsTotp) {
+        if (!totp.trim()) {
+          toast.error('Doğrulama kodunu girin');
+          return;
         }
+        await doSignIn(totp.trim());
+        return;
       }
+
+      // 1. adım: şifreyi doğrula, 2FA gerekiyor mu öğren
+      const res = await fetch('/api/auth/2fa-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error ?? 'E-posta/telefon veya şifre hatalı');
+        return;
+      }
+      if (data.twoFactorRequired) {
+        setNeedsTotp(true);
+        toast.info('Doğrulama uygulamanızdaki 6 haneli kodu girin.');
+        return;
+      }
+      await doSignIn();
     } catch {
       toast.error('Giriş sırasında hata oluştu');
     } finally {
@@ -102,13 +139,43 @@ export default function SellerLoginPage() {
                 </button>
               </div>
             </div>
+            {needsTotp && (
+              <div className="rounded-lg border border-[#d4af37]/40 bg-[#d4af37]/5 p-3">
+                <label className="text-sm font-medium mb-1.5 flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-[#d4af37]" />
+                  Doğrulama Kodu
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoFocus
+                  value={totp}
+                  onChange={(e) => setTotp(e.target.value)}
+                  placeholder="6 haneli kod"
+                  className="w-full rounded-lg border border-border bg-background py-2.5 px-4 text-center text-lg tracking-[0.3em] font-mono focus:border-[#d4af37] focus:outline-none focus:ring-1 focus:ring-[#d4af37]"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Doğrulama uygulamanızdaki 6 haneli kodu girin. Telefonunuza erişemiyorsanız
+                  yedek kodlarınızdan birini de kullanabilirsiniz.
+                </p>
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}
               className="w-full rounded-lg bg-[#d4af37] py-2.5 text-sm font-bold text-black hover:bg-[#c9a430] transition-colors disabled:opacity-50"
             >
-              {loading ? 'Giriş Yapılıyor...' : 'Satıcı Girişi Yap'}
+              {loading ? 'Giriş Yapılıyor...' : needsTotp ? 'Doğrula ve Giriş Yap' : 'Satıcı Girişi Yap'}
             </button>
+            {needsTotp && (
+              <button
+                type="button"
+                onClick={() => { setNeedsTotp(false); setTotp(''); }}
+                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Geri dön
+              </button>
+            )}
           </form>
           <div className="mt-3 text-center">
             <Link href="/sifremi-unuttum" className="text-xs text-muted-foreground hover:text-[#d4af37] transition-colors">

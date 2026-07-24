@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Bell, ArrowLeft } from 'lucide-react';
+import { User, Bell, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { ProfileSettings } from './profile-settings';
 import NotificationSettings from './notification-settings';
+import { SecuritySettings } from './security-settings';
 
 export default function SettingsTabs() {
   const router = useRouter();
-  const [tab, setTab] = useState<'profile' | 'notifications'>('profile');
+  const [tab, setTab] = useState<'profile' | 'notifications' | 'security'>('profile');
 
   return (
     <main className="flex-1 py-8">
@@ -38,9 +39,19 @@ export default function SettingsTabs() {
           >
             <Bell className="h-4 w-4" /> Bildirim Ayarları
           </button>
+          <button
+            onClick={() => setTab('security')}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-medium transition-colors ${
+              tab === 'security' ? 'bg-[#d4af37] text-black' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4" /> Güvenlik
+          </button>
         </div>
 
-        {tab === 'profile' ? <ProfileSettings /> : <NotificationSettings embedded />}
+        {tab === 'profile' && <ProfileSettings />}
+        {tab === 'notifications' && <NotificationSettings embedded />}
+        {tab === 'security' && <SecuritySettings />}
       </div>
     </main>
   );
