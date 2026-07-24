@@ -9,3 +9,10 @@ tsconfig.tsbuildinfo
 .DS_Store
 .vercel
 _to_delete/
+
+# iCloud senkron çakışmasında oluşan kopyalar ("dosya 2.ts", "dosya 3.tsx" gibi)
+# Bunlar eski sürüm artıklarıdır, asla depoya girmemeli.
+* [0-9].ts
+* [0-9].tsx
+* [0-9].js
+* [0-9].json

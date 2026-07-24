@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { verifyTOTP } from '@/lib/totp';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
