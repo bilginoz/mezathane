@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { buildBuyerLedger, buildSellerLedger, buildPlatformLedger } from '@/lib/ledger';
+import { buildBuyerLedger, buildSellerLedger, buildPlatformLedger, applyPeriod } from '@/lib/ledger';
 
 export async function GET(request: Request) {
   try {
@@ -14,20 +14,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const id = searchParams.get('id');
+    // İsteğe bağlı dönem ekstresi (aylık mutabakat için)
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
 
     if (type === 'platform') {
-      return NextResponse.json(await buildPlatformLedger());
+      return NextResponse.json(applyPeriod(await buildPlatformLedger(), from, to));
     }
     if (!id) return NextResponse.json({ error: 'id gerekli' }, { status: 400 });
     if (type === 'buyer') {
       const res = await buildBuyerLedger(id);
       if (!res) return NextResponse.json({ error: 'Alıcı bulunamadı' }, { status: 404 });
-      return NextResponse.json(res);
+      return NextResponse.json(applyPeriod(res, from, to));
     }
     if (type === 'seller') {
       const res = await buildSellerLedger(id);
       if (!res) return NextResponse.json({ error: 'Satıcı bulunamadı' }, { status: 404 });
-      return NextResponse.json(res);
+      return NextResponse.json(applyPeriod(res, from, to));
     }
     return NextResponse.json({ error: 'Geçersiz tip' }, { status: 400 });
   } catch (error: any) {

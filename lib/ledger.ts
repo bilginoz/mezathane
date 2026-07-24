@@ -48,6 +48,47 @@ export type LedgerResult = {
   summary: LedgerSummary;
 };
 
+/*
+  Dönem filtresi: verilen tarih aralığının DIŞINDAKİ hareketleri ayıklar.
+  Aralıktan önceki hareketler tek bir "Devreden bakiye" satırında toplanır ki
+  dönem ekstresi doğru bakiyeyle başlasın (aylık mutabakat için şart).
+*/
+export function applyDateRange(rows: LedgerRow[], from?: string | null, to?: string | null): LedgerRow[] {
+  if (!from && !to) return rows;
+  const fromT = from ? new Date(from).getTime() : -Infinity;
+  const toDate = to ? new Date(to) : null;
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+  const toT = toDate ? toDate.getTime() : Infinity;
+
+  const before: LedgerRow[] = [];
+  const inRange: LedgerRow[] = [];
+  for (const r of rows) {
+    const t = new Date(r.date).getTime();
+    if (t < fromT) before.push(r);
+    else if (t <= toT) inRange.push(r);
+  }
+
+  if (before.length === 0) return inRange;
+
+  // Devreden bakiye = dönem öncesi borç - alacak
+  let devirBorc = 0, devirAlacak = 0;
+  for (const r of before) { devirBorc += r.borc; devirAlacak += r.alacak; }
+  const net = round(devirBorc - devirAlacak);
+
+  const devir: LedgerRow = {
+    id: 'devir',
+    date: from ? new Date(from).toISOString() : inRange[0]?.date ?? new Date().toISOString(),
+    description: 'Devreden bakiye',
+    sub: `${before.length} önceki hareketin toplamı`,
+    borc: net > 0 ? net : 0,
+    alacak: net < 0 ? -net : 0,
+    balance: 0,
+    category: 'devir',
+    isManual: false,
+  };
+  return [devir, ...inRange];
+}
+
 function finalize(
   accountType: 'BUYER' | 'SELLER' | 'PLATFORM',
   header: Record<string, any>,
@@ -400,4 +441,38 @@ export async function buildPlatformLedger(): Promise<LedgerResult> {
 
 function fmt(n: number): string {
   return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(n) + '\u20ba';
+}
+
+/*
+  Haz\u0131r bir ekstreyi belirli bir d\u00f6neme indirger (ayl\u0131k mutabakat i\u00e7in).
+  D\u00f6nem \u00f6ncesi hareketler "Devreden bakiye" sat\u0131r\u0131nda topland\u0131\u011f\u0131 i\u00e7in, d\u00f6nem
+  sonundaki y\u00fcr\u00fcyen bakiye h\u00e2l\u00e2 hesab\u0131n GER\u00c7EK g\u00fcncel bakiyesini verir.
+  summary'deki soldCount/paidAmount/pendingAmount hesab\u0131n GENEL durumudur,
+  bilerek d\u00f6neme indirgenmez.
+*/
+export function applyPeriod(result: LedgerResult, from?: string | null, to?: string | null): LedgerResult {
+  if (!from && !to) return result;
+
+  const rows = applyDateRange(result.rows, from, to);
+  let running = 0, totalBorc = 0, totalAlacak = 0;
+  for (const r of rows) {
+    running = round(running + r.borc - r.alacak);
+    r.balance = running;
+    totalBorc = round(totalBorc + r.borc);
+    totalAlacak = round(totalAlacak + r.alacak);
+  }
+  const netBalance = round(totalBorc - totalAlacak);
+
+  return {
+    ...result,
+    rows,
+    summary: {
+      ...result.summary,
+      totalBorc,
+      totalAlacak,
+      netBalance,
+      netAbs: Math.abs(netBalance),
+    },
+    header: { ...result.header, periodFrom: from ?? null, periodTo: to ?? null },
+  };
 }

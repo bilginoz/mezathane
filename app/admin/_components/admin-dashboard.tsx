@@ -62,6 +62,48 @@ export function AdminDashboard() {
           <h1 className="font-display text-2xl font-bold">Admin Paneli</h1>
         </div>
 
+        {/* Bugün ilgilenilmesi gerekenler — panele girer girmez görülmesi için */}
+        {data?.actionSummary && (() => {
+          const a = data.actionSummary;
+          const items = [
+            { show: a.overdueCount > 0, tone: 'red', label: 'Vadesi geçmiş alacak',
+              value: formatPrice(a.overdueAmount), sub: `${a.overdueCount} ödeme`, href: '/admin/finans' },
+            { show: a.pendingCollectCount > 0, tone: 'amber', label: 'Bekleyen tahsilat',
+              value: formatPrice(a.pendingCollectAmount), sub: `${a.pendingCollectCount} ödeme`, href: '/admin/finans' },
+            { show: a.payoutDueCount > 0, tone: 'blue', label: 'Satıcıya ödenecek',
+              value: formatPrice(a.payoutDueAmount), sub: `${a.payoutDueCount} işlem`, href: '/admin/finans' },
+            { show: a.pendingSellers > 0, tone: 'amber', label: 'Onay bekleyen satıcı',
+              value: String(a.pendingSellers), sub: 'başvuru', href: '/admin/saticilar' },
+            { show: a.openDisputes > 0, tone: 'red', label: 'Açık anlaşmazlık',
+              value: String(a.openDisputes), sub: 'çözülmedi', href: '/admin/anlasmazliklar' },
+            { show: true, tone: 'neutral', label: 'Bu ayki gider',
+              value: formatPrice(a.monthExpense), sub: 'ay başından beri', href: '/admin/giderler' },
+          ].filter(i => i.show);
+
+          const toneCls: Record<string, string> = {
+            red: 'border-red-500/40 bg-red-500/5 text-red-400',
+            amber: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
+            blue: 'border-blue-500/40 bg-blue-500/5 text-blue-400',
+            neutral: 'border-border bg-card text-muted-foreground',
+          };
+
+          return (
+            <div className="mb-8">
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">İlgilenilmesi gerekenler</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {items.map((i, idx) => (
+                  <Link key={idx} href={i.href}
+                    className={`rounded-xl border p-4 transition-colors hover:brightness-125 ${toneCls[i.tone]}`}>
+                    <p className="text-xs font-medium">{i.label}</p>
+                    <p className="text-lg font-bold font-mono text-foreground mt-1">{i.value}</p>
+                    <p className="text-[11px] opacity-80">{i.sub}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[

@@ -46,10 +46,18 @@ export default function LedgerStatement({
   const [showEmail, setShowEmail] = useState(false);
   const [showInstallments, setShowInstallments] = useState(false);
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'paid' | 'completed' | 'shipping_pending' | 'payout_pending'>('all');
+  // Dönem ekstresi: boşsa tüm zamanlar. Dönem seçilince öncesi "Devreden bakiye"de toplanır.
+  const [periodFrom, setPeriodFrom] = useState('');
+  const [periodTo, setPeriodTo] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(dataEndpoint, { cache: 'no-store' });
+      const sep = dataEndpoint.includes('?') ? '&' : '?';
+      const range = new URLSearchParams();
+      if (periodFrom) range.set('from', periodFrom);
+      if (periodTo) range.set('to', periodTo);
+      const url = range.toString() ? `${dataEndpoint}${sep}${range}` : dataEndpoint;
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error();
       setData(await res.json());
     } catch {
@@ -57,13 +65,15 @@ export default function LedgerStatement({
     } finally {
       setLoading(false);
     }
-  }, [dataEndpoint]);
+  }, [dataEndpoint, periodFrom, periodTo]);
 
   useEffect(() => { load(); }, [load]);
 
   const qs = () => {
     const p = new URLSearchParams({ scope: accountRef.scope, type: accountRef.type });
     if (accountRef.id) p.set('id', accountRef.id);
+    if (periodFrom) p.set('from', periodFrom);
+    if (periodTo) p.set('to', periodTo);
     return p.toString();
   };
 
@@ -333,11 +343,34 @@ export default function LedgerStatement({
 
       {/* EKSTRE TABLOSU */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-2">
           <FileText className="h-4 w-4 text-[#d4af37]" />
           <h2 className="font-semibold">Cari Ekstre</h2>
           <span className="text-xs text-muted-foreground">({filteredRows.length} hareket)</span>
+
+          {/* Dönem seçimi — boşsa tüm zamanlar */}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Dönem:</span>
+            <input type="date" value={periodFrom} onChange={e => setPeriodFrom(e.target.value)}
+              className="rounded-lg bg-muted border border-border px-2 py-1 text-xs" />
+            <span className="text-xs text-muted-foreground">–</span>
+            <input type="date" value={periodTo} onChange={e => setPeriodTo(e.target.value)}
+              className="rounded-lg bg-muted border border-border px-2 py-1 text-xs" />
+            {(periodFrom || periodTo) && (
+              <button onClick={() => { setPeriodFrom(''); setPeriodTo(''); }}
+                className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted">
+                Tümü
+              </button>
+            )}
+          </div>
         </div>
+        {(periodFrom || periodTo) && (
+          <div className="px-4 py-2 bg-[#d4af37]/5 border-b border-border text-xs text-muted-foreground">
+            Dönem ekstresi gösteriliyor. Seçilen tarihten önceki hareketler
+            <strong className="text-foreground"> &quot;Devreden bakiye&quot;</strong> satırında toplandı; sondaki bakiye hesabın güncel bakiyesidir.
+            İndirilen PDF ve gönderilen e-posta da bu dönemi kapsar.
+          </div>
+        )}
         {filteredRows.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground text-sm">
             {filterTab !== 'all' ? 'Bu kategoride hareket yok.' : 'Henüz hareket yok.'}
@@ -414,7 +447,7 @@ export default function LedgerStatement({
         <ManualEntryModal accountRef={accountRef} onClose={() => setShowEntry(false)} onSaved={() => { setShowEntry(false); load(); }} />
       )}
       {showEmail && (
-        <EmailModal accountRef={accountRef} defaultEmail={header.email || ''} onClose={() => setShowEmail(false)} />
+        <EmailModal accountRef={accountRef} defaultEmail={header.email || ''} onClose={() => setShowEmail(false)} periodFrom={periodFrom} periodTo={periodTo} />
       )}
       {showInstallments && canEdit && isBuyer && accountRef.id && (
         <InstallmentPanel userId={accountRef.id} onClose={() => setShowInstallments(false)} onChanged={load} />
@@ -541,7 +574,7 @@ function ManualEntryModal({ accountRef, onClose, onSaved }: { accountRef: Accoun
 }
 
 // ---------- E-posta modal ----------
-function EmailModal({ accountRef, defaultEmail, onClose }: { accountRef: AccountRef; defaultEmail: string; onClose: () => void }) {
+function EmailModal({ accountRef, defaultEmail, onClose, periodFrom, periodTo }: { accountRef: AccountRef; defaultEmail: string; onClose: () => void; periodFrom?: string; periodTo?: string }) {
   const [email, setEmail] = useState(defaultEmail);
   const [sending, setSending] = useState(false);
   const send = async () => {
@@ -551,7 +584,7 @@ function EmailModal({ accountRef, defaultEmail, onClose }: { accountRef: Account
       const res = await fetch('/api/ledger/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scope: accountRef.scope, type: accountRef.type, id: accountRef.id, recipientEmail: email }),
+        body: JSON.stringify({ scope: accountRef.scope, type: accountRef.type, id: accountRef.id, recipientEmail: email, periodFrom: periodFrom || undefined, periodTo: periodTo || undefined }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);

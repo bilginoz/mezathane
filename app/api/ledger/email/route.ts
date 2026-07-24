@@ -9,9 +9,10 @@ import { sendEmail } from '@/lib/mailer';
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { scope, type, id, recipientEmail } = body;
+    // periodFrom/periodTo: isteğe bağlı dönem ekstresi (verilmezse tüm zamanlar)
+    const { scope, type, id, recipientEmail, periodFrom, periodTo } = body;
 
-    const res = await resolveLedger(scope, type, id);
+    const res = await resolveLedger(scope, type, id, { from: periodFrom, to: periodTo });
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status });
 
     const to = recipientEmail || res.data.header.email;

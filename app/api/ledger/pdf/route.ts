@@ -14,7 +14,10 @@ export async function GET(request: Request) {
     const type = searchParams.get('type');
     const id = searchParams.get('id');
 
-    const res = await resolveLedger(scope, type, id);
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+
+    const res = await resolveLedger(scope, type, id, { from, to });
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status });
 
     const html = buildLedgerHtml(res.data);
