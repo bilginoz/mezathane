@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Users, Store, Gavel, Layers, BarChart3, TrendingUp, Shield, CheckCircle, XCircle, Clock, ArrowRight, Receipt, Settings, FileText, Tag, MessageSquare, AlertTriangle, Calendar, Database, ArrowLeft, Ticket, PenTool, Gift } from 'lucide-react';
+import { Users, Store, Gavel, Layers, BarChart3, TrendingUp, Shield, CheckCircle, XCircle, Clock, ArrowRight, Receipt, Settings, FileText, Tag, MessageSquare, AlertTriangle, Calendar, Database, ArrowLeft, Ticket, PenTool, Gift, Wallet } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -102,6 +102,11 @@ export function AdminDashboard() {
           <Link href="/admin/finans" className="rounded-xl border border-border bg-card px-5 py-3 hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium">
             <Receipt className="h-4 w-4 text-[#d4af37]" />
             Cari Hesaplar & Finans
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+          <Link href="/admin/giderler" className="rounded-xl border border-border bg-card px-5 py-3 hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium">
+            <Wallet className="h-4 w-4 text-[#d4af37]" />
+            Giderler & Kâr/Zarar
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </Link>
           <Link href="/admin/site" className="rounded-xl border border-border bg-card px-5 py-3 hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium">

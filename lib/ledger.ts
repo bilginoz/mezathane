@@ -327,7 +327,7 @@ export async function buildPlatformLedger(): Promise<LedgerResult> {
     select: {
       id: true, lotNumber: true, title: true, soldPrice: true, updatedAt: true, kdvRate: true,
       auction: { select: { title: true, commissionRate: true, seller: { select: { companyName: true } } } },
-      payments: { select: { buyerPaymentReceived: true, status: true } },
+      payments: { select: { buyerPaymentReceived: true, status: true, buyerPremiumAmount: true, buyerPremiumKDV: true } },
     },
     orderBy: { updatedAt: 'asc' },
   });
@@ -338,29 +338,57 @@ export async function buildPlatformLedger(): Promise<LedgerResult> {
   for (const lot of lots) {
     if (!lot.soldPrice) continue;
     soldCount++;
+    const payment = lot.payments?.[0];
+    const collected = payment?.buyerPaymentReceived || payment?.status === 'PAID';
+    const sellerName = lot.auction?.seller?.companyName ?? '';
+    const durum = collected ? '· Tahsil edildi' : '· Bekliyor';
+
+    // 1) Satıcı komisyonu (satıcı onayında belirlenen oran; varsayılan %0 olabilir)
     const rate = (lot.auction?.commissionRate ?? 0) / 100;
     const matrah = lot.soldPrice * rate;
     const lotKdvRate = 0.20; // Aracılık komisyonu KDV'si sabit %20 (hizmet), ürün oranından bağımsız
-    const kdv = matrah * lotKdvRate;
-    const grossCommission = round(matrah + kdv);
-    const payment = lot.payments?.[0];
-    const collected = payment?.buyerPaymentReceived || payment?.status === 'PAID';
-    if (collected) paidAmount = round(paidAmount + grossCommission);
-    else pendingAmount = round(pendingAmount + grossCommission);
-    rows.push({
-      id: 'com_' + lot.id,
-      date: lot.updatedAt.toISOString(),
-      description: `${lot.title} — ${lot.auction?.title ?? 'Müzayede'}`,
-      sub: `${lot.auction?.seller?.companyName ?? ''} · Komisyon (KDV dahil) ${collected ? '· Tahsil edildi' : '· Bekliyor'}`,
-      borc: 0,
-      alacak: grossCommission,
-      balance: 0,
-      category: 'komisyon',
-      lotId: lot.id,
-      lotNumber: lot.lotNumber,
-      auctionTitle: lot.auction?.title,
-      isManual: false,
-    });
+    const grossCommission = round(matrah + matrah * lotKdvRate);
+    if (grossCommission > 0) {
+      if (collected) paidAmount = round(paidAmount + grossCommission);
+      else pendingAmount = round(pendingAmount + grossCommission);
+      rows.push({
+        id: 'com_' + lot.id,
+        date: lot.updatedAt.toISOString(),
+        description: `${lot.title} — ${lot.auction?.title ?? 'Müzayede'}`,
+        sub: `${sellerName} · Satıcı komisyonu (KDV dahil) ${durum}`,
+        borc: 0,
+        alacak: grossCommission,
+        balance: 0,
+        category: 'komisyon',
+        lotId: lot.id,
+        lotNumber: lot.lotNumber,
+        auctionTitle: lot.auction?.title,
+        isManual: false,
+      });
+    }
+
+    // 2) Alıcı hizmet bedeli (buyer premium) — platformun ASIL geliri.
+    // Daha önce bu ekstreye hiç yazılmıyordu; satıcı komisyonu %0 olduğu için
+    // platform ekstresi neredeyse sıfır gelir gösteriyordu.
+    const premiumGross = round((payment?.buyerPremiumAmount ?? 0) + (payment?.buyerPremiumKDV ?? 0));
+    if (premiumGross > 0) {
+      if (collected) paidAmount = round(paidAmount + premiumGross);
+      else pendingAmount = round(pendingAmount + premiumGross);
+      rows.push({
+        id: 'prem_' + lot.id,
+        date: lot.updatedAt.toISOString(),
+        description: `${lot.title} — ${lot.auction?.title ?? 'Müzayede'}`,
+        sub: `${sellerName} · Alıcı hizmet bedeli (KDV dahil) ${durum}`,
+        borc: 0,
+        alacak: premiumGross,
+        balance: 0,
+        category: 'komisyon',
+        lotId: lot.id,
+        lotNumber: lot.lotNumber,
+        auctionTitle: lot.auction?.title,
+        isManual: false,
+      });
+    }
   }
 
   const manual = await getManualEntries('PLATFORM', null);

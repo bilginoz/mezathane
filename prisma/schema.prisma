@@ -665,6 +665,31 @@ model Message {
 }
 
 // Elle girilen cari hareketler + kısmi tahsilat kayıtları (ön muhasebe)
+// Gider/masraf kaydı: platformun ÖDEDİĞİ paralar (hosting, reklam, kira, maaş…).
+// Cari defterler yalnızca alıcı/satıcı hareketlerini tutuyordu; kâr hesabı için
+// giderlerin de kaydedilmesi gerekiyor.
+model Expense {
+  id            String   @id @default(cuid())
+  title         String   // ne için ödendi
+  category      String   // hosting, reklam, kira, maas, kargo, ofis, yazilim, vergi, diger
+  amount        Float    // KDV hariç tutar
+  kdvRate       Float    @default(20)
+  kdvAmount     Float    @default(0)
+  totalAmount   Float    // amount + kdvAmount (ödenen toplam)
+  supplier      String?  // tedarikçi / firma
+  documentNo    String?  // fatura / fiş no
+  paymentMethod String?  // havale, eft, kredi_karti, nakit
+  bankName      String?
+  expenseDate   DateTime
+  notes         String?
+  createdById   String?  // kaydı giren admin
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([expenseDate])
+  @@index([category])
+}
+
 model LedgerEntry {
   id            String            @id @default(cuid())
   accountType   LedgerAccountType
