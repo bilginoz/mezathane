@@ -42,6 +42,19 @@ function parseCSV(text: string): string[][] {
   return rows;
 }
 
+// Durum/kondisyon değerini tekil lot formundaki seçeneklere hizala.
+// Satıcı "çok iyi" / "ÇOK İYİ" yazsa da "Çok İyi" olarak kaydedilir; listede
+// olmayan bir şey yazarsa (ör. "az kullanılmış") olduğu gibi korunur.
+const CONDITION_OPTIONS = ['Mükemmel', 'Çok İyi', 'İyi', 'Orta', 'Restore Edilmiş'];
+function normalizeCondition(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const match = CONDITION_OPTIONS.find(
+    (o) => o.toLocaleLowerCase('tr') === value.toLocaleLowerCase('tr')
+  );
+  return match ?? value;
+}
+
 // GET: Download sample CSV template
 export async function GET(request: Request) {
   try {
@@ -49,8 +62,10 @@ export async function GET(request: Request) {
     if (!session?.user) return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 });
     
     const bom = '\uFEFF';
-    const header = 'Lot Adı;Açıklama;Notlar;Kategori;Başlangıç Fiyatı;Tahmini Fiyat;Görsel URL';
-    const example = 'Antika Vazo;Osmanlı dönemi vazo;İyi durumda;Antika;5000;8000;';
+    // Not: "Durum" ve "Menşe" sütunları EN SONA eklendi; eski 7 sütunlu dosyalar
+    // bu yüzden çalışmaya devam eder (o sütunlar boş kabul edilir).
+    const header = 'Lot Adı;Açıklama;Notlar;Kategori;Başlangıç Fiyatı;Tahmini Fiyat;Görsel URL;Durum;Menşe';
+    const example = 'Antika Vazo;Osmanlı dönemi vazo;İyi durumda;Antika;5000;8000;;Çok İyi;Aile koleksiyonundan, 1990 İstanbul';
     const csv = bom + header + '\n' + example;
     
     return new NextResponse(csv, {
@@ -129,7 +144,9 @@ export async function POST(request: Request) {
       const row = dataRows[i];
       const rowNum = i + 2; // 1-based + header
       
-      // Expected: Lot Adı, Açıklama, Notlar, Kategori, Başlangıç Fiyatı, Tahmini Fiyat, Görsel URL
+      // Beklenen: Lot Adı, Açıklama, Notlar, Kategori, Başlangıç Fiyatı, Tahmini Fiyat,
+      // Görsel URL, Durum, Menşe. Son iki sütun isteğe bağlıdır — eski 7 sütunlu
+      // dosyalarda bulunmaz ve boş kabul edilir.
       const title = row[0] || '';
       const description = row[1] || null;
       const notes = row[2] || null;
@@ -137,6 +154,8 @@ export async function POST(request: Request) {
       const startingPriceStr = row[4] || '';
       const estimatedPriceStr = row[5] || '';
       const imageUrl = row[6] || '';
+      const condition = normalizeCondition(row[7]);
+      const provenance = row[8]?.trim() ? row[8].trim() : null;
 
       // Validate
       if (!title) {
@@ -165,6 +184,8 @@ export async function POST(request: Request) {
             title,
             description,
             notes,
+            condition,
+            provenance,
             auctionId,
             categoryId,
             startingPrice,

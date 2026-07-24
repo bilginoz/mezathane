@@ -122,7 +122,8 @@ export function BulkLotUpload() {
             <Download className="h-4 w-4" /> Şablonu İndir (CSV)
           </button>
           <div className="mt-3 text-[10px] text-muted-foreground space-y-0.5">
-            <p><strong>Sütunlar:</strong> Lot Adı; Açıklama; Notlar; Kategori; Başlangıç Fiyatı; Tahmini Fiyat; Görsel URL</p>
+            <p><strong>Sütunlar:</strong> Lot Adı; Açıklama; Notlar; Kategori; Başlangıç Fiyatı; Tahmini Fiyat; Görsel URL; Durum; Menşe</p>
+            <p><strong>Durum ve Menşe isteğe bağlıdır.</strong> Durum için önerilen değerler: Mükemmel, Çok İyi, İyi, Orta, Restore Edilmiş. Eski (7 sütunlu) dosyalarınız da çalışmaya devam eder.</p>
             <p><strong>Ayırıcı:</strong> Noktalı virgül (;) veya virgül (,)</p>
             <p><strong>Kodlama:</strong> UTF-8 (Türkçe karakter desteği)</p>
           </div>
