@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(request: Request) {
   try {
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
         where,
         select: {
           id: true, email: true, fullName: true, phone: true, role: true,
-          isActive: true, createdAt: true, memberNumber: true,
+          isActive: true, createdAt: true, memberNumber: true, twoFactorEnabled: true,
           sellerProfile: { select: { companyName: true, status: true } },
           _count: { select: { bids: true } },
         },
@@ -113,6 +114,36 @@ export async function PATCH(request: Request) {
           select: { id: true, fullName: true, email: true, phone: true },
         });
         break;
+
+      // Kurtarma: kullanıcı hem telefonunu hem yedek kodlarını kaybettiyse
+      // iki adımlı doğrulamayı sıfırla. Hassas işlem — denetim günlüğüne yazılır.
+      case 'reset2fa': {
+        const target = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, fullName: true, email: true, twoFactorEnabled: true },
+        });
+        if (!target) {
+          return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
+        }
+        if (!target.twoFactorEnabled) {
+          return NextResponse.json({ error: 'Bu kullanıcıda iki adımlı doğrulama zaten kapalı.' }, { status: 400 });
+        }
+        updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorBackupCodes: null },
+          select: { id: true, fullName: true, twoFactorEnabled: true },
+        });
+        await logAudit({
+          userId: (session.user as any).id,
+          userName: (session.user as any).name ?? undefined,
+          action: 'RESET_2FA',
+          entity: 'User',
+          entityId: userId,
+          details: { targetEmail: target.email, targetName: target.fullName },
+          ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? undefined,
+        });
+        break;
+      }
 
       default:
         return NextResponse.json({ error: 'Geçersiz action' }, { status: 400 });

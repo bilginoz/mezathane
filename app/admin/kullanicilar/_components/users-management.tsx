@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Shield, ShieldOff, ChevronLeft, ChevronRight, Pencil, X, Ban, CheckCircle, UserCheck, Store, ArrowLeft, Eye, Package, Gavel, XCircle, RefreshCw, Loader2, AlertTriangle, Wallet, CreditCard, Clock } from 'lucide-react';
+import { Users, Search, Shield, ShieldOff, ShieldCheck, ChevronLeft, ChevronRight, Pencil, X, Ban, CheckCircle, UserCheck, Store, ArrowLeft, Eye, Package, Gavel, XCircle, RefreshCw, Loader2, AlertTriangle, Wallet, CreditCard, Clock } from 'lucide-react';
 import { formatDate, formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ interface UserData {
   isActive: boolean;
   createdAt: string;
   memberNumber: number | null;
+  twoFactorEnabled?: boolean;
   sellerProfile: { companyName: string; status: string } | null;
   _count: { bids: number };
 }
@@ -426,9 +427,25 @@ export function UsersManagement() {
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-medium text-red-400"><Ban className="h-3 w-3" /> Engelli</span>
                       )}
+                      {detailUser.twoFactorEnabled && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-400"><ShieldCheck className="h-3 w-3" /> 2FA Açık</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {detailUser.twoFactorEnabled && (
+                      <button
+                        onClick={() => {
+                          if (!confirm(`${detailUser.fullName} kullanıcısının iki adımlı doğrulaması KAPATILACAK.\n\nBunu sadece kullanıcı telefonuna ve yedek kodlarına erişemiyorsa yapın. İşlem denetim günlüğüne kaydedilir.\n\nDevam edilsin mi?`)) return;
+                          handleAction(detailUser.id, 'reset2fa');
+                          setDetailUser(u => u ? { ...u, twoFactorEnabled: false } : u);
+                        }}
+                        title="Kullanıcı telefonunu/yedek kodlarını kaybettiyse 2FA'yı sıfırlar"
+                        className="inline-flex items-center gap-1 rounded-lg border border-blue-500/30 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/10 transition-colors"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" /> 2FA Sıfırla
+                      </button>
+                    )}
                     {detailUser.isActive ? (
                       <button onClick={() => { handleAction(detailUser.id, 'ban'); setDetailUser(u => u ? { ...u, isActive: false } : u); }} className="inline-flex items-center gap-1 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                         <ShieldOff className="h-3.5 w-3.5" /> Engelle
