@@ -13,15 +13,17 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const twoDaysLater = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-    // Find payments with due date approaching
+    // Vadesine 48 saatten az kalan, henüz ödenmemiş VE daha önce hatırlatma
+    // gönderilmemiş ödemeler. paymentReminderSentAt kontrolü sayesinde bu görev
+    // saatte bir çalışsa bile aynı ödeme için yalnızca BİR kez e-posta gider.
     const pendingPayments = await prisma.payment.findMany({
       where: {
         status: 'PENDING',
         buyerPaymentReceived: false,
-        dueDate: { gte: oneDayLater, lte: twoDaysLater },
+        paymentReminderSentAt: null,
+        dueDate: { gte: now, lte: twoDaysLater },
       },
       include: {
         user: { select: { id: true, email: true, fullName: true } },
@@ -77,6 +79,12 @@ export async function POST(req: NextRequest) {
           html: htmlBody,
         });
         emailsSent++;
+        // Sadece e-posta ba\u015Far\u0131yla gidince i\u015Faretle; gitmezse bir sonraki
+        // \u00E7al\u0131\u015Fmada tekrar denenir, ama bir daha spam olmaz.
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { paymentReminderSentAt: new Date() },
+        });
       } catch (e) {
         console.error(`Failed to send payment reminder to ${payment.user.email}:`, e);
       }

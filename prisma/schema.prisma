@@ -461,6 +461,7 @@ model Payment {
   buyerConfirmedAt      DateTime?     // Alıcı "Teslim Aldım" dediği tarih
   autoConfirmDate       DateTime?     // Otomatik onay tarihi (shippedAt + 7 gün)
   payoutRequestedAt     DateTime?     // Satıcı ödeme talep tarihi
+  paymentReminderSentAt DateTime?     // Ödeme hatırlatma e-postası gönderildiği an (bir kez gönderilir, tekrar spam olmaz)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
