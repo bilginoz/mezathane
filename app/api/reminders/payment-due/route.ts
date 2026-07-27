@@ -105,10 +105,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ====== OTOMATİK ASKI: ödeme yapmayan (default) kullanıcılar ======
+    // Vadesi geçmiş ödenmemiş siparişi olan BUYER'lar, ayarlanan eşiğe ulaşınca
+    // otomatik askıya alınır (isActive=false → giriş engellenir). Bu görev saatlik
+    // çalıştığı için ayrı bir cron gerekmez. Admin, hesabı elle geri açabilir.
+    let suspendedCount = 0;
+    try {
+      const ps = await prisma.platformSettings.findFirst();
+      const threshold = ps?.autoSuspendAfterDefaults ?? 1;
+      const overdueGroups = await prisma.payment.groupBy({
+        by: ['userId'],
+        where: { status: 'PENDING', buyerPaymentReceived: false, dueDate: { lt: now } },
+        _count: { id: true },
+      });
+      for (const g of overdueGroups) {
+        if ((g._count.id ?? 0) < threshold) continue;
+        const u = await prisma.user.findUnique({
+          where: { id: g.userId },
+          select: { id: true, isActive: true, role: true, email: true, fullName: true },
+        });
+        if (!u || !u.isActive || u.role !== 'BUYER') continue; // sadece aktif BUYER'lar
+        await prisma.user.update({ where: { id: u.id }, data: { isActive: false } });
+        suspendedCount++;
+        try {
+          await sendEmail({
+            to: u.email,
+            subject: 'Mezathane — Hesabınız askıya alındı',
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#e5e7eb;background:#0a0a0a"><h2 style="color:#d4af37">Hesabınız askıya alındı</h2><p>Merhaba ${u.fullName ?? ''},</p><p>Kazandığınız bir veya daha fazla lot için ödeme süresi dolduğu hâlde ödeme yapılmadığından hesabınız askıya alınmıştır. Borcunuzu kapatıp hesabınızı yeniden açtırmak için lütfen bizimle iletişime geçin: bilgi@mezathane.tr</p></div>`,
+          });
+        } catch {}
+      }
+    } catch (e) {
+      console.error('Auto-suspend error:', e);
+    }
+
     return NextResponse.json({
       success: true,
       paymentsProcessed: pendingPayments.length,
       emailsSent,
+      suspendedCount,
     });
   } catch (error) {
     console.error('Payment reminder error:', error);

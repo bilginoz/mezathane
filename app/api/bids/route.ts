@@ -264,23 +264,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Teklif vermek için e-posta adresinizi doğrulamanız gerekmektedir.', needsVerification: true }, { status: 403 });
     }
 
-    // Ödeme yapmayan kullanıcı kısıtlaması: vadesi geçmiş, ödenmemiş bir siparişi
-    // (kazanıp ödemediği bir lot) olan kullanıcı, borcunu kapatana kadar yeni teklif
-    // veremez. Müzayedede en büyük risk "kazanıp ödemeyen alıcı" olduğu için sektör
-    // standardı bir önlemdir.
-    const overdueDebt = await prisma.payment.count({
-      where: {
-        userId,
-        status: 'PENDING',
-        buyerPaymentReceived: false,
-        dueDate: { lt: new Date() },
-      },
+    // ====== ÖDEME YAPMAYAN KULLANICI KISITLAMASI (katmanlı) ======
+    // Müzayedede en büyük risk "kazanıp ödemeyen alıcı"dır. Ödeme günü (ör. 5 gün)
+    // gelene kadar borç "vadesi geçmiş" görünmez; bu pencerede kötü niyetli biri üst
+    // üste kazanıp sabote edebilir. Bu yüzden iki katman:
+    const pendingPayments = await prisma.payment.findMany({
+      where: { userId, status: 'PENDING', buyerPaymentReceived: false },
+      select: { totalAmount: true, dueDate: true },
     });
-    if (overdueDebt > 0) {
+    const nowTs = new Date();
+    // 1) Vadesi geçmiş ödenmemiş sipariş varsa → hiç teklif veremez.
+    if (pendingPayments.some((p) => p.dueDate && p.dueDate < nowTs)) {
       return NextResponse.json({
         error: 'Vadesi geçmiş ödenmemiş bir siparişiniz bulunduğu için yeni teklif veremezsiniz. Lütfen önce mevcut ödemenizi tamamlayın (Panelim → Siparişlerim).',
         hasOverdueDebt: true,
       }, { status: 403 });
+    }
+    // 2) Vadesi geçmese bile, ödenmemiş kazançların TOPLAMI limiti aşıyorsa → teklif
+    //    veremez. Limit, tek ürün fiyatına değil birikmiş borca bakar; böylece pahalı
+    //    ürün engellenmez ama üst üste kazanıp ödememe engellenir.
+    const outstanding = pendingPayments.reduce((s, p) => s + (p.totalAmount || 0), 0);
+    if (outstanding > 0) {
+      const paidCount = await prisma.payment.count({ where: { userId, status: 'PAID' } });
+      const ps = await prisma.platformSettings.findFirst();
+      const limit = paidCount > 0
+        ? (ps?.trustedUserOutstandingLimit ?? 500000)
+        : (ps?.newUserOutstandingLimit ?? 50000);
+      if (outstanding >= limit) {
+        return NextResponse.json({
+          error: `Ödenmemiş sipariş tutarınız (${outstanding.toLocaleString('tr-TR')} ₺) izin verilen sınıra (${limit.toLocaleString('tr-TR')} ₺) ulaştığı için yeni teklif veremezsiniz. Mevcut ödemelerinizi tamamlayınca tekrar teklif verebilirsiniz (Panelim → Siparişlerim).`,
+          outstandingLimitReached: true,
+        }, { status: 403 });
+      }
     }
 
     // Kendi lotuna teklif verme kontrolü (SELLER veya ADMIN — shill bidding engeli)

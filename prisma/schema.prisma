@@ -482,6 +482,10 @@ model PlatformSettings {
   platformName      String  @default("Mezathane.tr")
   platformEmail     String?
   platformPhone     String?
+  // Ödeme yapmayan kullanıcı önlemleri
+  newUserOutstandingLimit     Float @default(50000)   // Yeni üye (0 ödeme geçmişi) için ödenmemiş sipariş toplamı üst sınırı (TL)
+  trustedUserOutstandingLimit Float @default(500000)  // Güvenilir üye (≥1 ödeme) için üst sınır (TL)
+  autoSuspendAfterDefaults    Int   @default(1)       // Kaç vadesi geçmiş ödenmemiş sipariş (default) sonrası hesap otomatik askıya alınsın
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
