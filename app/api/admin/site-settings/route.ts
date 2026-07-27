@@ -38,6 +38,7 @@ export async function PATCH(request: Request) {
       'announcementText', 'announcementLink', 'announcementActive',
       'footerDescription',
       'bankName', 'bankAccountHolder', 'bankIban',
+      'instagramUrl', 'facebookUrl', 'tiktokUrl', 'youtubeUrl', 'twitterUrl',
     ];
     const updateData: any = {};
     for (const key of allowedFields) {

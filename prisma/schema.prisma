@@ -519,6 +519,12 @@ model SiteSettings {
   bankName            String  @default("")
   bankAccountHolder   String  @default("")
   bankIban            String  @default("")
+  // Sosyal medya profilleri (boş olanlar footer'da gösterilmez)
+  instagramUrl        String  @default("https://instagram.com/mezathane.tr")
+  facebookUrl         String  @default("https://facebook.com/mezathane.tr")
+  tiktokUrl           String  @default("https://www.tiktok.com/@mezathane.tr")
+  youtubeUrl          String  @default("")
+  twitterUrl          String  @default("")
   updatedAt       DateTime @updatedAt
 }
 

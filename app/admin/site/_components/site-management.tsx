@@ -222,6 +222,37 @@ export function SiteManagement() {
             </div>
           </motion.div>
 
+          {/* Sosyal Medya */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="rounded-xl border border-border bg-card p-6">
+            <h2 className="font-display font-semibold text-lg mb-1 flex items-center gap-2">
+              <Globe className="h-5 w-5 text-[#d4af37]" />
+              Sosyal Medya
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">Boş bırakılan hesaplar footer&apos;da gösterilmez.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Instagram</label>
+                <input type="text" value={settings?.instagramUrl || ''} onChange={e => updateField('instagramUrl', e.target.value)} placeholder="https://instagram.com/mezathane.tr" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Facebook</label>
+                <input type="text" value={settings?.facebookUrl || ''} onChange={e => updateField('facebookUrl', e.target.value)} placeholder="https://facebook.com/mezathane.tr" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">TikTok</label>
+                <input type="text" value={settings?.tiktokUrl || ''} onChange={e => updateField('tiktokUrl', e.target.value)} placeholder="https://www.tiktok.com/@mezathane.tr" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">YouTube (opsiyonel)</label>
+                <input type="text" value={settings?.youtubeUrl || ''} onChange={e => updateField('youtubeUrl', e.target.value)} placeholder="https://youtube.com/@mezathane" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">X / Twitter (opsiyonel)</label>
+                <input type="text" value={settings?.twitterUrl || ''} onChange={e => updateField('twitterUrl', e.target.value)} placeholder="https://x.com/mezathane" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+              </div>
+            </div>
+          </motion.div>
+
           {/* SEO */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
