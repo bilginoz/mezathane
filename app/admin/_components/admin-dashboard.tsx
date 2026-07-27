@@ -156,6 +156,11 @@ export function AdminDashboard() {
             Site Yönetimi
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+          <Link href="/admin/kurallar" className="rounded-xl border border-border bg-card px-5 py-3 hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium">
+            <Shield className="h-4 w-4 text-[#d4af37]" />
+            Kurallar & Limitler
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
           <Link href="/admin/sayfalar" className="rounded-xl border border-border bg-card px-5 py-3 hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium">
             <FileText className="h-4 w-4 text-[#d4af37]" />
             Sayfa Yönetimi
