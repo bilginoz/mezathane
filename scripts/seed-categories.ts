@@ -23,10 +23,10 @@ const CATEGORIES: { name: string; slug: string; imageUrl: string }[] = [
   { name: 'Mücevher', slug: 'mucevher', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Byzantine_-_Necklace_-_Walters_57544_-_View_A.jpg/960px-Byzantine_-_Necklace_-_Walters_57544_-_View_A.jpg' },
   { name: 'Saat', slug: 'saat', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Pocket_watch_of_William_S._Haynes.jpg/960px-Pocket_watch_of_William_S._Haynes.jpg' },
   { name: 'Porselen & Seramik', slug: 'porselen-seramik', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Iznik_mosque_lamp_dated_1549.jpg/960px-Iznik_mosque_lamp_dated_1549.jpg' },
-  { name: 'Hat & Tezhip', slug: 'hat-tezhip', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Wooden_Calligraphy_Tools%2C_Ottoman_Empire_%28Osmanl%C4%B1_%C4%B0mparatorlu%C4%9Fu%29.jpg/960px-Wooden_Calligraphy_Tools%2C_Ottoman_Empire_%28Osmanl%C4%B1_%C4%B0mparatorlu%C4%9Fu%29.jpg' },
-  { name: 'Efemera', slug: 'efemera', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Vintage_Stuckey%27s_Postcard.jpg/960px-Vintage_Stuckey%27s_Postcard.jpg' },
+  { name: 'Hat & Tezhip', slug: 'hat-tezhip', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Hilye-i_Saadet_by_Mustafa_Rakim.jpg/960px-Hilye-i_Saadet_by_Mustafa_Rakim.jpg' },
+  { name: 'Efemera', slug: 'efemera', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Constantinople_Purger_2802.jpg/960px-Constantinople_Purger_2802.jpg' },
   { name: 'Kitap & El Yazması', slug: 'kitap-el-yazmasi', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Codex_Beratinus_0011b.jpg/960px-Codex_Beratinus_0011b.jpg' },
-  { name: 'Tesbih', slug: 'tesbih', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Tasbih_or_prayer_beads.jpg/960px-Tasbih_or_prayer_beads.jpg' },
+  { name: 'Tesbih', slug: 'tesbih', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Ottoman_Faturan_Prayer_Bead.JPG/960px-Ottoman_Faturan_Prayer_Bead.JPG' },
   { name: 'Nümismatik', slug: 'numismatik', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Aureus%2C_Auguste%2C_Lyon%2C_btv1b104440369.jpg/960px-Aureus%2C_Auguste%2C_Lyon%2C_btv1b104440369.jpg' },
 ];
 
