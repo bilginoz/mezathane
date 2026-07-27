@@ -264,6 +264,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Teklif vermek için e-posta adresinizi doğrulamanız gerekmektedir.', needsVerification: true }, { status: 403 });
     }
 
+    // Ödeme yapmayan kullanıcı kısıtlaması: vadesi geçmiş, ödenmemiş bir siparişi
+    // (kazanıp ödemediği bir lot) olan kullanıcı, borcunu kapatana kadar yeni teklif
+    // veremez. Müzayedede en büyük risk "kazanıp ödemeyen alıcı" olduğu için sektör
+    // standardı bir önlemdir.
+    const overdueDebt = await prisma.payment.count({
+      where: {
+        userId,
+        status: 'PENDING',
+        buyerPaymentReceived: false,
+        dueDate: { lt: new Date() },
+      },
+    });
+    if (overdueDebt > 0) {
+      return NextResponse.json({
+        error: 'Vadesi geçmiş ödenmemiş bir siparişiniz bulunduğu için yeni teklif veremezsiniz. Lütfen önce mevcut ödemenizi tamamlayın (Panelim → Siparişlerim).',
+        hasOverdueDebt: true,
+      }, { status: 403 });
+    }
+
     // Kendi lotuna teklif verme kontrolü (SELLER veya ADMIN — shill bidding engeli)
     const auctionSeller = await prisma.sellerProfile.findUnique({
       where: { id: lot.auction.sellerId },

@@ -137,8 +137,10 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    if (user?.role === 'ADMIN') return '/admin';
-    if (user?.role === 'SELLER') return '/satici';
+    // "Panelim" herkes için kişisel alıcı paneline (/panel: tekliflerim, favorilerim,
+    // siparişlerim, ayarlar) gider. Admin ve Satıcı'nın kendi panellerine ayrı menü
+    // bağlantıları ("Admin Panel" / "Satıcı Paneli") zaten var; aksi halde admin/satıcı
+    // kendi alıcı paneline hiç ulaşamıyordu.
     return '/panel';
   };
 
