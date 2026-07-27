@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Tag, Plus, Edit3, Trash2, ArrowLeft, Save, X, Eye, EyeOff, Upload, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/compress-image';
 
 export function CategoriesManagement() {
   const { data: session, status } = useSession() || {};
@@ -69,16 +70,18 @@ export function CategoriesManagement() {
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
+      // Boyut ne olursa olsun küçült + WebP/JPEG'e çevir (telefon/HEIC dahil)
+      const { blob: compressed, type: compressedType } = await compressImage(file, 600, 0.85);
+      const ext = compressedType === 'image/webp' ? 'webp' : 'jpg';
       const fileName = `${Date.now()}-category.${ext}`;
       const presignRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: file.type, folder: 'categories' }),
+        body: JSON.stringify({ fileName, contentType: compressedType, isPublic: true }),
       });
       const presignData = await presignRes.json();
       if (!presignData?.uploadUrl) { toast.error(presignData?.error || 'Yükleme hatası'); return; }
-      await fetch(presignData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      await fetch(presignData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': compressedType }, body: compressed });
       const publicUrl = presignData.publicUrl || presignData.uploadUrl.split('?')[0];
       setEditing((prev: any) => ({ ...prev, imageUrl: publicUrl }));
       toast.success('Görsel yüklendi');

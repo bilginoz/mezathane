@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Settings, ImageIcon, Type, Mail, Phone, MapPin, Globe, Megaphone, Upload, Save, ArrowLeft, Eye, EyeOff, Link2, FileText, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/compress-image';
 
 export function SiteManagement() {
   const { data: session, status } = useSession() || {};
@@ -55,20 +56,23 @@ export function SiteManagement() {
   const handleImageUpload = async (file: File, field: 'logoUrl' | 'heroImageUrl') => {
     setUploading(field);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
+      // Boyut ne olursa olsun küçült + WebP/JPEG'e çevir (telefon/HEIC dahil).
+      // Logo küçük (400px), hero geniş banner (1600px).
+      const { blob: compressed, type: compressedType } = await compressImage(file, field === 'logoUrl' ? 400 : 1600, 0.85);
+      const ext = compressedType === 'image/webp' ? 'webp' : 'jpg';
       const folder = field === 'logoUrl' ? 'logo' : 'hero';
       const fileName = `${Date.now()}-${folder}.${ext}`;
       const presignRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: file.type, folder: 'site' }),
+        body: JSON.stringify({ fileName, contentType: compressedType, isPublic: true }),
       });
       const presignData = await presignRes.json();
       if (!presignData?.uploadUrl) { toast.error(presignData?.error || 'Yükleme hatası'); return; }
       await fetch(presignData.uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
+        headers: { 'Content-Type': compressedType },
+        body: compressed,
       });
       const publicUrl = presignData.publicUrl || presignData.uploadUrl.split('?')[0];
       setSettings((prev: any) => ({ ...prev, [field]: publicUrl }));
