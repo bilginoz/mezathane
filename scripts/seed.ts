@@ -6,18 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
 
-  // Test account (internal)
-  const testPass = await bcrypt.hash('johndoe123', 12);
-  await prisma.user.upsert({
-    where: { email: 'john@doe.com' },
-    update: { role: 'ADMIN', password: testPass },
-    create: {
-      email: 'john@doe.com',
-      password: testPass,
-      fullName: 'Platform Admin',
-      role: 'ADMIN',
-    },
-  });
+  // NOT: Eskiden burada varsayılan şifreli (johndoe123) bir john@doe.com admin
+  // hesabı oluşturuluyordu. Güvenlik açığı olduğu için 2026-07-27'de kaldırıldı.
+  // Gerçek admin: bilginoz@gmail.com. Yeni admin gerekiyorsa güçlü şifreyle eklenmeli.
 
   // Admin user - Bilgin ÖZ
   const bilginPass = await bcrypt.hash('Mzt@2026!BgOz', 12);
