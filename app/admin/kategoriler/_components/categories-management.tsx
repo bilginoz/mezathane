@@ -77,9 +77,9 @@ export function CategoriesManagement() {
         body: JSON.stringify({ fileName, contentType: file.type, folder: 'categories' }),
       });
       const presignData = await presignRes.json();
-      if (!presignData?.url) { toast.error('Yükleme hatası'); return; }
-      await fetch(presignData.url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-      const publicUrl = presignData.publicUrl || presignData.url.split('?')[0];
+      if (!presignData?.uploadUrl) { toast.error(presignData?.error || 'Yükleme hatası'); return; }
+      await fetch(presignData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      const publicUrl = presignData.publicUrl || presignData.uploadUrl.split('?')[0];
       setEditing((prev: any) => ({ ...prev, imageUrl: publicUrl }));
       toast.success('Görsel yüklendi');
     } catch { toast.error('Görsel yüklenemedi'); }

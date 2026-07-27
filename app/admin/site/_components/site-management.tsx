@@ -64,13 +64,13 @@ export function SiteManagement() {
         body: JSON.stringify({ fileName, contentType: file.type, folder: 'site' }),
       });
       const presignData = await presignRes.json();
-      if (!presignData?.url) { toast.error('Yükleme hatası'); return; }
-      await fetch(presignData.url, {
+      if (!presignData?.uploadUrl) { toast.error(presignData?.error || 'Yükleme hatası'); return; }
+      await fetch(presignData.uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
         body: file,
       });
-      const publicUrl = presignData.publicUrl || presignData.url.split('?')[0];
+      const publicUrl = presignData.publicUrl || presignData.uploadUrl.split('?')[0];
       setSettings((prev: any) => ({ ...prev, [field]: publicUrl }));
       toast.success('Görsel yüklendi');
     } catch {
