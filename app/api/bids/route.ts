@@ -280,19 +280,29 @@ export async function POST(request: Request) {
         hasOverdueDebt: true,
       }, { status: 403 });
     }
-    // 2) Vadesi geçmese bile, ödenmemiş kazançların TOPLAMI limiti aşıyorsa → teklif
-    //    veremez. Limit, tek ürün fiyatına değil birikmiş borca bakar; böylece pahalı
-    //    ürün engellenmez ama üst üste kazanıp ödememe engellenir.
-    const outstanding = pendingPayments.reduce((s, p) => s + (p.totalAmount || 0), 0);
-    if (outstanding > 0) {
+    // 2) Vadesi geçmese bile, ödenmemiş kazançların ADEDİ veya TOPLAM TUTARI limiti
+    //    aşıyorsa → teklif veremez. İki limit birlikte çalışır:
+    //    - Tutar sınırı: az sayıda pahalı ürünle limiti doldurmayı keser.
+    //    - Adet sınırı: çok sayıda ucuz ürünle (ör. 50×1.000₺) sabotajı keser.
+    //    Limitler mevcut birikmiş borca bakar (yeni teklifin potansiyeline değil),
+    //    böylece temiz bir kullanıcı tek bir pahalı ürüne teklif verebilir.
+    const unpaidCount = pendingPayments.length;
+    if (unpaidCount > 0) {
+      const outstanding = pendingPayments.reduce((s, p) => s + (p.totalAmount || 0), 0);
       const paidCount = await prisma.payment.count({ where: { userId, status: 'PAID' } });
       const ps = await prisma.platformSettings.findFirst();
-      const limit = paidCount > 0
-        ? (ps?.trustedUserOutstandingLimit ?? 500000)
-        : (ps?.newUserOutstandingLimit ?? 50000);
-      if (outstanding >= limit) {
+      const trusted = paidCount > 0;
+      const tlLimit = trusted ? (ps?.trustedUserOutstandingLimit ?? 500000) : (ps?.newUserOutstandingLimit ?? 50000);
+      const countLimit = trusted ? (ps?.trustedUserMaxUnpaidCount ?? 10) : (ps?.newUserMaxUnpaidCount ?? 3);
+      if (unpaidCount >= countLimit) {
         return NextResponse.json({
-          error: `Ödenmemiş sipariş tutarınız (${outstanding.toLocaleString('tr-TR')} ₺) izin verilen sınıra (${limit.toLocaleString('tr-TR')} ₺) ulaştığı için yeni teklif veremezsiniz. Mevcut ödemelerinizi tamamlayınca tekrar teklif verebilirsiniz (Panelim → Siparişlerim).`,
+          error: `Ödenmemiş sipariş sayınız (${unpaidCount}) izin verilen sınıra (${countLimit}) ulaştığı için yeni teklif veremezsiniz. Mevcut ödemelerinizi tamamlayınca tekrar teklif verebilirsiniz (Panelim → Siparişlerim).`,
+          unpaidLimitReached: true,
+        }, { status: 403 });
+      }
+      if (outstanding >= tlLimit) {
+        return NextResponse.json({
+          error: `Ödenmemiş sipariş tutarınız (${outstanding.toLocaleString('tr-TR')} ₺) izin verilen sınıra (${tlLimit.toLocaleString('tr-TR')} ₺) ulaştığı için yeni teklif veremezsiniz. Mevcut ödemelerinizi tamamlayınca tekrar teklif verebilirsiniz (Panelim → Siparişlerim).`,
           outstandingLimitReached: true,
         }, { status: 403 });
       }
