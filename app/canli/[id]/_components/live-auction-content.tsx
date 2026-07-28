@@ -61,12 +61,15 @@ export function LiveAuctionContent({ auctionId }: { auctionId: string }) {
     fetchLiveData();
     pollRef.current = setInterval(fetchLiveData, 8000);
 
+    // Ably'ye API anahtarıyla DEĞİL, sunucudan alınan geçici TOKEN ile bağlanır
+    // (anahtar tarayıcıya açılmaz). Token yalnızca bu kanalı dinleme yetkisi taşır.
+    // Ably kurulamaz/erişilemezse 8 sn'lik poll yedeği zaten devrede.
     let ably: Ably.Realtime | null = null;
-    if (process.env.NEXT_PUBLIC_ABLY_KEY) {
-      ably = new Ably.Realtime({ key: process.env.NEXT_PUBLIC_ABLY_KEY });
+    try {
+      ably = new Ably.Realtime({ authUrl: `/api/ably/auth?auction=${encodeURIComponent(auctionId)}` });
       const channel = ably.channels.get(`auction-${auctionId}`);
       channel.subscribe('update', () => { fetchLiveData(); });
-    }
+    } catch { /* poll yedeği devrede */ }
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
