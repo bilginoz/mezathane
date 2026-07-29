@@ -3,6 +3,10 @@ import { Footer } from '@/components/footer';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Scale, Shield, FileText, Cookie, Lock, Gavel, BookOpen, CreditCard, RotateCcw, Info, Banknote, Ban, ArrowLeft } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
+
+// Banka bilgileri Site Ayarları'ndan CANLI okunur; sabit metin değil.
+export const dynamic = 'force-dynamic';
 
 const LEGAL_PAGES: Record<string, { title: string; icon: string; sections: { heading: string; text: string }[] }> = {
   'kvkk': {
@@ -182,8 +186,41 @@ const ICONS: Record<string, any> = { Scale, Shield, FileText, Cookie, Lock, Gave
 
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: currentSlug } = await params;
-  const page = LEGAL_PAGES[currentSlug];
+  let page = LEGAL_PAGES[currentSlug];
   if (!page) return notFound();
+
+  // Banka Hesap Bilgileri sayfası: IBAN vb. Site Ayarları'ndan okunup gösterilir.
+  // Ayar boşsa (henüz girilmemişse) uydurma yapılmaz, mevcut "e-posta ile iletilecek" metni kalır.
+  if (currentSlug === 'banka-hesap') {
+    let bank: { bankName: string; bankAccountHolder: string; bankIban: string } | null = null;
+    try {
+      bank = await prisma.siteSettings.findUnique({
+        where: { id: 'default' },
+        select: { bankName: true, bankAccountHolder: true, bankIban: true },
+      });
+    } catch {
+      bank = null; // DB'ye ulaşılamazsa sabit metne düş
+    }
+    if (bank?.bankIban) {
+      const lines = [
+        bank.bankName && `Banka: ${bank.bankName}`,
+        bank.bankAccountHolder && `Hesap Sahibi: ${bank.bankAccountHolder}`,
+        `IBAN: ${bank.bankIban}`,
+      ].filter(Boolean).join('\n');
+      page = {
+        ...page,
+        sections: page.sections.map((s) =>
+          s.heading === 'Havale/EFT Hesap Bilgileri'
+            ? {
+                ...s,
+                text: `${lines}\n\nÖdeme yaparken açıklama kısmına üye numaranızı ve sipariş numaranızı yazmayı unutmayınız. Her müzayedenin kendi ödeme koşulları, satıcı tarafından müzayede açıklamasında belirtilebilir.\n\nGüvenliğiniz için: Ödeme yapmadan önce IBAN bilgisini yalnızca mezathane.tr üzerinden doğrulayın; e-posta/mesaj yoluyla gelen farklı bir IBAN'a ödeme yapmayın.`,
+              }
+            : s
+        ),
+      };
+    }
+  }
+
   const IconComp = ICONS[page.icon] ?? FileText;
 
   return (
