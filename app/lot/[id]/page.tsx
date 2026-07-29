@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { LotDetailContent } from './_components/lot-detail-content';
+import { RelatedLots } from './_components/related-lots';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 
@@ -60,6 +61,52 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
 
   if (!lot || lot.auction?.seller?.status === 'SUSPENDED') return notFound();
 
+  // Benzer / ilgili lotlar — aynı kategori, teklif verilebilir (aktif/canlı, onaylı satıcı),
+  // kendisi hariç. Kategoriden az çıkarsa diğer aktif lotlarla tamamlanır. Yoksa bölüm gizlenir.
+  const relInclude = {
+    images: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
+    category: true,
+    lotCategories: { include: { category: true } },
+    auction: { select: { id: true, title: true, status: true, startDate: true, endDate: true, liveOnly: true } },
+    _count: { select: { bids: true, watchlist: true } },
+  };
+  const baseWhere: any = {
+    id: { not: lot.id },
+    status: 'ACTIVE',
+    auction: { isPublic: true, status: { in: ['ACTIVE', 'LIVE'] }, seller: { status: 'APPROVED' } },
+  };
+  const catIds = [lot.categoryId, lot.secondaryCategoryId].filter(Boolean) as string[];
+  let relatedLots: any[] = [];
+  try {
+    if (catIds.length > 0) {
+      relatedLots = await prisma.lot.findMany({
+        where: {
+          ...baseWhere,
+          OR: [
+            { categoryId: { in: catIds } },
+            { secondaryCategoryId: { in: catIds } },
+            { lotCategories: { some: { categoryId: { in: catIds } } } },
+          ],
+        },
+        include: relInclude,
+        take: 8,
+        orderBy: [{ bidCount: 'desc' }, { createdAt: 'desc' }],
+      });
+    }
+    if (relatedLots.length < 4) {
+      const exclude = [lot.id, ...relatedLots.map((r) => r.id)];
+      const fill = await prisma.lot.findMany({
+        where: { ...baseWhere, id: { notIn: exclude } },
+        include: relInclude,
+        take: 8 - relatedLots.length,
+        orderBy: { createdAt: 'desc' },
+      });
+      relatedLots = [...relatedLots, ...fill];
+    }
+  } catch (e) {
+    console.error('Benzer lotlar sorgusu hatası:', e);
+  }
+
   const siteUrl = process.env.NEXTAUTH_URL ?? 'https://www.mezathane.tr';
   const sellerName = lot.auction?.seller?.companyName || 'Mezathane.tr';
 
@@ -117,6 +164,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <Header />
       <LotDetailContent lot={lot} />
+      <RelatedLots lots={relatedLots} />
       <Footer />
     </div>
   );
