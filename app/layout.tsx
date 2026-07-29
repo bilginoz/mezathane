@@ -7,6 +7,7 @@ import { NotificationPrompt } from '@/components/notification-prompt';
 import { BottomNav } from '@/components/bottom-nav';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { GoogleAnalyticsTracker } from '@/components/google-analytics';
+import { MetaPixel } from '@/components/meta-pixel';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,7 @@ export default function RootLayout({
       >
         <Providers>
           <GoogleAnalyticsTracker />
+          <MetaPixel />
           <AnnouncementBanner />
           <div className="pb-16 md:pb-0">
             {children}

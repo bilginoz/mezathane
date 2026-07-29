@@ -59,11 +59,11 @@ export async function middleware(request: NextRequest) {
   // Esnek ama güvenli: inline script/style'a izin ver (Next.js gereksinimi), dış kaynakları sınırla
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://www.google-analytics.com https://*.amazonaws.com https://*.r2.cloudflarestorage.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com",
+    "connect-src 'self' https://www.google-analytics.com https://www.facebook.com https://*.amazonaws.com https://*.r2.cloudflarestorage.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com",
     "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
