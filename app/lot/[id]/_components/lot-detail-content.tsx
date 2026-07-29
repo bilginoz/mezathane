@@ -360,6 +360,22 @@ export function LotDetailContent({ lot }: { lot: any }) {
               </div>
             )}
 
+            {/* Kısa tanıtım videosu — sessiz, otomatik, döngü ("hareketli foto") */}
+            {lot?.videoUrl && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <video
+                  src={lot.videoUrl}
+                  className="w-full max-h-[420px] object-contain bg-black"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  controls
+                />
+              </div>
+            )}
+
             {/* Description */}
             <div className="rounded-xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

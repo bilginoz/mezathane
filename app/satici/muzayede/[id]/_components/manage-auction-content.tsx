@@ -27,6 +27,7 @@ interface LotData {
   notes: string | null;
   condition?: string | null;
   provenance?: string | null;
+  videoUrl?: string | null;
   startingPrice: number;
   currentPrice: number;
   estimatedPrice: number | null;
@@ -121,6 +122,59 @@ export default function ManageAuctionContent() {
   });
   const [lotImages, setLotImages] = useState<{ url: string; cloudStoragePath: string; uploading: boolean }[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
+  const [lotVideo, setLotVideo] = useState<string>(''); // Kısa tanıtım videosu URL'i (ekleme formu)
+  const [videoUploading, setVideoUploading] = useState(false);
+
+  // Kısa tanıtım videosunu yükler (sıkıştırma YOK; sınır: ≤8 sn, ≤15 MB). URL döner ya da null.
+  const uploadVideo = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith('video/')) { toast.error('Lütfen bir video dosyası seçin'); return null; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('Video 15 MB\'dan büyük olamaz'); return null; }
+    // Süreyi metadata'dan oku; okunamazsa (bazı .mov) boyut sınırına güven.
+    const duration = await new Promise<number>((resolve) => {
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration || 0); };
+      v.onerror = () => resolve(0);
+      v.src = URL.createObjectURL(file);
+    });
+    if (duration && duration > 8.5) { toast.error('Video en fazla 8 saniye olmalı'); return null; }
+    try {
+      const ext = file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4';
+      const fileName = `lots/video-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const presignRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: file.type, isPublic: true }),
+      });
+      if (!presignRes.ok) { const d = await presignRes.json().catch(() => ({})); toast.error(d.error || 'Video yüklenemedi'); return null; }
+      const { uploadUrl, publicUrl } = await presignRes.json();
+      const headers: Record<string, string> = { 'Content-Type': file.type };
+      if (uploadUrl.includes('content-disposition')) headers['Content-Disposition'] = 'attachment';
+      await fetch(uploadUrl, { method: 'PUT', headers, body: file });
+      return publicUrl as string;
+    } catch {
+      toast.error('Video yüklenemedi');
+      return null;
+    }
+  };
+
+  const handleAddVideo = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setVideoUploading(true);
+    const url = await uploadVideo(file);
+    if (url) setLotVideo(url);
+    setVideoUploading(false);
+  };
+
+  const handleEditVideo = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setVideoUploading(true);
+    const url = await uploadVideo(file);
+    if (url) setEditLot(p => ({ ...p, videoUrl: url }));
+    setVideoUploading(false);
+  };
 
   // Görseli sıkıştır (max 1920px, kalite %80, WebP/JPEG)
   const compressImage = (file: File, maxWidth = 1920, quality = 0.8): Promise<{ blob: Blob; type: string }> => {
@@ -212,6 +266,7 @@ export default function ManageAuctionContent() {
     estimatedShipping: '',
     kdvRate: '20',
     imageUrl: '',
+    videoUrl: '',
   });
 
   useEffect(() => {
@@ -268,6 +323,7 @@ export default function ManageAuctionContent() {
       estimatedShipping: lot.estimatedShipping != null ? String(lot.estimatedShipping) : '',
       kdvRate: lot.kdvRate != null ? String(lot.kdvRate) : '20',
       imageUrl: lot.images[0]?.imageUrl ?? '',
+      videoUrl: lot.videoUrl ?? '',
     });
   };
 
@@ -295,6 +351,7 @@ export default function ManageAuctionContent() {
           estimatedShipping: editLot.estimatedShipping || null,
           kdvRate: parseFloat(editLot.kdvRate) || 20,
           imageUrl: editLot.imageUrl || undefined,
+          videoUrl: editLot.videoUrl || null,
         }),
       });
       if (!res.ok) {
@@ -406,6 +463,7 @@ export default function ManageAuctionContent() {
           estimatedShipping: newLot.estimatedShipping || null,
           kdvRate: parseFloat(newLot.kdvRate) || 20,
           images: lotImages.map(img => ({ imageUrl: img.url, cloudStoragePath: img.cloudStoragePath })),
+          videoUrl: lotVideo || null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -413,6 +471,7 @@ export default function ManageAuctionContent() {
       setShowAddLot(false);
       setNewLot({ title: '', description: '', notes: '', condition: '', provenance: '', categoryIds: [], startingPrice: '', estimatedPrice: '', customBidIncrement: '', shippingType: 'BUYER_PAYS', estimatedShipping: '', kdvRate: '20' });
       setLotImages([]);
+      setLotVideo('');
       fetchAuction();
     } catch {
       toast.error('Lot eklenirken hata oluştu');
@@ -936,6 +995,33 @@ export default function ManageAuctionContent() {
                   </label>
                 </div>
               </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm text-muted-foreground mb-1 block">Kısa Tanıtım Videosu (isteğe bağlı)</label>
+                <p className="text-xs text-muted-foreground mb-2">En fazla 8 saniye, sessiz "hareketli fotoğraf". Sayfada otomatik ve sessiz oynar. (≤15 MB · MP4/MOV/WebM)</p>
+                {lotVideo ? (
+                  <div className="relative w-40 rounded-lg overflow-hidden border border-border">
+                    <video src={lotVideo} className="w-full" autoPlay muted loop playsInline />
+                    <button type="button" onClick={() => setLotVideo('')} className="absolute top-1 right-1 bg-red-500 rounded-full p-0.5">
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-border py-4 cursor-pointer hover:border-amber-500/50 transition-colors ${videoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      onChange={e => handleAddVideo(e.target.files)}
+                      disabled={videoUploading}
+                    />
+                    {videoUploading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
+                    ) : (
+                      <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">Video Seç</span></>
+                    )}
+                  </label>
+                )}
+              </div>
             </div>
             <div className="flex justify-end gap-3 mt-4">
               <button
@@ -1227,6 +1313,33 @@ export default function ManageAuctionContent() {
                             className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                             placeholder="https://npr.brightspotcdn.com/dims3/default/strip/false/crop/2500x3125+0+0/resize/1100/quality/50/format/jpeg/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fd2%2Fc9%2Fa5bc19d74649b30a349d4c8c8913%2F260408-lk-kidcluttter-flowchart.jpg"
                           />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-sm text-muted-foreground mb-1 block">Kısa Tanıtım Videosu (isteğe bağlı)</label>
+                          <p className="text-xs text-muted-foreground mb-2">En fazla 8 saniye, sessiz. Sayfada otomatik oynar. (≤15 MB · MP4/MOV/WebM)</p>
+                          {editLot.videoUrl ? (
+                            <div className="relative w-40 rounded-lg overflow-hidden border border-border">
+                              <video src={editLot.videoUrl} className="w-full" autoPlay muted loop playsInline />
+                              <button type="button" onClick={() => setEditLot(p => ({ ...p, videoUrl: '' }))} className="absolute top-1 right-1 bg-red-500 rounded-full p-0.5">
+                                <X className="w-3 h-3 text-white" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-border py-4 cursor-pointer hover:border-amber-500/50 transition-colors ${videoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <input
+                                type="file"
+                                accept="video/mp4,video/webm,video/quicktime"
+                                className="hidden"
+                                onChange={e => handleEditVideo(e.target.files)}
+                                disabled={videoUploading}
+                              />
+                              {videoUploading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
+                              ) : (
+                                <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">Video Seç</span></>
+                              )}
+                            </label>
+                          )}
                         </div>
                       </div>
                       <div className="flex justify-end gap-3 mt-4">

@@ -63,6 +63,8 @@ export async function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
+    // Lot tanıtım videoları (dosyalar.mezathane.tr / R2, https) + form önizlemesi (blob:)
+    "media-src 'self' blob: https:",
     "connect-src 'self' https://www.google-analytics.com https://www.facebook.com https://*.amazonaws.com https://*.r2.cloudflarestorage.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com",
     "frame-src 'self'",
     "object-src 'none'",

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!seller || seller.status !== 'APPROVED') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
     const body = await request.json();
-    const { auctionId, title, description, notes, condition, provenance, categoryId, secondaryCategoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, images, shippingType, estimatedShipping, kdvRate } = body;
+    const { auctionId, title, description, notes, condition, provenance, categoryId, secondaryCategoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, images, videoUrl, shippingType, estimatedShipping, kdvRate } = body;
     // categoryIds: yeni çoklu kategori sistemi, categoryId/secondaryCategoryId: eski uyumluluk
     const resolvedCategoryIds: string[] = categoryIds?.length ? categoryIds : [categoryId, secondaryCategoryId].filter(Boolean);
 
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
         shippingType: shippingType === 'FREE_SELLER' ? 'FREE_SELLER' : 'BUYER_PAYS',
         estimatedShipping: shippingType === 'FREE_SELLER' ? null : (estimatedShipping != null && estimatedShipping !== '' ? parseFloat(estimatedShipping) : null),
         kdvRate: [1, 10, 20].includes(Number(kdvRate)) ? Number(kdvRate) : 20,
+        videoUrl: typeof videoUrl === 'string' && videoUrl.trim() ? videoUrl.trim() : null,
         currentPrice: startingPrice ?? 0,
         status: 'PENDING',
         sortOrder: (lastLot?.sortOrder ?? 0) + 1,

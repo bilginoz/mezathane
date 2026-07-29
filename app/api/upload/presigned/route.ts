@@ -17,6 +17,11 @@ const ALLOWED_CONTENT_TYPES = new Set([
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  // Lot tanıtım videosu — kısa/sessiz klip. quicktime (.mov) iPhone kayıtları için kabul edilir.
+  // Süre/boyut sınırı istemci tarafında uygulanır (≤8 sn, ≤15 MB). Çalıştırılabilir tür değil.
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
 ]);
 
 export async function POST(request: Request) {
@@ -31,7 +36,7 @@ export async function POST(request: Request) {
     }
     if (typeof contentType !== 'string' || !ALLOWED_CONTENT_TYPES.has(contentType)) {
       return NextResponse.json(
-        { error: 'Bu dosya türü kabul edilmiyor. Yalnızca resim (JPEG/PNG/WebP/GIF), PDF ve Word belgeleri yüklenebilir.' },
+        { error: 'Bu dosya türü kabul edilmiyor. Yalnızca resim (JPEG/PNG/WebP/GIF), kısa video (MP4/WebM/MOV), PDF ve Word belgeleri yüklenebilir.' },
         { status: 400 }
       );
     }
