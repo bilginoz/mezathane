@@ -33,7 +33,7 @@ export async function createInAppNotification(options: {
       const allowed = await checkNotificationPreference(options.userId, 'inApp', options.preferenceType);
       if (!allowed) return null;
     }
-    return await prisma.notification.create({
+    const created = await prisma.notification.create({
       data: {
         userId: options.userId,
         title: options.title,
@@ -42,6 +42,22 @@ export async function createInAppNotification(options: {
         link: options.link,
       },
     });
+
+    // Web push — site KAPALI olsa bile kullanıcının cihazına bildirim gönder.
+    // Uygulama içi bildirim zaten tercih kontrolünden geçti; push onu birebir yansıtır.
+    // Best-effort: VAPID env yoksa ya da abonelik yoksa sessizce atlanır, hata fırlatmaz.
+    try {
+      const { sendPushToUser } = await import('@/lib/push');
+      await sendPushToUser(options.userId, {
+        title: options.title,
+        body: options.message,
+        url: options.link || '/',
+      });
+    } catch {
+      /* push başarısızlığı bildirim akışını bozmasın */
+    }
+
+    return created;
   } catch (error) {
     console.error('In-app notification error:', error);
     return null;

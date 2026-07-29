@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { subscribeToPush } from '@/lib/push-client';
 
 const STORAGE_KEY = 'mezathane_notif_pref';
 const DISMISSED_KEY = 'mezathane_notif_dismissed';
@@ -22,6 +23,9 @@ export function useBrowserNotifications() {
       setPermission('granted');
       localStorage.setItem(STORAGE_KEY, 'granted');
       setShowBanner(false);
+      // İzin zaten verilmiş: bu cihazın web push aboneliğini (yoksa) kaydet/tazele.
+      // Giriş yapılmadıysa /api/push/subscribe 401 döner ve sessizce atlanır.
+      subscribeToPush();
     } else if (browserPerm === 'denied') {
       setPermission('denied');
       localStorage.setItem(STORAGE_KEY, 'denied');
@@ -44,6 +48,8 @@ export function useBrowserNotifications() {
       setPermission(result as NotifPref);
       localStorage.setItem(STORAGE_KEY, result);
       setShowBanner(false);
+      // İzin verildiyse bu cihazı web push'a abone et (site kapalıyken de bildirim).
+      if (result === 'granted') subscribeToPush();
     } catch {
       setPermission('denied');
     }

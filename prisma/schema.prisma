@@ -115,6 +115,7 @@ model User {
   bids          Bid[]
   watchlist     Watchlist[]
   notifications Notification[]
+  pushSubscriptions PushSubscription[]
   sellerReviews SellerReview[]
   payments      Payment[]
   sessions      Session[]
@@ -423,6 +424,22 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+}
+
+// Web push aboneliği — kullanıcının cihazı/tarayıcısı (site kapalıyken bildirim gönderebilmek için).
+// Bir kullanıcının birden çok cihazı/tarayıcısı olabilir (her biri ayrı endpoint).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Payment {
