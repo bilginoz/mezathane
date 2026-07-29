@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, ChevronLeft, ChevronRight, Store, Tag, ArrowLeft, Users, Timer, Search, Maximize2, MessageCircle, Gavel, Zap, Clock, CreditCard, Package } from 'lucide-react';
+import { Heart, Share2, ChevronLeft, ChevronRight, Store, Tag, ArrowLeft, Users, Timer, Search, Maximize2, MessageCircle, Gavel, Zap, Clock, CreditCard, Package, ShieldCheck, Wrench } from 'lucide-react';
 import { VerifiedBadge } from '@/components/verified-badge';
 import { formatPrice, formatDateTime } from '@/lib/utils';
 import { BidPanel } from '@/components/bid-panel';
@@ -399,7 +399,7 @@ export function LotDetailContent({ lot }: { lot: any }) {
               {lot?.notes && (
                 <p className="text-xs text-muted-foreground italic border-t border-border pt-3">{lot.notes}</p>
               )}
-              {(lot?.condition || lot?.provenance) && (
+              {(lot?.condition || lot?.provenance || lot?.restorationNote || lot?.certificateUrl) && (
                 <div className="rounded-lg border border-border bg-muted/40 px-3 py-3 mt-1 space-y-2">
                   {lot?.condition && (
                     <div className="flex items-center justify-between gap-3">
@@ -407,10 +407,28 @@ export function LotDetailContent({ lot }: { lot: any }) {
                       <span className="text-sm font-semibold">{lot.condition}</span>
                     </div>
                   )}
+                  {lot?.restorationNote && (
+                    <div className="border-t border-border pt-2">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Wrench className="h-3 w-3" /> Restorasyon Beyanı</span>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{lot.restorationNote}</p>
+                    </div>
+                  )}
                   {lot?.provenance && (
                     <div className="border-t border-border pt-2">
                       <span className="text-xs text-muted-foreground block mb-1">Menşe / Köken</span>
                       <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{lot.provenance}</p>
+                    </div>
+                  )}
+                  {lot?.certificateUrl && (
+                    <div className="border-t border-border pt-2">
+                      <a
+                        href={lot.certificateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30 px-3 py-1.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20 transition-colors"
+                      >
+                        <ShieldCheck className="h-4 w-4" /> Otantiklik Sertifikası — görüntüle
+                      </a>
                     </div>
                   )}
                 </div>

@@ -76,7 +76,7 @@ export async function PATCH(
       // Sadece status değişikliği ise izin ver (admin tarafından tetiklenecek)
       return NextResponse.json({ error: 'Lotlar sadece müzayede taslak durumundayken düzenlenebilir.' }, { status: 400 });
     }
-    const { title, description, notes, condition, provenance, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, videoUrl, shippingType, estimatedShipping, kdvRate } = body;
+    const { title, description, notes, condition, provenance, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, videoUrl, restorationNote, certificateUrl, shippingType, estimatedShipping, kdvRate } = body;
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -98,6 +98,8 @@ export async function PATCH(
     if (estimatedShipping !== undefined) updateData.estimatedShipping = (shippingType === 'FREE_SELLER' || estimatedShipping == null || estimatedShipping === '') ? null : parseFloat(estimatedShipping);
     if (kdvRate !== undefined) updateData.kdvRate = [1, 10, 20].includes(Number(kdvRate)) ? Number(kdvRate) : 20;
     if (videoUrl !== undefined) updateData.videoUrl = (typeof videoUrl === 'string' && videoUrl.trim()) ? videoUrl.trim() : null;
+    if (restorationNote !== undefined) updateData.restorationNote = (typeof restorationNote === 'string' && restorationNote.trim()) ? restorationNote.trim() : null;
+    if (certificateUrl !== undefined) updateData.certificateUrl = (typeof certificateUrl === 'string' && certificateUrl.trim()) ? certificateUrl.trim() : null;
     if (status) updateData.status = status;
 
     const updatedLot = await prisma.lot.update({

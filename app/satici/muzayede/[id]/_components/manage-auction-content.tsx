@@ -11,7 +11,7 @@ import { formatPrice, formatDate, formatDateTime } from '@/lib/utils';
 import {
   ArrowLeft, Package, Gavel, Eye, Heart, Plus, Edit, Trash2,
   Calendar, Clock, ChevronRight, ImageIcon, Save, X, Loader2, Upload,
-  FileDown, UploadCloud, RotateCcw, CheckSquare, Square,
+  FileDown, UploadCloud, RotateCcw, CheckSquare, Square, FileText,
 } from 'lucide-react';
 
 interface LotImage {
@@ -28,6 +28,8 @@ interface LotData {
   condition?: string | null;
   provenance?: string | null;
   videoUrl?: string | null;
+  restorationNote?: string | null;
+  certificateUrl?: string | null;
   startingPrice: number;
   currentPrice: number;
   estimatedPrice: number | null;
@@ -119,11 +121,58 @@ export default function ManageAuctionContent() {
     shippingType: 'BUYER_PAYS',
     estimatedShipping: '',
     kdvRate: '20',
+    restorationNote: '',
   });
   const [lotImages, setLotImages] = useState<{ url: string; cloudStoragePath: string; uploading: boolean }[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
   const [lotVideo, setLotVideo] = useState<string>(''); // Kısa tanıtım videosu URL'i (ekleme formu)
   const [videoUploading, setVideoUploading] = useState(false);
+  const [lotCertificate, setLotCertificate] = useState<string>(''); // Otantiklik sertifikası URL'i (ekleme formu)
+  const [certUploading, setCertUploading] = useState(false);
+
+  // Otantiklik/ekspertiz sertifikası yükler (PDF veya görsel, ≤10 MB, sıkıştırma yok). URL döner.
+  const uploadCertificate = async (file: File): Promise<string | null> => {
+    const isPdf = file.type === 'application/pdf';
+    const isImage = file.type.startsWith('image/');
+    if (!isPdf && !isImage) { toast.error('Sertifika PDF veya görsel olmalı'); return null; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Sertifika 10 MB\'dan büyük olamaz'); return null; }
+    try {
+      const ext = isPdf ? 'pdf' : (file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg');
+      const fileName = `lots/sertifika-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const presignRes = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: file.type, isPublic: true }),
+      });
+      if (!presignRes.ok) { const d = await presignRes.json().catch(() => ({})); toast.error(d.error || 'Sertifika yüklenemedi'); return null; }
+      const { uploadUrl, publicUrl } = await presignRes.json();
+      const headers: Record<string, string> = { 'Content-Type': file.type };
+      if (uploadUrl.includes('content-disposition')) headers['Content-Disposition'] = 'attachment';
+      await fetch(uploadUrl, { method: 'PUT', headers, body: file });
+      return publicUrl as string;
+    } catch {
+      toast.error('Sertifika yüklenemedi');
+      return null;
+    }
+  };
+
+  const handleAddCert = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setCertUploading(true);
+    const url = await uploadCertificate(file);
+    if (url) setLotCertificate(url);
+    setCertUploading(false);
+  };
+
+  const handleEditCert = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setCertUploading(true);
+    const url = await uploadCertificate(file);
+    if (url) setEditLot(p => ({ ...p, certificateUrl: url }));
+    setCertUploading(false);
+  };
 
   // Kısa tanıtım videosunu yükler (sıkıştırma YOK; sınır: ≤8 sn, ≤15 MB). URL döner ya da null.
   const uploadVideo = async (file: File): Promise<string | null> => {
@@ -267,6 +316,8 @@ export default function ManageAuctionContent() {
     kdvRate: '20',
     imageUrl: '',
     videoUrl: '',
+    restorationNote: '',
+    certificateUrl: '',
   });
 
   useEffect(() => {
@@ -324,6 +375,8 @@ export default function ManageAuctionContent() {
       kdvRate: lot.kdvRate != null ? String(lot.kdvRate) : '20',
       imageUrl: lot.images[0]?.imageUrl ?? '',
       videoUrl: lot.videoUrl ?? '',
+      restorationNote: lot.restorationNote ?? '',
+      certificateUrl: lot.certificateUrl ?? '',
     });
   };
 
@@ -352,6 +405,8 @@ export default function ManageAuctionContent() {
           kdvRate: parseFloat(editLot.kdvRate) || 20,
           imageUrl: editLot.imageUrl || undefined,
           videoUrl: editLot.videoUrl || null,
+          restorationNote: editLot.restorationNote || null,
+          certificateUrl: editLot.certificateUrl || null,
         }),
       });
       if (!res.ok) {
@@ -464,14 +519,17 @@ export default function ManageAuctionContent() {
           kdvRate: parseFloat(newLot.kdvRate) || 20,
           images: lotImages.map(img => ({ imageUrl: img.url, cloudStoragePath: img.cloudStoragePath })),
           videoUrl: lotVideo || null,
+          restorationNote: newLot.restorationNote || null,
+          certificateUrl: lotCertificate || null,
         }),
       });
       if (!res.ok) throw new Error();
       toast.success('Lot başarıyla eklendi');
       setShowAddLot(false);
-      setNewLot({ title: '', description: '', notes: '', condition: '', provenance: '', categoryIds: [], startingPrice: '', estimatedPrice: '', customBidIncrement: '', shippingType: 'BUYER_PAYS', estimatedShipping: '', kdvRate: '20' });
+      setNewLot({ title: '', description: '', notes: '', condition: '', provenance: '', categoryIds: [], startingPrice: '', estimatedPrice: '', customBidIncrement: '', shippingType: 'BUYER_PAYS', estimatedShipping: '', kdvRate: '20', restorationNote: '' });
       setLotImages([]);
       setLotVideo('');
+      setLotCertificate('');
       fetchAuction();
     } catch {
       toast.error('Lot eklenirken hata oluştu');
@@ -959,6 +1017,35 @@ export default function ManageAuctionContent() {
                 />
               </div>
               <div className="sm:col-span-2">
+                <label className="text-sm text-muted-foreground mb-1 block">Restorasyon Beyanı <span className="text-xs">(isteğe bağlı)</span></label>
+                <textarea
+                  value={newLot.restorationNote}
+                  onChange={e => setNewLot(p => ({ ...p, restorationNote: e.target.value }))}
+                  rows={2}
+                  className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                  placeholder="Eser restore edildiyse ne yapıldığını yazın (ör. 'Kaide onarıldı', 'Vernik yenilendi'). Orijinalse boş bırakın."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm text-muted-foreground mb-1 block">Otantiklik / Ekspertiz Sertifikası <span className="text-xs">(isteğe bağlı, PDF veya görsel)</span></label>
+                {lotCertificate ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                    <FileText className="w-4 h-4 text-amber-500 shrink-0" />
+                    <a href={lotCertificate} target="_blank" rel="noopener noreferrer" className="text-sm text-amber-400 hover:underline truncate flex-1">Sertifika yüklendi — görüntüle</a>
+                    <button type="button" onClick={() => setLotCertificate('')} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <label className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-border py-3 cursor-pointer hover:border-amber-500/50 transition-colors ${certUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={e => handleAddCert(e.target.files)} disabled={certUploading} />
+                    {certUploading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
+                    ) : (
+                      <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">Sertifika Yükle (≤10 MB)</span></>
+                    )}
+                  </label>
+                )}
+              </div>
+              <div className="sm:col-span-2">
                 <label className="text-sm text-muted-foreground mb-1 block">Görseller (max 6)</label>
                 <div className="space-y-3">
                   {lotImages.length > 0 && (
@@ -1303,6 +1390,35 @@ export default function ManageAuctionContent() {
                             className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
                             placeholder="Eserin geçmişi, sahiplik zinciri, sertifika/ekspertiz bilgisi vb."
                           />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-sm text-muted-foreground mb-1 block">Restorasyon Beyanı <span className="text-xs">(isteğe bağlı)</span></label>
+                          <textarea
+                            value={editLot.restorationNote}
+                            onChange={e => setEditLot(p => ({ ...p, restorationNote: e.target.value }))}
+                            rows={2}
+                            className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                            placeholder="Eser restore edildiyse ne yapıldığını yazın. Orijinalse boş bırakın."
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-sm text-muted-foreground mb-1 block">Otantiklik / Ekspertiz Sertifikası <span className="text-xs">(isteğe bağlı, PDF veya görsel)</span></label>
+                          {editLot.certificateUrl ? (
+                            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                              <FileText className="w-4 h-4 text-amber-500 shrink-0" />
+                              <a href={editLot.certificateUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-amber-400 hover:underline truncate flex-1">Sertifika yüklendi — görüntüle</a>
+                              <button type="button" onClick={() => setEditLot(p => ({ ...p, certificateUrl: '' }))} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+                            </div>
+                          ) : (
+                            <label className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-border py-3 cursor-pointer hover:border-amber-500/50 transition-colors ${certUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <input type="file" accept="application/pdf,image/*" className="hidden" onChange={e => handleEditCert(e.target.files)} disabled={certUploading} />
+                              {certUploading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
+                              ) : (
+                                <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">Sertifika Yükle (≤10 MB)</span></>
+                              )}
+                            </label>
+                          )}
                         </div>
                         <div className="sm:col-span-2">
                           <label className="text-sm text-muted-foreground mb-1 block">Görsel URL</label>
