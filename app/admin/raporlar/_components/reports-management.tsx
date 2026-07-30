@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { BarChart3, TrendingUp, Users, Gavel, DollarSign, ArrowLeft, ShoppingBag, Percent, Trophy, Wallet } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -15,6 +16,7 @@ import {
 const COLORS = ['#d4af37', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b'];
 
 export function ReportsManagement() {
+  const paymentMode = usePaymentMode();
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -72,6 +74,14 @@ export function ReportsManagement() {
             <option value="365">Son 1 Yıl</option>
           </select>
         </div>
+
+        {paymentMode === 'DIRECT' && (
+          <div className="rounded-xl border border-sky-500/30 bg-sky-500/5 p-3 mb-4 text-xs text-muted-foreground">
+            <strong className="text-foreground">Doğrudan ödeme modeli aktif:</strong> Bu modelde platform üründen komisyon almaz;
+            aşağıdaki "Komisyon Geliri" gibi kalemler yalnızca eski (ESCROW) kayıtları yansıtır. Platform geliri Müzayede Hakkı'dır
+            (Finans sayfasında görülür). Teklif/kullanıcı istatistikleri her iki modelde de geçerlidir.
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { AdminDirectFinance } from './admin-direct-finance';
 
 interface Transaction {
   lotId: string;
@@ -145,6 +147,7 @@ interface FlatTransaction extends Transaction {
 }
 
 export function FinanceManagement() {
+  const paymentMode = usePaymentMode();
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -400,6 +403,11 @@ export function FinanceManagement() {
       default: return txs;
     }
   }, [allTransactions, txFilter, searchQuery]);
+
+  // DIRECT (V2): platform para tutmaz → cari/hakediş/payout anlamsız. Escrow finans JSX'i korunur.
+  if (paymentMode === 'DIRECT') {
+    return <AdminDirectFinance />;
+  }
 
   if (status === 'loading' || loading) {
     return (
