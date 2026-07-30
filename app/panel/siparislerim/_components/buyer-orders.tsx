@@ -49,6 +49,7 @@ export function BuyerOrders() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [paymentMode, setPaymentMode] = useState<'ESCROW' | 'DIRECT'>('ESCROW');
   const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [bankInfo, setBankInfo] = useState({ bankName: '', bankAccountHolder: '', bankIban: '' });
@@ -71,6 +72,7 @@ export function BuyerOrders() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setOrders(data.orders ?? []);
+      if (data.paymentMode === 'DIRECT') setPaymentMode('DIRECT');
     } catch {
       toast.error('Siparişler yüklenemedi');
     } finally {
@@ -206,7 +208,7 @@ export function BuyerOrders() {
                           <span className="font-mono">{formatPrice(order.amount)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Hizmet Bedeli (%{order.buyerPremiumRate})</span>
+                          <span className="text-muted-foreground">{paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli'} (%{order.buyerPremiumRate})</span>
                           <span className="font-mono">{formatPrice(order.buyerPremiumAmount)}</span>
                         </div>
                         <div className="flex justify-between">

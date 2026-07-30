@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createInAppNotification } from '@/lib/notifications';
 import { sendEmail } from '@/lib/mailer';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 /*
   Müzayede otomatik geçiş kontrolü:
@@ -16,6 +17,9 @@ export async function GET() {
   try {
     const now = new Date();
     let transitioned = 0;
+
+    // Ödeme modu (sürüm anahtarı): ESCROW = V1 (varsayılan), DIRECT = V2. Okunamazsa ESCROW'a düşer.
+    const paymentMode = await getPaymentMode();
 
     // 1. SCHEDULED → ACTIVE: startDate geçmiş olanları aktifleştir
     const scheduledToActive = await prisma.auction.updateMany({
@@ -74,11 +78,14 @@ export async function GET() {
 
         const highestBid = lot.bids?.[0];
         if (highestBid && highestBid.amount >= lot.startingPrice) {
-          // Lot satıldı
-          const commRate = (auction.seller?.commissionRate ?? 0) / 100;
+          // Lot satıldı — ödeme matematiği MODA GÖRE dallanır (ESCROW eklemeli biçimde korunur).
+          const isDirect = paymentMode === 'DIRECT';
+          // Satıcı (platform) komisyonu: ESCROW'da satıcının oranı; DIRECT'te platform üründen pay almaz → 0.
+          const commRate = isDirect ? 0 : (auction.seller?.commissionRate ?? 0) / 100;
           const commAmt = highestBid.amount * commRate;
-          // Alıcı komisyonu (buyer premium) hesapla
-          const buyerPremiumRate = 7.0;
+          // Alıcı hizmet bedeli (buyer premium): ESCROW'da sabit %7 (platform geliri),
+          // DIRECT'te satıcının kendi belirlediği oran (müzayedeye açılışta kopyalanmış snapshot).
+          const buyerPremiumRate = isDirect ? (auction.buyerPremiumRate ?? 7.0) : 7.0;
           const buyerPremiumAmount = highestBid.amount * (buyerPremiumRate / 100);
           const lotKdvRate = 0.20; // Hizmet bedeli bir hizmettir; KDV'si ürün oranından bağımsız, sabit %20
           const buyerPremiumKDV = Math.round(buyerPremiumAmount * lotKdvRate * 100) / 100;
