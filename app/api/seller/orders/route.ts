@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 /*
   KVKK Uyumu:
@@ -96,6 +97,10 @@ export async function GET() {
         autoConfirmDate: payment.autoConfirmDate,
         payoutRequestedAt: payment.payoutRequestedAt,
         payoutCompleted: payment.payoutCompleted,
+        // DIRECT ödeme akışı
+        buyerReportedPaidAt: payment.buyerReportedPaidAt,
+        buyerReceiptUrl: payment.buyerReceiptUrl,
+        sellerPaymentConfirmedAt: payment.sellerPaymentConfirmedAt,
         // Satış gerçekleştikten sonra alıcı bilgileri satıcıya gösterilir (fatura kesimi için)
         buyer: isSold ? {
           fullName: payment.user.fullName,
@@ -117,7 +122,8 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ orders });
+    const paymentMode = await getPaymentMode();
+    return NextResponse.json({ orders, paymentMode });
   } catch (error: any) {
     console.error('Seller orders error:', error);
     return NextResponse.json({ error: 'Siparişler yüklenemedi' }, { status: 500 });
@@ -137,7 +143,40 @@ export async function PATCH(request: Request) {
     if (!sellerProfile) return NextResponse.json({ error: 'Satıcı profili yok' }, { status: 404 });
 
     const body = await request.json();
-    const { paymentId, shippingStatus, trackingNumber, trackingCompany } = body;
+    const { paymentId, shippingStatus, trackingNumber, trackingCompany, action } = body;
+
+    // DIRECT (V2) ödeme: satıcı "ödemeyi aldım" onaylar → sipariş kargo aşamasına açılır.
+    if (action === 'confirm_payment') {
+      if (!paymentId) return NextResponse.json({ error: 'Eksik bilgi' }, { status: 400 });
+      const pay = await prisma.payment.findFirst({
+        where: { id: paymentId, lot: { auction: { sellerId: sellerProfile.id } } },
+        include: { lot: { select: { title: true } }, user: { select: { id: true } } },
+      });
+      if (!pay) return NextResponse.json({ error: 'Sipariş bulunamadı' }, { status: 404 });
+      if (pay.sellerPaymentConfirmedAt) return NextResponse.json({ error: 'Zaten onaylandı' }, { status: 400 });
+      const now = new Date();
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          sellerPaymentConfirmedAt: now,
+          buyerPaymentReceived: true, // ödeme alındı işareti (kargo akışı bunu bekler)
+          status: 'PAID',
+          paidAt: pay.paidAt ?? now,
+          paymentMethod: pay.paymentMethod ?? 'DIRECT_HAVALE',
+        },
+      });
+      // Alıcıya bildirim
+      const { createInAppNotification } = await import('@/lib/notifications');
+      await createInAppNotification({
+        userId: pay.user.id,
+        title: '✅ Satıcı ödemenizi onayladı',
+        message: `"${pay.lot.title}" için satıcı ödemeyi aldığını onayladı. Ürün en kısa sürede kargoya verilecek.`,
+        type: 'ORDER_STATUS',
+        link: '/panel/siparislerim',
+        preferenceType: 'OrderStatus',
+      });
+      return NextResponse.json({ success: true });
+    }
 
     if (!paymentId || !shippingStatus) {
       return NextResponse.json({ error: 'Eksik bilgi' }, { status: 400 });

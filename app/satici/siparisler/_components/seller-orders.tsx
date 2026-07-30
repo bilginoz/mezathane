@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Package, FileText, Upload, Eye, EyeOff,
   Loader2, CheckCircle2, Clock, AlertCircle, Truck,
-  CreditCard, Building2, Download,
+  CreditCard, Building2, Download, Wallet,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -47,6 +47,10 @@ interface Order {
   autoConfirmDate: string | null;
   payoutRequestedAt: string | null;
   payoutCompleted: boolean;
+  // DIRECT ödeme akışı
+  buyerReportedPaidAt: string | null;
+  buyerReceiptUrl: string | null;
+  sellerPaymentConfirmedAt: string | null;
   buyer: {
     fullName: string; email: string; phone: string; address: string;
     shippingAddress?: string; billingAddress?: string;
@@ -61,6 +65,8 @@ export function SellerOrders() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [paymentMode, setPaymentMode] = useState<'ESCROW' | 'DIRECT'>('ESCROW');
+  const [confirmingPayment, setConfirmingPayment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [generatingInvoiceId, setGeneratingInvoiceId] = useState<string | null>(null);
@@ -94,6 +100,7 @@ export function SellerOrders() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setOrders(data.orders ?? []);
+      if (data.paymentMode === 'DIRECT') setPaymentMode('DIRECT');
     } catch {
       toast.error('Siparişler yüklenemedi');
     } finally {
@@ -163,6 +170,26 @@ export function SellerOrders() {
       toast.error('Fatura indirme hatası');
     } finally {
       setGeneratingInvoiceId(null);
+    }
+  };
+
+  // DIRECT modda: satıcı "ödemeyi aldım" onaylar → sipariş kargo aşamasına açılır.
+  const confirmPayment = async (paymentId: string) => {
+    setConfirmingPayment(paymentId);
+    try {
+      const res = await fetch('/api/seller/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, action: 'confirm_payment' }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || 'Onaylanamadı'); return; }
+      toast.success('Ödeme onaylandı, sipariş kargo aşamasına geçti');
+      fetchOrders();
+    } catch {
+      toast.error('Onaylanamadı');
+    } finally {
+      setConfirmingPayment(null);
     }
   };
 
@@ -388,6 +415,37 @@ export function SellerOrders() {
                           </div>
                         </div>
                       ) : null}
+
+                      {/* DIRECT (V2): satıcı ödeme onayı — kargodan önce */}
+                      {paymentMode === 'DIRECT' && !order.buyerHidden && (
+                        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Wallet className="h-4 w-4 text-amber-400" />
+                            <span className="text-sm font-semibold">Ödeme Onayı (Doğrudan Ödeme)</span>
+                          </div>
+                          {order.sellerPaymentConfirmedAt ? (
+                            <p className="text-xs text-green-500">✅ Ödemeyi aldığınızı onayladınız ({formatDate(order.sellerPaymentConfirmedAt)}). Kargo aşamasına geçtiniz.</p>
+                          ) : (
+                            <>
+                              {order.buyerReportedPaidAt ? (
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Alıcı ödeme yaptığını bildirdi ({formatDate(order.buyerReportedPaidAt)}).
+                                  {order.buyerReceiptUrl && <a href={order.buyerReceiptUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-amber-400 underline">Dekontu gör</a>}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground mb-2">Alıcı henüz ödeme bildirmedi. Hesabınıza para geçtiyse doğrudan onaylayabilirsiniz.</p>
+                              )}
+                              <button
+                                onClick={() => confirmPayment(order.paymentId)}
+                                disabled={confirmingPayment === order.paymentId}
+                                className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black font-medium px-4 py-2 text-sm hover:bg-[#c9a431] disabled:opacity-50"
+                              >
+                                {confirmingPayment === order.paymentId ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Ödemeyi Aldım
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
 
                       {/* Kargo Takip */}
                       {!order.buyerHidden && (
