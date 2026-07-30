@@ -12,10 +12,12 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 export function SellerDashboard() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
+  const paymentMode = usePaymentMode();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateAuction, setShowCreateAuction] = useState(false);
@@ -364,8 +366,8 @@ export function SellerDashboard() {
               <Wallet className="h-5 w-5 text-[#d4af37]" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">Cari Hesabım</p>
-              <p className="text-xs text-muted-foreground">Komisyon kesintileri ve fatura bilgileri</p>
+              <p className="font-semibold text-sm">{paymentMode === 'DIRECT' ? 'Satış Kayıtları' : 'Cari Hesabım'}</p>
+              <p className="text-xs text-muted-foreground">{paymentMode === 'DIRECT' ? 'Satışlarınız, alıcılar ve ödeme durumu' : 'Komisyon kesintileri ve fatura bilgileri'}</p>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </Link>

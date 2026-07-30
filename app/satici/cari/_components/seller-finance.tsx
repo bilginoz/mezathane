@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { SellerSalesLog } from './seller-sales-log';
 
 interface Transaction {
   lotId: string;
@@ -64,6 +66,7 @@ export function SellerFinance() {
   const [loading, setLoading] = useState(true);
 
   const user = session?.user as any;
+  const paymentMode = usePaymentMode();
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.replace('/giris'); return; }
@@ -93,6 +96,11 @@ export function SellerFinance() {
       setLoading(false);
     }
   };
+
+  // DIRECT (V2): cari/hakediş anlamsız → satış kayıtları görünümü. Escrow cari JSX'i olduğu gibi korunur.
+  if (paymentMode === 'DIRECT') {
+    return <SellerSalesLog />;
+  }
 
   if (status === 'loading' || loading) {
     return (
