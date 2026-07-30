@@ -14,6 +14,8 @@ export function RulesManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
+  const [preview, setPreview] = useState<string | null>(null); // admin önizleme durumu
+  const [previewBusy, setPreviewBusy] = useState(false);
   const user = session?.user as any;
 
   useEffect(() => {
@@ -25,8 +27,31 @@ export function RulesManagement() {
         .then(d => setSettings(d?.settings || {}))
         .catch(() => toast.error('Ayarlar yüklenemedi'))
         .finally(() => setLoading(false));
+      fetch('/api/admin/payment-preview').then(r => r.json()).then(d => setPreview(d?.preview ?? null)).catch(() => {});
     }
   }, [status, router, user?.role]);
+
+  // Admin önizleme aç/kapa: canlı flag'e dokunmadan yalnızca bu tarayıcıya DIRECT/ESCROW gösterir.
+  const togglePreview = async (mode: 'DIRECT' | 'OFF') => {
+    setPreviewBusy(true);
+    try {
+      const res = await fetch('/api/admin/payment-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d?.error ?? 'Önizleme ayarlanamadı'); return; }
+      setPreview(d?.preview ?? null);
+      toast.success(mode === 'OFF' ? 'Önizleme kapatıldı' : 'DIRECT önizleme açıldı (yalnızca siz görürsünüz)');
+      // Sunucu bileşenleri yeni çereze göre yeniden render olsun diye sayfayı tazele.
+      setTimeout(() => window.location.reload(), 400);
+    } catch {
+      toast.error('Önizleme ayarlanamadı');
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
 
   const updateField = (key: string, value: any) => setSettings((prev: any) => ({ ...prev, [key]: value }));
 
@@ -105,6 +130,41 @@ export function RulesManagement() {
             <p className="text-xs text-muted-foreground mt-3">
               Not: Mod değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Geri dönmek için tekrar
               ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
+            </p>
+          </div>
+
+          {/* Admin Önizleme — canlı flag'e dokunmadan yeni sistemi test etmek için */}
+          <div className="rounded-xl border border-sky-500/40 bg-sky-500/5 p-6">
+            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-sky-400" /> DIRECT Önizleme (yalnızca siz)</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Yeni sistemi (DIRECT) canlı flag'i değiştirmeden test edin. Açtığınızda <strong className="text-foreground">yalnızca sizin tarayıcınız</strong> yeni
+              sistemi görür; siteyi gezen diğer satıcı/alıcılar eski sistemde (ESCROW) kalır. Test bitince kapatın.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              {preview === 'DIRECT' ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/15 text-sky-400 px-3 py-2 text-sm font-medium">🔵 DIRECT önizleme AÇIK</span>
+                  <button
+                    onClick={() => togglePreview('OFF')}
+                    disabled={previewBusy}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                  >
+                    Önizlemeyi Kapat
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => togglePreview('DIRECT')}
+                  disabled={previewBusy}
+                  className="rounded-lg bg-sky-500 text-white px-4 py-2 text-sm font-semibold hover:bg-sky-600 transition-colors disabled:opacity-50"
+                >
+                  DIRECT Önizlemeyi Aç
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Not: Bu önizleme yalnızca ekranları (etiket, IBAN, yasal metin, satış kaydı vb.) gösterir; gerçek satış
+              matematiği her zaman canlı flag'e göre işler. 6 saat sonra kendiliğinden kapanır.
             </p>
           </div>
 
