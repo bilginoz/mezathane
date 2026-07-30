@@ -512,6 +512,10 @@ model Payment {
   buyerPaymentReceived  Boolean    @default(false)
   payoutCompleted       Boolean    @default(false)
   adminNotes            String?
+  // DIRECT (V2) ödeme: alıcı satıcıya havale yapınca "ödedim" der + dekont yükler; satıcı onaylar.
+  buyerReceiptUrl       String?    // alıcının yüklediği dekont (PDF/görsel)
+  buyerReportedPaidAt   DateTime?  // alıcı "ödemeyi yaptım" dediği an
+  sellerPaymentConfirmedAt DateTime? // satıcı "ödemeyi aldım" dediği an (DIRECT modda kargoyu açar)
   // Kargo takip
   shippingStatus        ShippingStatus @default(PREPARING)
   trackingNumber        String?

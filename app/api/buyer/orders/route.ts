@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { getFileUrl } from '@/lib/s3';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 export async function GET() {
   try {
@@ -12,13 +13,15 @@ export async function GET() {
     if (!session?.user) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     const userId = (session.user as any).id;
 
+    const paymentMode = await getPaymentMode();
+
     const payments = await prisma.payment.findMany({
       where: { userId },
       include: {
         lot: {
           include: {
             auction: {
-              select: { title: true, seller: { select: { companyName: true } } },
+              select: { title: true, seller: { select: { companyName: true, iban: true } } },
             },
             images: { take: 1, orderBy: { sortOrder: 'asc' } },
           },
@@ -43,6 +46,7 @@ export async function GET() {
         lotImage: payment.lot.images?.[0]?.imageUrl ?? null,
         auctionTitle: payment.lot.auction.title,
         sellerName: payment.lot.auction.seller?.companyName ?? '',
+        sellerIban: payment.lot.auction.seller?.iban ?? null, // DIRECT modda alıcı buraya öder
         amount: payment.amount,
         totalAmount: payment.totalAmount,
         buyerPremiumRate: payment.buyerPremiumRate ?? 0,
@@ -63,10 +67,14 @@ export async function GET() {
         deliveredAt: payment.deliveredAt,
         buyerConfirmedAt: payment.buyerConfirmedAt,
         autoConfirmDate: payment.autoConfirmDate,
+        // DIRECT ödeme akışı
+        buyerReceiptUrl: payment.buyerReceiptUrl,
+        buyerReportedPaidAt: payment.buyerReportedPaidAt,
+        sellerPaymentConfirmedAt: payment.sellerPaymentConfirmedAt,
       };
     }));
 
-    return NextResponse.json({ orders });
+    return NextResponse.json({ orders, paymentMode });
   } catch (error: any) {
     console.error('Buyer orders error:', error);
     return NextResponse.json({ error: 'Siparişler yüklenemedi' }, { status: 500 });
@@ -80,7 +88,37 @@ export async function PATCH(request: Request) {
     if (!session?.user) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     const userId = (session.user as any).id;
 
-    const { paymentId, action } = await request.json();
+    const body = await request.json();
+    const { paymentId, action } = body;
+
+    // DIRECT (V2) ödeme: alıcı "ödemeyi yaptım" der + isteğe bağlı dekont yükler → satıcıya bildirim.
+    if (action === 'report_payment') {
+      if (!paymentId) return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
+      const pay = await prisma.payment.findFirst({
+        where: { id: paymentId, userId },
+        include: { lot: { select: { title: true, auction: { select: { seller: { select: { userId: true } } } } } } },
+      });
+      if (!pay) return NextResponse.json({ error: 'Sipariş bulunamadı' }, { status: 404 });
+      const receiptUrl = typeof body.receiptUrl === 'string' && body.receiptUrl.trim() ? body.receiptUrl.trim() : undefined;
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: { buyerReportedPaidAt: new Date(), ...(receiptUrl ? { buyerReceiptUrl: receiptUrl } : {}) },
+      });
+      const sellerUserId = pay.lot.auction.seller?.userId;
+      if (sellerUserId) {
+        const { createInAppNotification } = await import('@/lib/notifications');
+        await createInAppNotification({
+          userId: sellerUserId,
+          title: '💳 Alıcı ödeme bildirdi',
+          message: `"${pay.lot.title}" için alıcı ödemeyi yaptığını bildirdi${receiptUrl ? ' ve dekont yükledi' : ''}. Hesabınızı kontrol edip "Ödemeyi aldım" ile onaylayın.`,
+          type: 'ORDER_STATUS',
+          link: '/satici/siparisler',
+          preferenceType: 'OrderStatus',
+        });
+      }
+      return NextResponse.json({ success: true });
+    }
+
     if (!paymentId || action !== 'confirm_delivery') {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
