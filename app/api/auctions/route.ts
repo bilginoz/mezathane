@@ -86,6 +86,7 @@ export async function POST(request: Request) {
             waitingTime: Math.min(120, Math.max(5, body.waitingTime ?? 20)),
             fairWaitingTime: Math.min(15, Math.max(5, body.fairWaitingTime ?? 5)),
             commissionRate: seller.commissionRate,
+            buyerPremiumRate: (seller as any).buyerPremiumRate ?? 7.0, // DIRECT modda alıcı komisyonu; anlık kopya
             paymentDays: Math.min(7, Math.max(2, body.paymentDays ?? 5)),
             isPublic: body.isPublic ?? true,
           },

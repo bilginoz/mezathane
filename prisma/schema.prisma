@@ -223,6 +223,10 @@ model SellerProfile {
   contactEmail   String?
   status         SellerStatus @default(PENDING)
   commissionRate Float        @default(0)
+  // Satıcının alıcıdan aldığı komisyon oranı (%). YALNIZCA DIRECT (V2) modda kullanılır:
+  // alıcı bu oranı satıcıya doğrudan öder. ESCROW (V1) modda yok sayılır (platform %7 geçerli).
+  // Varsayılan 7 → mevcut orana eşit, bir şey bozulmaz.
+  buyerPremiumRate Float       @default(7.0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -292,6 +296,8 @@ model LotCategory {
   @@index([lotId])
 }
 
+// (Auction.buyerPremiumRate: müzayede açılışında satıcının o anki oranından kopyalanır —
+//  DIRECT modda alıcıya gösterilen/uygulanan oran. null → satıcının/varsayılan 7 kullanılır.)
 model Auction {
   id              String        @id @default(cuid())
   title           String
@@ -307,6 +313,7 @@ model Auction {
   waitingTime     Int           @default(20)
   fairWaitingTime Int           @default(5)
   commissionRate  Float         @default(0)
+  buyerPremiumRate Float?       // DIRECT modda satıcıdan kopyalanan alıcı komisyon oranı (%)
   paymentDays     Int           @default(7)
   isPublic        Boolean       @default(true)
   viewCount       Int           @default(0)

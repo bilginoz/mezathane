@@ -38,6 +38,7 @@ export function SellerProfileSettings() {
     companyAddress: '',
     description: '',
     logoUrl: '',
+    buyerPremiumRate: '7',
     iban: '',
     phone: '',
     email: '',
@@ -75,6 +76,7 @@ export function SellerProfileSettings() {
           companyAddress: data.companyAddress ?? '',
           description: data.description ?? '',
           logoUrl: data.logoUrl ?? '',
+          buyerPremiumRate: data.buyerPremiumRate != null ? String(data.buyerPremiumRate) : '7',
           iban: data.iban ?? '',
           phone: data.phone ?? '',
           email: data.email ?? '',
@@ -190,6 +192,7 @@ export function SellerProfileSettings() {
         body: JSON.stringify({
           description: form.description,
           logoUrl: form.logoUrl,
+          buyerPremiumRate: parseFloat(form.buyerPremiumRate) || 0,
         }),
       });
       if (res.ok) {
@@ -373,6 +376,17 @@ export function SellerProfileSettings() {
                 className={inputClass}
                 placeholder="Müzayede evinizi ve uzmanlık alanlarınızı tanıtın..."
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Alıcı Komisyon Oranınız (%)</label>
+              <input
+                type="number" min={0} max={30} step="0.5"
+                value={form.buyerPremiumRate}
+                onChange={(e) => setForm(prev => ({ ...prev, buyerPremiumRate: e.target.value }))}
+                className={inputClass}
+                placeholder="7"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Kazanan alıcının, satış bedeline ek olarak size ödeyeceği hizmet komisyonu oranı (0–30). Alıcı bu tutarı <b>doğrudan size</b> öder; lot ve ödeme sayfasında görünür. Yeni ödeme modeli (doğrudan ödeme) devreye girince geçerli olur.</p>
             </div>
           </div>
         </motion.div>

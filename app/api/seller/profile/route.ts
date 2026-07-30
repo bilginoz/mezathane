@@ -28,6 +28,7 @@ export async function GET() {
         logoUrl: true,
         iban: true,
         mersisNo: true,
+        buyerPremiumRate: true,
         status: true,
       },
     });
@@ -56,6 +57,16 @@ export async function PATCH(request: Request) {
     // Tüm kayıt alanları kilitli — sadece description ve logoUrl değiştirilebilir
     if (body.description !== undefined) updateData.description = body.description;
     if (body.logoUrl !== undefined) updateData.logoUrl = body.logoUrl;
+
+    // Alıcı komisyon oranı — satıcının kendi fiyat kararı, serbest düzenlenebilir (0-30 arası).
+    // Yalnızca DIRECT (V2) modda etkilidir; ESCROW'da yok sayılır.
+    if (body.buyerPremiumRate !== undefined) {
+      const r = Number(body.buyerPremiumRate);
+      if (!Number.isFinite(r) || r < 0 || r > 30) {
+        return NextResponse.json({ error: 'Alıcı komisyon oranı 0 ile 30 arasında olmalı.' }, { status: 400 });
+      }
+      updateData.buyerPremiumRate = r;
+    }
 
     // phone ve companyAddress artık kilitli — Değişiklik Talebi gerekir
 
