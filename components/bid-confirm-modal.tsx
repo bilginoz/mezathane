@@ -18,6 +18,8 @@ interface BidConfirmModalProps {
   auctionTitle?: string;
   paymentDays?: number;
   kdvRate?: number;
+  premiumRate?: number; // ondalık (örn. 0.07). DIRECT'te satıcının oranı geçilir.
+  premiumLabel?: string; // "Hizmet Bedeli" | "Satıcı Komisyonu"
 }
 
 export function BidConfirmModal({
@@ -33,10 +35,12 @@ export function BidConfirmModal({
   auctionTitle,
   paymentDays = 5,
   kdvRate = 20,
+  premiumRate = 0.07,
+  premiumLabel = 'Hizmet Bedeli',
 }: BidConfirmModalProps) {
   // Komisyon hesaplama
   const amount = isProxy && maxBidAmount ? maxBidAmount : bidAmount;
-  const komisyon = amount * 0.07;
+  const komisyon = amount * premiumRate;
   const effectiveKdvRate = 0.20; // Hizmet bedeli KDV'si sabit %20 (hizmet), ürün oranından bağımsız
   const komisyonKDV = komisyon * effectiveKdvRate;
   const toplam = amount + komisyon + komisyonKDV;
@@ -114,11 +118,11 @@ export function BidConfirmModal({
                   <span className="font-mono font-medium">{formatPrice(amount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Hizmet Bedeli (%7)</span>
+                  <span className="text-muted-foreground">{premiumLabel} (%{Math.round(premiumRate * 100)})</span>
                   <span className="font-mono">{formatPrice(komisyon)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Hizmet Bedeli K.D.V. (%20)</span>
+                  <span className="text-muted-foreground">{premiumLabel} K.D.V. (%20)</span>
                   <span className="font-mono">{formatPrice(komisyonKDV)}</span>
                 </div>
 

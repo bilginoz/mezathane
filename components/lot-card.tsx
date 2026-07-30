@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { BidConfirmModal } from './bid-confirm-modal';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 interface LotCardProps {
   lot: any;
@@ -23,6 +24,12 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
   const router = useRouter();
   const imageUrl = lot?.images?.[0]?.imageUrl ?? 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png';
   const categoryName = lot?.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot?.category?.name ?? '');
+
+  // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcı oranı "satıcı komisyonu".
+  const paymentMode = usePaymentMode();
+  const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
+  const premiumRate = premiumRatePct / 100;
+  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
   const bidCount = lot?._count?.bids ?? lot?.bidCount ?? 0;
   const watchCount = lot?._count?.watchlist ?? lot?.watchCount ?? 0;
   const startingPrice = lot?.startingPrice ?? 0;
@@ -216,7 +223,7 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
             {/* Hızlı Teklif */}
             {showQuickBid && canBid && !((session?.user as any)?.sellerProfileId && (session?.user as any)?.sellerProfileId === (lot?.auction?.sellerId || lot?.auction?.seller?.id)) && (
               <div className="pt-1" onClick={(e) => e.preventDefault()}>
-                <p className="text-[8px] sm:text-[9px] text-muted-foreground text-center mb-0.5">+%7 hizmet bedeli + %20 KDV uygulanır</p>
+                <p className="text-[8px] sm:text-[9px] text-muted-foreground text-center mb-0.5">+%{premiumRatePct} {premiumLabel.toLocaleLowerCase('tr-TR')} + %20 KDV uygulanır</p>
                 {!showBidInput ? (
                   <button
                     onClick={handleQuickBid}
@@ -269,6 +276,8 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
         auctionTitle={lot?.auction?.title}
         paymentDays={lot?.auction?.paymentDays ?? 5}
         kdvRate={lot?.kdvRate ?? 20}
+        premiumRate={premiumRate}
+        premiumLabel={premiumLabel}
       />
     </motion.div>
   );

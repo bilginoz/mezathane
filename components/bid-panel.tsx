@@ -9,6 +9,7 @@ import { formatPrice, getMinBidIncrement } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CountdownTimer } from './countdown-timer';
 import { BidConfirmModal } from './bid-confirm-modal';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 interface BidPanelProps {
   lot: any;
@@ -35,6 +36,13 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
 
   const minIncrement = getMinBidIncrement(currentPrice, lot?.customBidIncrement);
   const minBid = currentPrice + minIncrement;
+
+  // Alıcı komisyonu görünümü moda göre: ESCROW → sabit %7 "Hizmet Bedeli" (platform),
+  // DIRECT → satıcının kendi oranı "Satıcı Komisyonu". KDV yine %20 (bkz. 2e kararı).
+  const paymentMode = usePaymentMode();
+  const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
+  const premiumRate = premiumRatePct / 100;
+  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
 
   useEffect(() => {
     setBidAmount(minBid);
@@ -309,16 +317,16 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
                   <span className="font-mono">{formatPrice(bidAmount)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] sm:text-xs">
-                  <span className="text-muted-foreground">Hizmet Bedeli (%7)</span>
-                  <span className="font-mono">{formatPrice(bidAmount * 0.07)}</span>
+                  <span className="text-muted-foreground">{premiumLabel} (%{premiumRatePct})</span>
+                  <span className="font-mono">{formatPrice(bidAmount * premiumRate)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] sm:text-xs">
-                  <span className="text-muted-foreground">KDV (%20, hizmet bedeli üzerinden)</span>
-                  <span className="font-mono">{formatPrice(bidAmount * 0.07 * 0.20)}</span>
+                  <span className="text-muted-foreground">KDV (%20, {premiumLabel.toLocaleLowerCase('tr-TR')} üzerinden)</span>
+                  <span className="font-mono">{formatPrice(bidAmount * premiumRate * 0.20)}</span>
                 </div>
                 <div className="border-t border-border pt-1 mt-1 flex justify-between text-xs sm:text-sm font-bold">
                   <span className="text-foreground">Toplam Ödenecek</span>
-                  <span className="text-[#d4af37] font-mono">{formatPrice(bidAmount + bidAmount * 0.07 + bidAmount * 0.07 * 0.20)}</span>
+                  <span className="text-[#d4af37] font-mono">{formatPrice(bidAmount + bidAmount * premiumRate + bidAmount * premiumRate * 0.20)}</span>
                 </div>
               </div>
             )}
@@ -392,7 +400,7 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
                     </div>
                     <div className="border-t border-border pt-1 mt-1 flex justify-between text-xs sm:text-sm font-bold">
                       <span className="text-foreground">Maks. Ödenecek</span>
-                      <span className="text-[#d4af37] font-mono">{formatPrice(maxBidAmount + maxBidAmount * 0.07 + maxBidAmount * 0.07 * 0.20)}</span>
+                      <span className="text-[#d4af37] font-mono">{formatPrice(maxBidAmount + maxBidAmount * premiumRate + maxBidAmount * premiumRate * 0.20)}</span>
                     </div>
                   </div>
                 )}
@@ -458,6 +466,8 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
         auctionTitle={lot?.auction?.title}
         paymentDays={lot?.auction?.paymentDays ?? 5}
         kdvRate={lot?.kdvRate ?? 20}
+        premiumRate={premiumRate}
+        premiumLabel={premiumLabel}
       />
 
     </div>

@@ -357,22 +357,38 @@ export function SellerOrders() {
                         </div>
                       </div>
 
-                      {/* Financial breakdown */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground">Komisyon (%{order.commissionRate} + KDV)</p>
-                          <p className="text-sm font-mono font-bold text-amber-500">-{formatPrice(order.grossCommission)}</p>
-                          <p className="text-[8px] text-muted-foreground">Matrah: {formatPrice(order.invoiceMatrah)} + KDV: {formatPrice(order.invoiceKDV)}</p>
+                      {/* Financial breakdown — moda göre.
+                          ESCROW: platform komisyonu kesilir, satıcı net kalanı alır.
+                          DIRECT: platform komisyon almaz; alıcı ödemesinin tamamı doğrudan satıcıya gelir. */}
+                      {paymentMode === 'DIRECT' ? (
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Çekiç Fiyatı</p>
+                            <p className="text-sm font-mono font-bold">{formatPrice(order.salePrice)}</p>
+                          </div>
+                          <div className="rounded-lg bg-green-500/10 p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Platform Komisyonu</p>
+                            <p className="text-sm font-mono font-bold text-green-500">0 ₺</p>
+                            <p className="text-[8px] text-muted-foreground">Tahsilatın tamamı size aittir</p>
+                          </div>
                         </div>
-                        <div className="rounded-lg bg-green-500/10 p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground">Net Elinize Geçen</p>
-                          <p className="text-sm font-mono font-bold text-green-500">{formatPrice(order.sellerNet)}</p>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                          <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Komisyon (%{order.commissionRate} + KDV)</p>
+                            <p className="text-sm font-mono font-bold text-amber-500">-{formatPrice(order.grossCommission)}</p>
+                            <p className="text-[8px] text-muted-foreground">Matrah: {formatPrice(order.invoiceMatrah)} + KDV: {formatPrice(order.invoiceKDV)}</p>
+                          </div>
+                          <div className="rounded-lg bg-green-500/10 p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Net Elinize Geçen</p>
+                            <p className="text-sm font-mono font-bold text-green-500">{formatPrice(order.sellerNet)}</p>
+                          </div>
+                          <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Hizmet Faturası</p>
+                            <p className="text-sm font-mono font-bold">{formatPrice(order.grossCommission)}</p>
+                          </div>
                         </div>
-                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground">Hizmet Faturası</p>
-                          <p className="text-sm font-mono font-bold">{formatPrice(order.grossCommission)}</p>
-                        </div>
-                      </div>
+                      )}
 
                       {/* Buyer Info (KVKK) */}
                       {order.buyerHidden ? (
@@ -590,23 +606,32 @@ export function SellerOrders() {
                         </div>
                       )}
 
-                      {/* Commission Invoice Download */}
-                      <div className="mt-3 flex items-center gap-2">
-                        <button
-                          onClick={() => handleDownloadCommissionInvoice(order.paymentId)}
-                          disabled={generatingInvoiceId === order.paymentId}
-                          className="flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors disabled:opacity-50"
-                        >
-                          {generatingInvoiceId === order.paymentId ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Download className="h-3.5 w-3.5" />
-                          )}
-                          {generatingInvoiceId === order.paymentId ? 'Oluşturuluyor...' : 'Hizmet Faturası İndir'}
-                        </button>
-                      </div>
+                      {/* Commission Invoice Download — yalnızca ESCROW (platform komisyonu var).
+                          DIRECT'te platform komisyon almadığı için platform faturası yoktur. */}
+                      {paymentMode !== 'DIRECT' && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadCommissionInvoice(order.paymentId)}
+                            disabled={generatingInvoiceId === order.paymentId}
+                            className="flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors disabled:opacity-50"
+                          >
+                            {generatingInvoiceId === order.paymentId ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
+                            )}
+                            {generatingInvoiceId === order.paymentId ? 'Oluşturuluyor...' : 'Hizmet Faturası İndir'}
+                          </button>
+                        </div>
+                      )}
 
-                      {/* Invoice Upload */}
+                      {/* Invoice Upload — satıcının KENDİ adına kestiği fatura; alıcı siparişinde indirir.
+                          DIRECT'te tek fatura budur (platform fatura kesmez). */}
+                      {paymentMode === 'DIRECT' && !order.invoicePath && (
+                        <p className="mt-3 text-[11px] text-muted-foreground">
+                          Bu satışın faturasını <strong>kendi firmanız adına</strong> alıcıya kesip aşağıdan yükleyin; alıcı kendi siparişinden indirebilir.
+                        </p>
+                      )}
                       <div className="mt-3 flex items-center gap-3">
                         {order.invoicePath ? (
                           <div className="flex items-center gap-2 text-sm">

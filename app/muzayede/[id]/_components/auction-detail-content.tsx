@@ -12,6 +12,7 @@ import { LotCard } from '@/components/lot-card';
 import { SellerRating } from '@/components/seller-rating';
 import { SocialShare } from '@/components/social-share';
 import { VerifiedBadge } from '@/components/verified-badge';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 const LOTS_PER_PAGE = 20;
 
@@ -19,6 +20,15 @@ type SortOption = 'lot-asc' | 'lot-desc' | 'price-asc' | 'price-desc' | 'bids-de
 
 export function AuctionDetailContent({ auction }: { auction: any }) {
   const router = useRouter();
+  // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcının oranı "satıcı komisyonu".
+  const paymentMode = usePaymentMode();
+  const premiumRatePct = paymentMode === 'DIRECT' ? (auction?.buyerPremiumRate ?? 7) : 7;
+  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
+  const exBase = 100;
+  const exPrem = exBase * (premiumRatePct / 100);
+  const exKdv = exPrem * 0.20;
+  const exTotal = exBase + exPrem + exKdv;
+
   const [search, setSearch] = useState('');
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -221,29 +231,29 @@ export function AuctionDetailContent({ auction }: { auction: any }) {
               <Info className="h-5 w-5 text-[#d4af37] mt-0.5 flex-shrink-0" />
               <div className="space-y-3 flex-1">
                 <p className="text-sm text-foreground">
-                  Alıcılardan çekiç fiyatı üzerine <strong className="text-[#d4af37]">%7 hizmet bedeli</strong> ve bu bedel üzerine <strong className="text-[#d4af37]">%20 KDV</strong> ilave alınacaktır.
+                  Alıcılardan çekiç fiyatı üzerine <strong className="text-[#d4af37]">%{premiumRatePct} {premiumLabel.toLocaleLowerCase('tr-TR')}</strong> ve bu bedel üzerine <strong className="text-[#d4af37]">%20 KDV</strong> ilave alınacaktır.
                 </p>
                 <div className="rounded-lg bg-card/80 border border-border p-3">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Örnek hesaplama:</p>
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Çekiç Fiyatı (KDV dahil)</span>
-                      <span className="font-mono">100 ₺</span>
+                      <span className="font-mono">{formatPrice(exBase)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Hizmet Bedeli %7</span>
-                      <span className="font-mono">7 ₺</span>
+                      <span className="text-muted-foreground">{premiumLabel} %{premiumRatePct}</span>
+                      <span className="font-mono">{formatPrice(exPrem)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Hizmet Bedeli KDV %20</span>
-                      <span className="font-mono">1,40 ₺</span>
+                      <span className="text-muted-foreground">{premiumLabel} KDV %20</span>
+                      <span className="font-mono">{formatPrice(exKdv)}</span>
                     </div>
                     <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
                       <span>Toplam</span>
-                      <span className="text-[#d4af37] font-mono">108,40 ₺</span>
+                      <span className="text-[#d4af37] font-mono">{formatPrice(exTotal)}</span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">Hizmet bedeli üzerinden %20 KDV alınır. Teklif verirken ödeyeceğiniz gerçek tutarı göreceksiniz.</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">{premiumLabel} üzerinden %20 KDV alınır. Teklif verirken ödeyeceğiniz gerçek tutarı göreceksiniz.</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
