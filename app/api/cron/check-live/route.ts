@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createInAppNotification } from '@/lib/notifications';
 import { sendEmail } from '@/lib/mailer';
 import { getPaymentMode } from '@/lib/payment-mode';
+import { computeSalePayment } from '@/lib/sale-math';
 
 /*
   Müzayede otomatik geçiş kontrolü:
@@ -78,18 +79,14 @@ export async function GET() {
 
         const highestBid = lot.bids?.[0];
         if (highestBid && highestBid.amount >= lot.startingPrice) {
-          // Lot satıldı — ödeme matematiği MODA GÖRE dallanır (ESCROW eklemeli biçimde korunur).
-          const isDirect = paymentMode === 'DIRECT';
-          // Satıcı (platform) komisyonu: ESCROW'da satıcının oranı; DIRECT'te platform üründen pay almaz → 0.
-          const commRate = isDirect ? 0 : (auction.seller?.commissionRate ?? 0) / 100;
-          const commAmt = highestBid.amount * commRate;
-          // Alıcı hizmet bedeli (buyer premium): ESCROW'da sabit %7 (platform geliri),
-          // DIRECT'te satıcının kendi belirlediği oran (müzayedeye açılışta kopyalanmış snapshot).
-          const buyerPremiumRate = isDirect ? (auction.buyerPremiumRate ?? 7.0) : 7.0;
-          const buyerPremiumAmount = highestBid.amount * (buyerPremiumRate / 100);
-          const lotKdvRate = 0.20; // Hizmet bedeli bir hizmettir; KDV'si ürün oranından bağımsız, sabit %20
-          const buyerPremiumKDV = Math.round(buyerPremiumAmount * lotKdvRate * 100) / 100;
-          const buyerTotalAmount = highestBid.amount + buyerPremiumAmount + buyerPremiumKDV;
+          // Lot satıldı — ödeme matematiği tek kaynaktan (lib/sale-math). Moda göre dallanır (ESCROW/DIRECT).
+          const { commissionAmount: commAmt, buyerPremiumRate, buyerPremiumAmount, buyerPremiumKDV, totalAmount: buyerTotalAmount } =
+            computeSalePayment({
+              mode: paymentMode,
+              hammer: highestBid.amount,
+              sellerCommissionRate: auction.seller?.commissionRate ?? 0,
+              sellerPremiumRate: auction.buyerPremiumRate,
+            });
           const dueDate = new Date(now.getTime() + (auction.paymentDays ?? 7) * 24 * 60 * 60 * 1000);
 
           await prisma.lot.update({

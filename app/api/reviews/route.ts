@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { maskName } from '@/lib/utils';
 
 // GET reviews for a seller
 export async function GET(request: Request) {
@@ -12,12 +13,18 @@ export async function GET(request: Request) {
     const sellerId = searchParams.get('sellerId');
     if (!sellerId) return NextResponse.json({ error: 'sellerId gerekli' }, { status: 400 });
 
-    const reviews = await prisma.sellerReview.findMany({
+    const rawReviews = await prisma.sellerReview.findMany({
       where: { sellerId },
       include: { user: { select: { fullName: true } } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+
+    // Gizlilik (KVKK): değerlendiren kişinin TAM adı istemciye gönderilmez, maskelenir ("Ahmet S.").
+    const reviews = rawReviews.map((r: any) => ({
+      ...r,
+      user: { fullName: maskName(r.user?.fullName) },
+    }));
 
     const seller = await prisma.sellerProfile.findUnique({
       where: { id: sellerId },

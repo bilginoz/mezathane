@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Gizlilik (KVKK): herkese açık yerlerde (satıcı değerlendirmeleri vb.) tam isim gösterilmez.
+// "Ahmet Sancak" → "Ahmet S." | "Mehmet Ali Yılmaz" → "Mehmet A. Y." | "Ali" → "Ali" | boş → "Anonim".
+export function maskName(name?: string | null): string {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return 'Anonim';
+  const parts = trimmed.split(/\s+/);
+  const first = parts[0];
+  if (parts.length === 1) return first;
+  const initials = parts.slice(1).map((p) => p.charAt(0).toLocaleUpperCase('tr-TR') + '.').join(' ');
+  return `${first} ${initials}`;
+}
+
 const DEFAULT_KDV_RATE = 0.20;
 
 export function formatPrice(price: number | null | undefined): string {
