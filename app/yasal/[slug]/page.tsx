@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Scale, Shield, FileText, Cookie, Lock, Gavel, BookOpen, CreditCard, RotateCcw, Info, Banknote, Ban, ArrowLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 // Banka bilgileri Site Ayarları'ndan CANLI okunur; sabit metin değil.
 export const dynamic = 'force-dynamic';
@@ -184,14 +185,69 @@ const SIDEBAR_ORDER = [
 
 const ICONS: Record<string, any> = { Scale, Shield, FileText, Cookie, Lock, Gavel, BookOpen, CreditCard, RotateCcw, Info, Banknote, Ban };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DIRECT (V2 / doğrudan ödeme) modu için YASAL METİN OVERRIDE'LARI.
+// Yalnızca ödeme/komisyon/iade AKIŞI değişen bölümleri değiştirir; ESCROW (V1) metinleri
+// LEGAL_PAGES içinde olduğu gibi durur → flag ESCROW'a dönünce eski metinler geri gelir.
+// Model: Platform = ARACI HİZMET SAĞLAYICI (6563 sayılı E-Ticaret Kanunu). Satış sözleşmesi
+// ALICI ile SATICI arasındadır. Alıcı, satış bedelini + satıcının belirlediği komisyonu + %20
+// KDV'yi DOĞRUDAN satıcıya öder; platform ürün bedelini taraf olarak tahsil etmez. Platform geliri,
+// satıcının önceden aldığı "Müzayede Hakkı"dır.
+// [HUKUK KONTROLÜ]: Bu taslak metinler yayına (flag DIRECT'e) alınmadan önce hukukçu onayından geçmeli.
+// Anahtar = bölüm başlığı (heading); değeri o bölümün DIRECT metnidir.
+const DIRECT_OVERRIDES: Record<string, Record<string, string>> = {
+  'kvkk': {
+    '4. Kişisel Verilerin Aktarılması': 'Kişisel verileriniz aşağıdaki hallerde üçüncü kişilere aktarılabilir:\n\n• Satış sözleşmesinin tarafı olan satıcıya (siparişin tamamlanması ve teslimat için gerekli bilgiler; ödeme doğrudan satıcıya yapıldığından ödeme/iletişim için gerekli bilgiler paylaşılır)\n• Kargo firmalarına (teslimat sürecinin yönetilmesi için)\n• Yasal zorunluluk halinde yetkili kamu kurum ve kuruluşlarına\n• Hukuki uyuşmazlıklarda mahkeme ve icra dairelerine\n\nBu modelde ürün bedeli platform tarafından tahsil edilmez; ödeme doğrudan alıcı ile satıcı arasında gerçekleşir. Kişisel verileriniz hiçbir sebepten dolayı hiçbir kuruluş veya kurumla ticari amaçla paylaşılmamaktadır.',
+  },
+  'uyelik-sozlesmesi': {
+    '2. Tanımlar': '• Platform: Mezathane.tr internet sitesi ve mobil uygulamaları (aracı hizmet sağlayıcı)\n• Üye: Platforma kayıt olarak üyelik sözleşmesini kabul eden gerçek veya tüzel kişi\n• Satıcı: Platformda müzayede düzenleme yetkisi verilen onaylı üye; satışın asıl SATICI tarafı\n• Alıcı: Platformda teklif veren ve/veya müzayede kazanan üye\n• Müzayede: Platform üzerinden gerçekleştirilen online açık artırma\n• Lot: Müzayedede satışa sunulan her bir eser/ürün\n• Pey (Teklif): Bir lot için verilen fiyat teklifi\n• Satıcı Komisyonu (Alıcıdan): Müzayedeyi kazanan alıcıdan, satış bedeli üzerine SATICININ belirlediği oranda alınan ve üzerine %20 KDV eklenen komisyon. Alıcı bu tutarı doğrudan satıcıya öder; platform bu tutara taraf olarak dokunmaz.\n• Müzayede Hakkı: Satıcının, müzayede açabilmek için platformdan önceden satın aldığı kullanım hakkıdır ve platformun bu modeldeki gelirini oluşturur. Platform, satılan ürünün bedelinden ayrıca komisyon/pay almaz.',
+    '7. Ödeme ve Teslimat': 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Müzayedeyi kazanan alıcı, satış bedeline ek olarak SATICININ belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Ödenecek toplam tutar, teklif verme ekranında açıkça gösterilir. Bu ödemenin tamamı DOĞRUDAN SATICIYA yapılır; platform aracı hizmet sağlayıcı olup ürün bedelini taraf olarak tahsil etmez ve ürün bedelinden komisyon almaz.\n\n• Ödeme, müzayede bitiminden itibaren belirtilen süre içinde (varsayılan 5 gün; müzayede bazında 2-7 gün arasında değişebilir) satıcının bildirdiği hesaba gerçekleştirilmelidir.\n• Satın alınan esere ilişkin fatura, satışın tarafı olan SATICI tarafından alıcı adına düzenlenir.\n• Teslimat koşulları satıcı tarafından belirlenir; satıcının kendi satış/iade/teslimat şartları lot sayfasında gösterilir.\n• Kargo firmasından kaynaklanan gecikmelerden Platform sorumlu tutulamaz.',
+  },
+  'muzayede-sartnamesi': {
+    '5. Kazanan Teklif ve Ödeme': '• Müzayede süresi dolduğunda en yüksek teklifi veren kullanıcı müzayedeyi kazanır.\n\nMüzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Müzayedeyi kazanan alıcı, satış bedeline ek olarak SATICININ belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Ödenecek toplam tutar, teklif verme ekranında açıkça gösterilir. Bu tutarın tamamı DOĞRUDAN SATICIYA ödenir; platform ürün bedelini tahsil etmez.\n\n• Ödeme, müzayede bitiminden itibaren belirtilen süre içinde satıcının hesabına tamamlanmalıdır. Süresinde ödenmeyen siparişler iptal edilebilir ve kullanıcı hesabı kısıtlanabilir.\n• Ödemesi yapılmayan siparişler için cezai şart uygulanabilir.',
+    '6. Komisyon ve Ücretler': '• Satıcı komisyonu oranını SATICI belirler; bu oran lot ve ödeme ekranında açıkça gösterilir ve üzerine %20 KDV eklenir. Alıcı bu tutarı doğrudan satıcıya öder.\n• Platform, satılan ürünün bedelinden komisyon/pay ALMAZ. Platformun bu modeldeki geliri, satıcının önceden satın aldığı Müzayede Hakkı bedelidir.\n• Satışa ilişkin fatura satıcı tarafından düzenlenir; platform ürün satışının tarafı değildir, aracı hizmet sağlayıcıdır.',
+    '7. Teslimat ve İade': '• Satıcı, ödemeyi aldığını teyit ettikten sonra ürünü belirtilen süre içinde alıcıya gönderir.\n• Hedeflenen kargo teslim süresi şehir içi ve şehir dışı için 7 gündür. Mevzuat gereği azami teslim süresi 30 gündür.\n• Ürün açıklamasına uymayan veya hasarlı gönderilen ürünler için alıcı, teslim tarihinden itibaren 7 gün içinde itiraz edebilir. Alıcı bu süre içinde teslim onayı vermez veya itiraz bildirmezse, teslimat otomatik olarak onaylanmış sayılır.\n• İade/ayıp hallerinde muhatap, satışın tarafı olan satıcıdır; ürün bedeli alıcıya satıcı tarafından iade edilir. Platform süreçte arabuluculuk yapar.\n• Alıcı, ürünü teslim aldığı anda kontrol etmekle yükümlüdür. Kargodan kaynaklanan hasar varsa kargo firması yetkilisine tutanak tutturmakla sorumludur.',
+  },
+  'mesafeli-satis': {
+    '6. Fiyat ve Ödeme': 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Müzayedeyi kazanan alıcı, satış bedeline ek olarak SATICININ belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Ödenecek toplam tutar, teklif verme ekranında açıkça gösterilir. Bu ödemenin tamamı DOĞRUDAN SATICIYA yapılır; platform aracı hizmet sağlayıcı olup ürün bedelini taraf olarak tahsil etmez.\n\n• Ödeme, müzayede bitiminden itibaren belirtilen süre içinde tamamlanmalıdır.\n• Alıcı, toplam tutarı satıcının bildirdiği hesaba havale yoluyla peşin olarak öder.',
+    '10. Ödeme Güvenliği': 'Platform, kredi kartı bilgisi talep etmez ve saklamaz. Bu modelde ürün bedeli platform tarafından tahsil edilmez; ödeme, alıcı tarafından doğrudan SATICININ bildirdiği banka hesabına havale/EFT ile yapılır. Güvenliğiniz için ödeme yapılacak IBAN\'ı yalnızca mezathane.tr üzerindeki resmi sipariş/ödeme sayfasından doğrulayın; e-posta veya mesaj yoluyla gelen farklı bir IBAN\'a ödeme yapmayın.',
+  },
+  'on-bilgilendirme': {
+    '4. Ürün Bilgileri': '• Ürünün temel nitelikleri, açıklamaları ve fotoğrafları lot detay sayfasında belirtilmektedir.\n• Satış fiyatı, müzayede sonucunda oluşan kazanan teklif tutarıdır.\n\nMüzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Müzayedeyi kazanan alıcı, satış bedeline ek olarak SATICININ belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Ödenecek toplam tutar, teklif verme ekranında açıkça gösterilir. Bu tutarın tamamı doğrudan satıcıya ödenir.\n\n• Ödeme şekli: Satıcının hesabına Havale/EFT',
+    '5. Teslimat Bilgileri': '• Hedeflenen kargo teslim süresi şehir içi ve şehir dışı için 7 gündür. Siparişiniz 6502 sayılı Tüketicinin Korunması Hakkında Kanun hükümlerine uygun olarak sipariş tarihinden itibaren en geç 30 (otuz) gün içinde alıcı adına kargo firmasına teslim edilir.\n• Satış sözleşmesinin tarafı satıcıdır; ürünün ediminin yerine getirilememesi veya ilanda teknik hata bulunması halinde satıcı, tahsil edilen tutarları ilgili mevzuat (29188 sayılı Mesafeli Sözleşmeler Yönetmeliği md. 16/4) uyarınca alıcıya iade etmekle yükümlüdür. Platform bu süreçte arabuluculuk yapar. [HUKUK KONTROLÜ]',
+  },
+  'iptal-iade': {
+    '2. Ayıplı / Açıklamaya Uygun Olmayan Ürün': '• Teslim edilen ürünün lot açıklamasıyla uyuşmadığını veya ayıplı olduğunu düşünüyorsanız, teslim tarihinden itibaren 7 gün içinde hem satıcıya hem bilgi@mezathane.tr adresine sipariş numaranız ve durumu açıklayan fotoğraflarla birlikte başvurmanız gerekmektedir.\n• Bu modelde ürün bedeli doğrudan satıcıya ödendiğinden, haklı bulunan iade taleplerinde ürün bedelini satıcı, iade onayının ardından 14 (ondört) gün içinde alıcıya iade eder. Platform taraflar arasında arabuluculuk yapar.\n• İade edilecek ürünün orijinal ambalajında ve teslim alındığı durumda olması gerekmektedir.',
+  },
+  'banka-hesap': {
+    'Ödeme Bilgileri': 'Bu satışlarda ödeme, platforma değil DOĞRUDAN SATICIYA yapılır. Müzayedeyi kazandığınızda satıcının banka hesap bilgileri (IBAN) sipariş/ödeme sayfanızda gösterilir. Ödemenizi bu bilgileri kullanarak havale/EFT yoluyla gerçekleştirin ve açıklama kısmına üye/sipariş numaranızı yazın.',
+    'Havale/EFT Hesap Bilgileri': 'Ödeme yapılacak IBAN, satışın tarafı olan satıcıya aittir ve kazandığınız siparişin ödeme sayfasında görüntülenir.\n\nGüvenliğiniz için: Ödeme yapmadan önce IBAN\'ı yalnızca mezathane.tr üzerindeki resmi ödeme sayfasından doğrulayın; e-posta/mesaj yoluyla gelen farklı bir IBAN\'a ödeme yapmayın. Platform ürün bedelini tahsil etmediğinden, platform adına IBAN paylaşıldığını iddia eden mesajlara itibar etmeyin.',
+  },
+  'kullanim-kosullari': {
+    '4. Teklif ve Ödemenin Bağlayıcılığı': '• Bir lota verilen pey (teklif) bağlayıcıdır; müzayedeyi kazanan alıcı, satış bedeli ile birlikte SATICININ belirlediği orandaki satıcı komisyonunu ve bu komisyon üzerinden %20 KDV\'yi ödemekle yükümlüdür. Bu ödemenin tamamı doğrudan satıcıya yapılır; ödenecek toplam tutar teklif ekranında açıkça gösterilir.\n• Ödeme, müzayede bitiminden itibaren belirtilen süre içinde (varsayılan 5 gün; müzayede bazında 2-7 gün arasında değişebilir) satıcının hesabına yapılmalıdır.\n• Süresinde ödenmeyen siparişler iptal edilebilir, kullanıcı hesabı kısıtlanabilir ve cezai şart uygulanabilir.\n• Müzayede yoluyla yapılan satışlar yasa gereği cayma hakkı kapsamı dışındadır; ayrıntılar İptal ve İade Koşulları sayfasındadır.',
+  },
+};
+
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: currentSlug } = await params;
   let page = LEGAL_PAGES[currentSlug];
   if (!page) return notFound();
 
+  // Ödeme modu (sürüm anahtarı). DIRECT'te ödeme/komisyon/iade akışı değiştiği için ilgili bölümler
+  // DIRECT_OVERRIDES ile değiştirilir; ESCROW'da metinler olduğu gibi kalır.
+  const mode = await getPaymentMode();
+  if (mode === 'DIRECT' && DIRECT_OVERRIDES[currentSlug]) {
+    const ov = DIRECT_OVERRIDES[currentSlug];
+    page = {
+      ...page,
+      sections: page.sections.map((s) => (ov[s.heading] ? { ...s, text: ov[s.heading] } : s)),
+    };
+  }
+
   // Banka Hesap Bilgileri sayfası: IBAN vb. Site Ayarları'ndan okunup gösterilir.
   // Ayar boşsa (henüz girilmemişse) uydurma yapılmaz, mevcut "e-posta ile iletilecek" metni kalır.
-  if (currentSlug === 'banka-hesap') {
+  // DIRECT modda ödeme doğrudan satıcıya yapıldığından platform IBAN'ı GÖSTERİLMEZ (override yeterli).
+  if (currentSlug === 'banka-hesap' && mode !== 'DIRECT') {
     let bank: { bankName: string; bankAccountHolder: string; bankIban: string } | null = null;
     try {
       bank = await prisma.siteSettings.findUnique({
