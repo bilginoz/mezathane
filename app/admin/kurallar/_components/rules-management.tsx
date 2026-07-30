@@ -42,6 +42,7 @@ export function RulesManagement() {
           newUserMaxUnpaidCount: Number(settings.newUserMaxUnpaidCount),
           trustedUserMaxUnpaidCount: Number(settings.trustedUserMaxUnpaidCount),
           autoSuspendAfterDefaults: Number(settings.autoSuspendAfterDefaults),
+          paymentMode: settings.paymentMode === 'DIRECT' ? 'DIRECT' : 'ESCROW',
         }),
       });
       const data = await res.json();
@@ -79,6 +80,34 @@ export function RulesManagement() {
         </div>
 
         <div className="space-y-6">
+          {/* Ödeme Modu (sürüm anahtarı) */}
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
+            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-amber-400" /> Ödeme Modu (Sürüm)</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              <strong className="text-foreground">ESCROW (V1):</strong> Para platform hesabına gelir,
+              cari/hakediş işler, satıcıya biz öderiz. <br />
+              <strong className="text-foreground">DIRECT (V2):</strong> Para doğrudan satıcının hesabına
+              gider; gelirimiz "Müzayede Hakkı"dır. Alıcı satıcının IBAN'ına öder, satıcı onaylar.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={settings?.paymentMode === 'DIRECT' ? 'DIRECT' : 'ESCROW'}
+                onChange={e => updateField('paymentMode', e.target.value)}
+                className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none"
+              >
+                <option value="ESCROW">ESCROW (V1) — para platformdan geçer</option>
+                <option value="DIRECT">DIRECT (V2) — para doğrudan satıcıya</option>
+              </select>
+              {settings?.paymentMode === 'DIRECT' && (
+                <span className="text-xs text-amber-500 font-medium">⚠️ V2 aktif — kaydettikten sonra geçerli olur.</span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Not: Mod değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Geri dönmek için tekrar
+              ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
+            </p>
+          </div>
+
           {/* Açıklama */}
           <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
             Bu limitler, <strong className="text-foreground">ödeme yapmadan üst üste kazanıp

@@ -58,6 +58,14 @@ export async function PATCH(request: Request) {
       }
     }
 
+    // Ödeme modu (sürüm anahtarı) — yalnızca ESCROW veya DIRECT
+    if (body.paymentMode !== undefined) {
+      if (!['ESCROW', 'DIRECT'].includes(body.paymentMode)) {
+        return NextResponse.json({ error: 'paymentMode yalnızca ESCROW veya DIRECT olabilir.' }, { status: 400 });
+      }
+      updateData.paymentMode = body.paymentMode;
+    }
+
     const current = await getOrCreate();
     const settings = await prisma.platformSettings.update({
       where: { id: current.id },

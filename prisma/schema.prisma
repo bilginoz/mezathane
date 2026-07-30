@@ -536,6 +536,10 @@ model PlatformSettings {
   platformName      String  @default("Mezathane.tr")
   platformEmail     String?
   platformPhone     String?
+  // Ödeme modeli (sürüm anahtarı): ESCROW = V1 (para platformdan geçer, cari/hakediş),
+  // DIRECT = V2 (para doğrudan satıcıya, kontör geliri). Varsayılan ESCROW → mevcut davranış.
+  // DIRECT'e geçmek escrow kodunu SİLMEZ, sadece akışı değiştirir; geri dönüş = tekrar ESCROW.
+  paymentMode       String  @default("ESCROW")
   // Ödeme yapmayan kullanıcı önlemleri (adet VEYA tutar sınırına takılınca teklif engellenir)
   newUserOutstandingLimit     Float @default(50000)   // Yeni üye (0 ödeme geçmişi) ödenmemiş sipariş TOPLAM tutar sınırı (TL)
   trustedUserOutstandingLimit Float @default(500000)  // Güvenilir üye (≥1 ödeme) tutar sınırı (TL)
