@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import {
   Gavel, Layers, TrendingUp, BarChart3, Plus, Settings,
   Calendar, Clock, Edit, ArrowRight, Store, Wallet, Package, AlertCircle,
-  Upload, FileText, PieChart, ArrowLeft, MessageCircle, BookOpen, Send, Loader2, Info, Paperclip, X, Trash2,
+  Upload, FileText, PieChart, ArrowLeft, MessageCircle, BookOpen, Send, Loader2, Info, Paperclip, X, Trash2, Ticket,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -426,6 +426,16 @@ export function SellerDashboard() {
             <div className="flex-1">
               <p className="font-semibold text-sm">Satıcı Rehberi</p>
               <p className="text-xs text-muted-foreground">Adım adım kullanım kılavuzu &amp; kurallar</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+          <Link href="/satici/haklarim" className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 hover:bg-amber-500/10 transition-colors">
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Ticket className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Müzayede Haklarım</p>
+              <p className="text-xs text-muted-foreground">Müzayede açmak için hak satın al</p>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </Link>

@@ -69,6 +69,38 @@ enum SellerStatus {
   INFO_REQUESTED  // Admin eksik bilgi/düzeltme istedi
 }
 
+// Müzayede Hakkı satın alımı (kontör modeli). Satıcı önden N adet "müzayede açma
+// hakkı" satın alır (havale + admin onayı). Onaylanınca remaining = quantity ve 60 gün
+// geçerli olur; her müzayede açılışında 1 hak düşer. Gelir modeli budur — ürün bedeli
+// bizden geçmez, o yüzden ödeme kuruluşu gerekmez.
+enum AuctionRightStatus {
+  PENDING   // talep oluştu, havale + admin onayı bekliyor
+  APPROVED  // onaylandı, kullanılabilir
+  REJECTED  // reddedildi
+}
+
+model AuctionRightPurchase {
+  id           String             @id @default(cuid())
+  sellerId     String
+  quantity     Int                // kaç adet müzayede hakkı
+  unitPrice    Float              @default(1900)
+  totalAmount  Float              // quantity * unitPrice
+  status       AuctionRightStatus @default(PENDING)
+  remaining    Int                @default(0) // onaylanınca = quantity; kullanıldıkça azalır
+  expiresAt    DateTime?          // onay anında = now + 60 gün (null = süresiz, kullanılmaz)
+  sellerNote   String?            // satıcının notu (havale açıklaması vb.)
+  adminNote    String?            // admin notu / ret sebebi
+  approvedAt   DateTime?
+  approvedById String?            // onaylayan admin user id
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  seller       SellerProfile      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([status])
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -205,6 +237,7 @@ model SellerProfile {
   templates      AuctionTemplate[]
   conversations  Conversation[]
   additionalDocs SellerDocument[]
+  auctionRights  AuctionRightPurchase[]
   isVerified     Boolean      @default(false)
   averageRating  Float        @default(0)
   reviewCount    Int          @default(0)

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { consumeOneRight } from '@/lib/auction-rights';
 
 export async function GET(request: Request) {
   try {
@@ -61,37 +62,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Onaylı satıcı profili gerekli' }, { status: 403 });
     }
 
-    // Satıcının aktif müzayede sayısını kontrol et (max 3)
-    const activeAuctionCount = await prisma.auction.count({
-      where: {
-        sellerId: seller.id,
-        status: { in: ['DRAFT', 'SCHEDULED', 'ACTIVE', 'LIVE'] },
-      },
-    });
-    if (activeAuctionCount >= 3) {
-      return NextResponse.json({ error: 'En fazla 3 aktif müzayedeniz olabilir. Mevcut müzayedelerinizden birinin süresi dolmadan yeni müzayede açamazsınız.' }, { status: 400 });
-    }
-
     const body = await request.json();
-    const auction = await prisma.auction.create({
-      data: {
-        title: body.title,
-        description: body.description ?? null,
-        bannerUrl: body.bannerUrl ?? null,
-        sellerId: seller.id,
-        status: body.status ?? 'DRAFT',
-        startDate: new Date(body.startDate),
-        endDate: body.endDate ? new Date(body.endDate) : null,
-        liveStartDate: body.liveStartDate ? new Date(body.liveStartDate) : null,
-        liveOnly: body.liveOnly ?? false,
-        liveDelayMinutes: Math.min(1440, Math.max(0, body.liveDelayMinutes ?? 30)),
-        waitingTime: Math.min(120, Math.max(5, body.waitingTime ?? 20)),
-        fairWaitingTime: Math.min(15, Math.max(5, body.fairWaitingTime ?? 5)),
-        commissionRate: seller.commissionRate,
-        paymentDays: Math.min(7, Math.max(2, body.paymentDays ?? 5)),
-        isPublic: body.isPublic ?? true,
-      },
-    });
+
+    // Müzayede açmak 1 "Müzayede Hakkı" kullanır (kontör modeli). Kontrol + hak düşme +
+    // müzayede oluşturma tek transaction'da atomik yapılır. Hak yoksa oluşturulmaz.
+    let auction;
+    try {
+      auction = await prisma.$transaction(async (tx) => {
+        const consumed = await consumeOneRight(tx, seller.id);
+        if (!consumed) throw new Error('NO_RIGHT');
+        return tx.auction.create({
+          data: {
+            title: body.title,
+            description: body.description ?? null,
+            bannerUrl: body.bannerUrl ?? null,
+            sellerId: seller.id,
+            status: body.status ?? 'DRAFT',
+            startDate: new Date(body.startDate),
+            endDate: body.endDate ? new Date(body.endDate) : null,
+            liveStartDate: body.liveStartDate ? new Date(body.liveStartDate) : null,
+            liveOnly: body.liveOnly ?? false,
+            liveDelayMinutes: Math.min(1440, Math.max(0, body.liveDelayMinutes ?? 30)),
+            waitingTime: Math.min(120, Math.max(5, body.waitingTime ?? 20)),
+            fairWaitingTime: Math.min(15, Math.max(5, body.fairWaitingTime ?? 5)),
+            commissionRate: seller.commissionRate,
+            paymentDays: Math.min(7, Math.max(2, body.paymentDays ?? 5)),
+            isPublic: body.isPublic ?? true,
+          },
+        });
+      });
+    } catch (e: any) {
+      if (e?.message === 'NO_RIGHT') {
+        return NextResponse.json(
+          { error: 'Müzayede hakkınız yok. Müzayede açmak için "Müzayede Hakkı" satın alın.', code: 'NO_RIGHT' },
+          { status: 402 }
+        );
+      }
+      throw e;
+    }
     return NextResponse.json({ auction });
   } catch (error: any) {
     console.error('Create auction error:', error);
