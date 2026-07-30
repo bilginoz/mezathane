@@ -193,7 +193,6 @@ const ICONS: Record<string, any> = { Scale, Shield, FileText, Cookie, Lock, Gave
 // ALICI ile SATICI arasındadır. Alıcı, satış bedelini + satıcının belirlediği komisyonu + %20
 // KDV'yi DOĞRUDAN satıcıya öder; platform ürün bedelini taraf olarak tahsil etmez. Platform geliri,
 // satıcının önceden aldığı "Müzayede Hakkı"dır.
-// [HUKUK KONTROLÜ]: Bu taslak metinler yayına (flag DIRECT'e) alınmadan önce hukukçu onayından geçmeli.
 // Anahtar = bölüm başlığı (heading); değeri o bölümün DIRECT metnidir.
 const DIRECT_OVERRIDES: Record<string, Record<string, string>> = {
   'kvkk': {
@@ -214,7 +213,7 @@ const DIRECT_OVERRIDES: Record<string, Record<string, string>> = {
   },
   'on-bilgilendirme': {
     '4. Ürün Bilgileri': '• Ürünün temel nitelikleri, açıklamaları ve fotoğrafları lot detay sayfasında belirtilmektedir.\n• Satış fiyatı, müzayede sonucunda oluşan kazanan teklif tutarıdır.\n\nMüzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Müzayedeyi kazanan alıcı, satış bedeline ek olarak SATICININ belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Ödenecek toplam tutar, teklif verme ekranında açıkça gösterilir. Bu tutarın tamamı doğrudan satıcıya ödenir.\n\n• Ödeme şekli: Satıcının hesabına Havale/EFT',
-    '5. Teslimat Bilgileri': '• Hedeflenen kargo teslim süresi şehir içi ve şehir dışı için 7 gündür. Siparişiniz 6502 sayılı Tüketicinin Korunması Hakkında Kanun hükümlerine uygun olarak sipariş tarihinden itibaren en geç 30 (otuz) gün içinde alıcı adına kargo firmasına teslim edilir.\n• Satış sözleşmesinin tarafı satıcıdır; ürünün ediminin yerine getirilememesi veya ilanda teknik hata bulunması halinde satıcı, tahsil edilen tutarları ilgili mevzuat (29188 sayılı Mesafeli Sözleşmeler Yönetmeliği md. 16/4) uyarınca alıcıya iade etmekle yükümlüdür. Platform bu süreçte arabuluculuk yapar. [HUKUK KONTROLÜ]',
+    '5. Teslimat Bilgileri': '• Hedeflenen kargo teslim süresi şehir içi ve şehir dışı için 7 gündür. Siparişiniz 6502 sayılı Tüketicinin Korunması Hakkında Kanun hükümlerine uygun olarak sipariş tarihinden itibaren en geç 30 (otuz) gün içinde alıcı adına kargo firmasına teslim edilir.\n• Satış sözleşmesinin tarafı satıcıdır; ürünün ediminin yerine getirilememesi veya ilanda teknik hata bulunması halinde satıcı, tahsil edilen tutarları ilgili mevzuat (29188 sayılı Mesafeli Sözleşmeler Yönetmeliği md. 16/4) uyarınca alıcıya iade etmekle yükümlüdür. Platform bu süreçte arabuluculuk yapar.',
   },
   'iptal-iade': {
     '2. Ayıplı / Açıklamaya Uygun Olmayan Ürün': '• Teslim edilen ürünün lot açıklamasıyla uyuşmadığını veya ayıplı olduğunu düşünüyorsanız, teslim tarihinden itibaren 7 gün içinde hem satıcıya hem bilgi@mezathane.tr adresine sipariş numaranız ve durumu açıklayan fotoğraflarla birlikte başvurmanız gerekmektedir.\n• Bu modelde ürün bedeli doğrudan satıcıya ödendiğinden, haklı bulunan iade taleplerinde ürün bedelini satıcı, iade onayının ardından 14 (ondört) gün içinde alıcıya iade eder. Platform taraflar arasında arabuluculuk yapar.\n• İade edilecek ürünün orijinal ambalajında ve teslim alındığı durumda olması gerekmektedir.',
