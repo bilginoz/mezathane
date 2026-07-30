@@ -29,6 +29,7 @@ export async function GET() {
         iban: true,
         mersisNo: true,
         buyerPremiumRate: true,
+        salesTerms: true,
         status: true,
       },
     });
@@ -57,6 +58,16 @@ export async function PATCH(request: Request) {
     // Tüm kayıt alanları kilitli — sadece description ve logoUrl değiştirilebilir
     if (body.description !== undefined) updateData.description = body.description;
     if (body.logoUrl !== undefined) updateData.logoUrl = body.logoUrl;
+
+    // Satıcının kendi satış/iade/teslimat şartları (isteğe bağlı, DIRECT modelinde geçerli). Boş bırakılırsa
+    // platform varsayılanı uygulanır. 8000 karakter sınırı.
+    if (body.salesTerms !== undefined) {
+      const t = typeof body.salesTerms === 'string' ? body.salesTerms.trim() : '';
+      if (t.length > 8000) {
+        return NextResponse.json({ error: 'Satış şartları en fazla 8000 karakter olabilir.' }, { status: 400 });
+      }
+      updateData.salesTerms = t || null;
+    }
 
     // Alıcı komisyon oranı — satıcının kendi fiyat kararı, serbest düzenlenebilir (0-30 arası).
     // Yalnızca DIRECT (V2) modda etkilidir; ESCROW'da yok sayılır.

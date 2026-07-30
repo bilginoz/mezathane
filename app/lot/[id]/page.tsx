@@ -39,7 +39,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
       include: {
         auction: {
           include: {
-            seller: { select: { id: true, userId: true, companyName: true, logoUrl: true, commissionRate: true, status: true, isVerified: true } },
+            seller: { select: { id: true, userId: true, companyName: true, logoUrl: true, commissionRate: true, status: true, isVerified: true, salesTerms: true } },
           },
         },
         category: true,

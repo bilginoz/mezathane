@@ -39,6 +39,7 @@ export function SellerProfileSettings() {
     description: '',
     logoUrl: '',
     buyerPremiumRate: '7',
+    salesTerms: '',
     iban: '',
     phone: '',
     email: '',
@@ -77,6 +78,7 @@ export function SellerProfileSettings() {
           description: data.description ?? '',
           logoUrl: data.logoUrl ?? '',
           buyerPremiumRate: data.buyerPremiumRate != null ? String(data.buyerPremiumRate) : '7',
+          salesTerms: data.salesTerms ?? '',
           iban: data.iban ?? '',
           phone: data.phone ?? '',
           email: data.email ?? '',
@@ -193,6 +195,7 @@ export function SellerProfileSettings() {
           description: form.description,
           logoUrl: form.logoUrl,
           buyerPremiumRate: parseFloat(form.buyerPremiumRate) || 0,
+          salesTerms: form.salesTerms,
         }),
       });
       if (res.ok) {
@@ -387,6 +390,18 @@ export function SellerProfileSettings() {
                 placeholder="7"
               />
               <p className="text-xs text-muted-foreground mt-1">Kazanan alıcının, satış bedeline ek olarak size ödeyeceği hizmet komisyonu oranı (0–30). Alıcı bu tutarı <b>doğrudan size</b> öder; lot ve ödeme sayfasında görünür. Yeni ödeme modeli (doğrudan ödeme) devreye girince geçerli olur.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Satış / İade / Teslimat Şartlarım (isteğe bağlı)</label>
+              <textarea
+                value={form.salesTerms}
+                onChange={(e) => setForm(prev => ({ ...prev, salesTerms: e.target.value }))}
+                className={inputClass}
+                rows={6}
+                maxLength={8000}
+                placeholder="Kendi satış, iade ve teslimat şartlarınızı buraya yazın. Örn: kargo süresi, iade koşulları, ürün garanti/orijinallik beyanı..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">Doğrudan ödeme modelinde satışın asıl tarafı sizsiniz. Buraya yazdığınız şartlar lotlarınızda ve mesafeli satış sözleşmesinde alıcıya gösterilir. <b>Boş bırakırsanız</b> platformun varsayılan çerçeve metni geçerli olur. Hukuki bağlayıcılığı size aittir.</p>
             </div>
           </div>
         </motion.div>

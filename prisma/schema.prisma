@@ -227,6 +227,10 @@ model SellerProfile {
   // alıcı bu oranı satıcıya doğrudan öder. ESCROW (V1) modda yok sayılır (platform %7 geçerli).
   // Varsayılan 7 → mevcut orana eşit, bir şey bozulmaz.
   buyerPremiumRate Float       @default(7.0)
+  // Satıcının kendi satış/iade/teslimat şartları (DIRECT/V2 modelinde satıcı asıl SATICI taraf olduğu
+  // için). İsteğe bağlı; boşsa platformun varsayılan çerçeve metni geçerli olur. Lot sayfasında ve
+  // mesafeli satış sözleşmesinde gösterilir.
+  salesTerms     String?      @db.Text
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

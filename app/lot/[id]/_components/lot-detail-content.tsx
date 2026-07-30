@@ -10,6 +10,7 @@ import { Heart, Share2, ChevronLeft, ChevronRight, Store, Tag, ArrowLeft, Users,
 import { VerifiedBadge } from '@/components/verified-badge';
 import { formatPrice, formatDateTime } from '@/lib/utils';
 import { BidPanel } from '@/components/bid-panel';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 import { CountdownTimer } from '@/components/countdown-timer';
 import { SocialShare } from '@/components/social-share';
 import { Lightbox } from '@/components/lightbox';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 export function LotDetailContent({ lot }: { lot: any }) {
   const { data: session } = useSession() || {};
   const router = useRouter();
+  const paymentMode = usePaymentMode();
   const [currentImage, setCurrentImage] = useState(0);
   const [askingQuestion, setAskingQuestion] = useState(false);
   const [questionText, setQuestionText] = useState('');
@@ -431,6 +433,14 @@ export function LotDetailContent({ lot }: { lot: any }) {
                       </a>
                     </div>
                   )}
+                </div>
+              )}
+              {/* Satıcının kendi satış/iade/teslimat şartları — yalnızca DIRECT modda ve satıcı doldurmuşsa.
+                  Satışın asıl tarafı satıcı olduğundan kendi şartları alıcıya gösterilir. */}
+              {paymentMode === 'DIRECT' && lot?.auction?.seller?.salesTerms && (
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-3 mt-1">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Store className="h-3 w-3" /> Satıcının Satış / İade / Teslimat Şartları</span>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{lot.auction.seller.salesTerms}</p>
                 </div>
               )}
               {lot?.estimatedPrice != null && lot.estimatedPrice > 0 && (
