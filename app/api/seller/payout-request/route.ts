@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,11 @@ export async function POST(request: Request) {
     const user = session.user as any;
     if (user.role !== 'SELLER' && user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
+    }
+
+    // DIRECT (V2): platform payout'u yoktur (para doğrudan satıcıya ödenir) → ödeme talebi geçersiz.
+    if ((await getPaymentMode()) === 'DIRECT') {
+      return NextResponse.json({ error: 'Doğrudan ödeme modelinde platform ödemesi/hakediş yoktur; ödeme size doğrudan yapılır.' }, { status: 400 });
     }
 
     const sellerProfile = await prisma.sellerProfile.findFirst({ where: { userId: user.id } });

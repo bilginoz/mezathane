@@ -151,6 +151,10 @@ export async function PATCH(request: Request) {
       },
     });
 
+    // Bildirim metinleri moda göre: DIRECT'te payout yok (para zaten satıcıda) → escrow "serbest bırakma" dili kullanılmaz.
+    const mode = await getPaymentMode();
+    const isDirect = mode === 'DIRECT';
+
     // Satıcıya bildirim gönder
     const { createInAppNotification, sendCheckedNotificationEmail } = await import('@/lib/notifications');
     const sellerUserId = payment.lot.auction.seller?.userId;
@@ -158,7 +162,9 @@ export async function PATCH(request: Request) {
       await createInAppNotification({
         userId: sellerUserId,
         title: '✅ Alıcı Teslim Onayladı!',
-        message: `"${payment.lot.title}" ürünü alıcı tarafından teslim alındı ve onaylandı. Ödemeniz serbest bırakılacak.`,
+        message: isDirect
+          ? `"${payment.lot.title}" ürünü alıcı tarafından teslim alındı ve onaylandı. İşlem tamamlandı.`
+          : `"${payment.lot.title}" ürünü alıcı tarafından teslim alındı ve onaylandı. Ödemeniz serbest bırakılacak.`,
         type: 'ORDER_STATUS',
         link: '/satici/siparisler',
         preferenceType: 'OrderStatus',
@@ -170,8 +176,10 @@ export async function PATCH(request: Request) {
     for (const admin of admins) {
       await createInAppNotification({
         userId: admin.id,
-        title: '✅ Teslim Onaylandı — Ödeme Serbest',
-        message: `"${payment.lot.title}" — Alıcı teslim onayladı. Satıcıya (${payment.lot.auction.seller?.companyName}) ödeme yapılabilir.`,
+        title: isDirect ? '✅ Teslim Onaylandı' : '✅ Teslim Onaylandı — Ödeme Serbest',
+        message: isDirect
+          ? `"${payment.lot.title}" — Alıcı teslim onayladı. Satış tamamlandı. (Doğrudan ödeme modeli: ödeme alıcı ile satıcı arasında.)`
+          : `"${payment.lot.title}" — Alıcı teslim onayladı. Satıcıya (${payment.lot.auction.seller?.companyName}) ödeme yapılabilir.`,
         type: 'ADMIN',
         link: `/admin/finans`,
       });

@@ -8,8 +8,10 @@ import Link from 'next/link';
 import { Users, Store, Gavel, Layers, BarChart3, TrendingUp, Shield, CheckCircle, XCircle, Clock, ArrowRight, Receipt, Settings, FileText, Tag, MessageSquare, AlertTriangle, Calendar, Database, ArrowLeft, Ticket, PenTool, Gift, Wallet } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 export function AdminDashboard() {
+  const paymentMode = usePaymentMode();
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -65,12 +67,14 @@ export function AdminDashboard() {
         {/* Bugün ilgilenilmesi gerekenler — panele girer girmez görülmesi için */}
         {data?.actionSummary && (() => {
           const a = data.actionSummary;
+          // DIRECT'te platform ürün bedelini tahsil etmez/tutmaz → tahsilat/payout kartları anlamsız, gizlenir.
+          const isEscrow = paymentMode !== 'DIRECT';
           const items = [
-            { show: a.overdueCount > 0, tone: 'red', label: 'Vadesi geçmiş alacak',
+            { show: isEscrow && a.overdueCount > 0, tone: 'red', label: 'Vadesi geçmiş alacak',
               value: formatPrice(a.overdueAmount), sub: `${a.overdueCount} ödeme`, href: '/admin/finans' },
-            { show: a.pendingCollectCount > 0, tone: 'amber', label: 'Bekleyen tahsilat',
+            { show: isEscrow && a.pendingCollectCount > 0, tone: 'amber', label: 'Bekleyen tahsilat',
               value: formatPrice(a.pendingCollectAmount), sub: `${a.pendingCollectCount} ödeme`, href: '/admin/finans' },
-            { show: a.payoutDueCount > 0, tone: 'blue', label: 'Satıcıya ödenecek',
+            { show: isEscrow && a.payoutDueCount > 0, tone: 'blue', label: 'Satıcıya ödenecek',
               value: formatPrice(a.payoutDueAmount), sub: `${a.payoutDueCount} işlem`, href: '/admin/finans' },
             { show: a.pendingSellers > 0, tone: 'amber', label: 'Onay bekleyen satıcı',
               value: String(a.pendingSellers), sub: 'başvuru', href: '/admin/saticilar' },

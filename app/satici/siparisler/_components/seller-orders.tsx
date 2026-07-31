@@ -501,7 +501,8 @@ export function SellerOrders() {
                                   Otomatik onay: {formatDate(order.autoConfirmDate)}
                                 </p>
                               )}
-                              {!order.payoutRequestedAt && !order.payoutCompleted && (
+                              {/* Payout (hakediş) talebi yalnızca ESCROW'da: DIRECT'te para zaten satıcıda. */}
+                              {paymentMode !== 'DIRECT' && !order.payoutRequestedAt && !order.payoutCompleted && (
                                 <button
                                   onClick={() => handlePayoutRequest(order.paymentId)}
                                   disabled={requestingPayout === order.paymentId}
@@ -515,7 +516,7 @@ export function SellerOrders() {
                                   Ödeme Talep Et
                                 </button>
                               )}
-                              {order.payoutRequestedAt && (
+                              {paymentMode !== 'DIRECT' && order.payoutRequestedAt && (
                                 <p className="mt-1 text-amber-400">Ödeme talebi gönderildi — {formatDate(order.payoutRequestedAt)}</p>
                               )}
                             </div>
@@ -527,7 +528,9 @@ export function SellerOrders() {
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 Alıcı teslim onayladı — {formatDate(order.buyerConfirmedAt)}
                               </div>
-                              {order.payoutCompleted ? (
+                              {paymentMode === 'DIRECT' ? (
+                                <p className="text-green-400 mt-1">✅ Teslimat tamamlandı — işlem kapandı. (Ödeme doğrudan size yapıldı.)</p>
+                              ) : order.payoutCompleted ? (
                                 <p className="text-green-400 mt-1">✅ Ödemeniz tamamlandı</p>
                               ) : (
                                 <p className="text-muted-foreground mt-1">Ödemeniz serbest bırakıldı, admin tarafından işlenecek.</p>
