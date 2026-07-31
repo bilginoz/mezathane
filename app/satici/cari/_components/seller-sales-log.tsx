@@ -50,7 +50,7 @@ function buyerName(o: SaleRow): string {
   return o.buyer.companyName || o.buyer.fullName || '—';
 }
 
-export function SellerSalesLog() {
+export function SellerSalesLog({ embedded = false }: { embedded?: boolean } = {}) {
   const [rows, setRows] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -117,30 +117,41 @@ export function SellerSalesLog() {
     );
   }
 
-  return (
-    <main className="flex-1 py-8">
-      <div className="mx-auto max-w-[1200px] px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-3">
-            <Link href="/satici" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <Package className="h-6 w-6 text-[#d4af37]" />
-            <h1 className="font-display text-2xl font-bold">Satış Kayıtları</h1>
-          </div>
-          {filtered.length > 0 && (
-            <button
-              onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all shrink-0"
-            >
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV indir</span>
+  const Wrapper: any = embedded ? 'div' : 'main';
+  const inner = (
+      <div className={embedded ? '' : 'mx-auto max-w-[1200px] px-4'}>
+        {/* Header — gömülü modda üst bileşen zaten başlık gösterir */}
+        {!embedded && (
+          <>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <Link href="/satici" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+                <Package className="h-6 w-6 text-[#d4af37]" />
+                <h1 className="font-display text-2xl font-bold">Satış Kayıtları</h1>
+              </div>
+              {filtered.length > 0 && (
+                <button
+                  onClick={exportCsv}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all shrink-0"
+                >
+                  <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV indir</span>
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mb-6 ml-12">
+              Bu satışlarda ödeme doğrudan size yapılır; platform komisyon almaz. Kayıtlar resmi anlaşmazlıklarda referans içindir.
+            </p>
+          </>
+        )}
+        {embedded && filtered.length > 0 && (
+          <div className="flex justify-end mb-3">
+            <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black px-3 py-2 text-sm font-semibold hover:brightness-110 transition-all">
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
             </button>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground mb-6 ml-12">
-          Bu satışlarda ödeme doğrudan size yapılır; platform komisyon almaz. Kayıtlar resmi anlaşmazlıklarda referans içindir.
-        </p>
+          </div>
+        )}
 
         {/* Arama */}
         <div className="relative mb-4 max-w-sm">
@@ -195,6 +206,7 @@ export function SellerSalesLog() {
           </div>
         )}
       </div>
-    </main>
   );
+
+  return <Wrapper className={embedded ? '' : 'flex-1 py-8'}>{inner}</Wrapper>;
 }

@@ -13,7 +13,7 @@ import {
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
-import { SellerSalesLog } from './seller-sales-log';
+import { SellerCari } from './seller-cari';
 
 interface Transaction {
   lotId: string;
@@ -99,7 +99,7 @@ export function SellerFinance() {
 
   // DIRECT (V2): cari/hakediş anlamsız → satış kayıtları görünümü. Escrow cari JSX'i olduğu gibi korunur.
   if (paymentMode === 'DIRECT') {
-    return <SellerSalesLog />;
+    return <SellerCari />;
   }
 
   if (status === 'loading' || loading) {
