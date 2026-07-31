@@ -9,8 +9,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Ticket, Info, Package, ArrowRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { AdminBuyersFinance } from './admin-buyers-finance';
+import { AdminSellersFinance } from './admin-sellers-finance';
 
 export function AdminDirectFinance() {
+  const [tab, setTab] = useState<'ozet' | 'alici' | 'satici'>('ozet');
   const [loading, setLoading] = useState(true);
   const [approvedRevenue, setApprovedRevenue] = useState(0);
   const [approvedCount, setApprovedCount] = useState(0);
@@ -45,15 +48,25 @@ export function AdminDirectFinance() {
           <h1 className="font-display text-2xl font-bold">Finans (Doğrudan Ödeme Modeli)</h1>
         </div>
 
+        {/* Sekmeler */}
+        <div className="flex items-center gap-2 mb-5 border-b border-border">
+          {([['ozet', 'Özet'], ['alici', 'Alıcılar'], ['satici', 'Satıcılar']] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === k ? 'border-[#d4af37] text-[#d4af37]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{label}</button>
+          ))}
+        </div>
+
+        {tab === 'alici' && <AdminBuyersFinance />}
+        {tab === 'satici' && <AdminSellersFinance />}
+
+        {tab === 'ozet' && (<>
         {/* Model açıklaması */}
         <div className="rounded-xl border border-sky-500/30 bg-sky-500/5 p-4 mb-6 flex items-start gap-3">
           <Info className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
             Doğrudan ödeme modelinde <strong className="text-foreground">ürün bedeli platformdan geçmez</strong>; alıcı doğrudan
             satıcıya öder. Bu yüzden platform carisi, hakediş ve payout <strong className="text-foreground">tutulmaz</strong>.
-            Platformun geliri <strong className="text-foreground">Müzayede Hakkı</strong> satışlarıdır. Satış detayları
-            (kim, hangi lotu, kaç TL'ye aldı, ödeme durumu) her satıcının <strong className="text-foreground">Satış Kayıtları</strong>
-            ekranında ve aşağıdaki bağlantılarda görülür.
+            Platformun geliri <strong className="text-foreground">Müzayede Hakkı</strong> satışlarıdır. Alıcı/satıcı bazlı ödeme
+            takibi için <strong className="text-foreground">Alıcılar</strong> ve <strong className="text-foreground">Satıcılar</strong> sekmelerine bakın.
           </div>
         </div>
 
@@ -100,6 +113,7 @@ export function AdminDirectFinance() {
             </div>
           </>
         )}
+        </>)}
       </div>
     </main>
   );
