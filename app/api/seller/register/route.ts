@@ -6,7 +6,7 @@ import { encrypt } from '@/lib/encryption';
 import { prisma } from '@/lib/prisma';
 import { validateTCKimlikNo } from '@/lib/tc-kimlik';
 import { generateEmailVerifyCode, sendVerificationEmail } from '@/lib/email-verify';
-import { sendNotificationEmail, createInAppNotification } from '@/lib/notifications';
+import { sendNotificationEmail, notifyAdmins } from '@/lib/notifications';
 import { validateIBAN } from '@/lib/iban';
 import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
@@ -171,7 +171,6 @@ export async function POST(request: Request) {
     }
 
     // Admin bildirimi — e-posta
-    const adminUserId = 'cmqqfig5p0000ry08n4onlth4';
     try {
       await sendNotificationEmail({
         recipientEmail: 'bilginoz@icloud.com',
@@ -182,18 +181,13 @@ export async function POST(request: Request) {
       console.error('[SellerRegister] Notification email failed:', notifError?.message ?? notifError);
     }
 
-    // Admin bildirimi — uygulama içi
-    try {
-      await createInAppNotification({
-        userId: adminUserId,
-        title: 'Yeni Satıcı Başvurusu',
-        message: `${companyName} satıcı olarak başvurdu. Başvuran: ${email}`,
-        type: 'SELLER_APPLICATION',
-        link: '/admin/saticilar',
-      });
-    } catch (inAppError: any) {
-      console.error('[SellerRegister] In-app notification failed:', inAppError?.message ?? inAppError);
-    }
+    // Admin bildirimi — uygulama içi (TÜM adminlere + push)
+    await notifyAdmins({
+      title: 'Yeni Satıcı Başvurusu',
+      message: `${companyName} satıcı olarak başvurdu. Başvuran: ${email}`,
+      type: 'SELLER_APPLICATION',
+      link: '/admin/saticilar',
+    });
 
     return NextResponse.json({
       success: true,

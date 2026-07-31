@@ -64,6 +64,27 @@ export async function createInAppNotification(options: {
   }
 }
 
+// TÜM admin kullanıcılara uygulama-içi (+push) bildirim gönderir. Sabit admin id yerine bunu kullan
+// (admin sayısı/kimliği değişse de çalışır). Best-effort; hata akışı bozmaz.
+export async function notifyAdmins(options: { title: string; message: string; link?: string; type?: string }) {
+  try {
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    await Promise.all(
+      admins.map((a) =>
+        createInAppNotification({
+          userId: a.id,
+          title: options.title,
+          message: options.message,
+          type: options.type ?? 'ADMIN',
+          link: options.link,
+        })
+      )
+    );
+  } catch (e) {
+    console.error('notifyAdmins error:', e);
+  }
+}
+
 // E-posta bildirimi gönder (tercih kontrollü)
 export async function sendCheckedNotificationEmail(options: {
   userId: string;

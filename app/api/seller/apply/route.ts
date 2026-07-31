@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
-import { sendNotificationEmail, createInAppNotification } from '@/lib/notifications';
+import { sendNotificationEmail, notifyAdmins } from '@/lib/notifications';
 import { validateIBAN } from '@/lib/iban';
 
 export async function POST(request: Request) {
@@ -50,7 +50,6 @@ export async function POST(request: Request) {
     await prisma.user.update({ where: { id: userId }, data: { role: 'SELLER' } });
 
     // Notify admin — hem e-posta hem uygulama içi bildirim
-    const adminUserId = 'cmqqfig5p0000ry08n4onlth4';
     try {
       console.log('[Seller Apply] Sending notification for:', body.companyName);
       const emailResult = await sendNotificationEmail({
@@ -63,19 +62,13 @@ export async function POST(request: Request) {
       console.error('[Seller Apply] Notification email failed:', notifError?.message ?? notifError);
     }
 
-    // Uygulama içi bildirim — admin panelindeki zil ikonu
-    try {
-      await createInAppNotification({
-        userId: adminUserId,
-        title: 'Yeni Satıcı Başvurusu',
-        message: `${body.companyName} satıcı olarak başvurdu. Başvuran: ${session.user?.email ?? 'Bilinmiyor'}`,
-        type: 'SELLER_APPLICATION',
-        link: '/admin/saticilar',
-      });
-      console.log('[Seller Apply] In-app notification created for admin');
-    } catch (inAppError: any) {
-      console.error('[Seller Apply] In-app notification failed:', inAppError?.message ?? inAppError);
-    }
+    // Uygulama içi bildirim — TÜM adminlere (zil ikonu + push)
+    await notifyAdmins({
+      title: 'Yeni Satıcı Başvurusu',
+      message: `${body.companyName} satıcı olarak başvurdu. Başvuran: ${session.user?.email ?? 'Bilinmiyor'}`,
+      type: 'SELLER_APPLICATION',
+      link: '/admin/saticilar',
+    });
 
     return NextResponse.json({ success: true, seller });
   } catch (error: any) {

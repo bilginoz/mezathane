@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { checkMessageForContactInfo } from '@/lib/message-filter';
+import { createInAppNotification } from '@/lib/notifications';
 
 // GET: List conversations for current user
 export async function GET(req: NextRequest) {
@@ -148,6 +149,19 @@ export async function POST(req: NextRequest) {
           sellerUnread: { increment: 1 },
         },
       });
+    }
+
+    // Satıcıya anlık bildirim (alıcı soru sordu)
+    try {
+      await createInAppNotification({
+        userId: seller.userId,
+        title: '💬 Alıcıdan yeni mesaj',
+        message: message.trim().slice(0, 80),
+        type: 'MESSAGE',
+        link: '/satici/mesajlar',
+      });
+    } catch (e) {
+      console.error('Conversation notify error:', e);
     }
 
     return NextResponse.json({ conversationId: conversation.id });

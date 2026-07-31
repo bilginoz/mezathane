@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { checkMessageForContactInfo } from '@/lib/message-filter';
+import { createInAppNotification } from '@/lib/notifications';
 
 // GET: Get messages for a conversation
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -131,6 +132,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ...(isBuyer ? { sellerUnread: { increment: 1 } } : { buyerUnread: { increment: 1 } }),
       },
     });
+
+    // Karşı tarafa anlık bildirim (zil + push) — okunmamış rozeti yanında bildirim de gitsin.
+    try {
+      const recipientId = isBuyer ? conversation.seller.userId : conversation.buyerId;
+      if (recipientId && recipientId !== user.id) {
+        const preview = message.trim().slice(0, 80);
+        await createInAppNotification({
+          userId: recipientId,
+          title: isBuyer ? '💬 Alıcıdan yeni mesaj' : '💬 Satıcıdan yeni mesaj',
+          message: preview,
+          type: 'MESSAGE',
+          link: isBuyer ? '/satici/mesajlar' : '/panel/mesajlar',
+        });
+      }
+    } catch (e) {
+      console.error('Message notify error:', e); // bildirim hatası mesajı bozmasın
+    }
 
     return NextResponse.json({
       message: {

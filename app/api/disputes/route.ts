@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { createInAppNotification, notifyAdmins } from '@/lib/notifications';
 
 // Kullanıcı şikayetlerini listele + yeni şikayet oluştur
 export async function GET(request: Request) {
@@ -56,6 +57,28 @@ export async function POST(request: Request) {
         description,
       },
     });
+
+    // Anlık bildirim: adminler (çözüm için) + hakkında şikayet açılan satıcı.
+    try {
+      await notifyAdmins({
+        title: '⚠️ Yeni Anlaşmazlık',
+        message: `"${lot.title}" lotu için bir anlaşmazlık açıldı. Sebep: ${reason}. İncelenmesi gerekiyor.`,
+        link: '/admin/anlasmazliklar',
+      });
+      const sellerUserId = lot.auction.seller.userId;
+      if (sellerUserId && sellerUserId !== userId) {
+        await createInAppNotification({
+          userId: sellerUserId,
+          title: '⚠️ Hakkınızda anlaşmazlık açıldı',
+          message: `"${lot.title}" lotu için bir alıcı anlaşmazlık açtı (${reason}). Platform süreci değerlendirecek.`,
+          type: 'ORDER_STATUS',
+          link: '/satici/siparisler',
+          preferenceType: 'OrderStatus',
+        });
+      }
+    } catch (e) {
+      console.error('Dispute notify error:', e); // bildirim hatası şikayeti bozmasın
+    }
 
     return NextResponse.json(dispute, { status: 201 });
   } catch (error) {
