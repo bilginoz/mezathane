@@ -17,6 +17,7 @@ interface Purchase {
   expiresAt: string | null;
   sellerNote: string | null;
   adminNote: string | null;
+  paymentReportedAt: string | null;
   createdAt: string;
   seller: { id: string; companyName: string; user: { fullName: string; email: string } };
 }
@@ -119,6 +120,9 @@ export function AuctionRightsManagement() {
                     <p className="text-sm mt-1"><b>{p.quantity} hak</b> · {formatPrice(p.totalAmount)} · {formatDateTime(p.createdAt)}</p>
                     {p.status === 'APPROVED' && <p className="text-xs text-muted-foreground mt-1">Kalan: {p.remaining}{p.expiresAt ? ` · Son: ${formatDateTime(p.expiresAt)}` : ''}</p>}
                     {p.sellerNote && <p className="text-xs text-muted-foreground mt-1">Satıcı notu: {p.sellerNote}</p>}
+                    {p.status === 'PENDING' && p.paymentReportedAt && (
+                      <p className="text-xs text-green-500 mt-1 font-medium">💳 Satıcı ödemeyi yaptığını bildirdi ({formatDateTime(p.paymentReportedAt)}) — hesabı kontrol edip onaylayın.</p>
+                    )}
                     {p.adminNote && <p className="text-xs text-muted-foreground mt-1">Admin notu: {p.adminNote}</p>}
                   </div>
                   {p.status === 'PENDING' && (

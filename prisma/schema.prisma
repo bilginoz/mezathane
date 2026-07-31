@@ -90,6 +90,7 @@ model AuctionRightPurchase {
   expiresAt    DateTime?          // onay anında = now + 60 gün (null = süresiz, kullanılmaz)
   sellerNote   String?            // satıcının notu (havale açıklaması vb.)
   adminNote    String?            // admin notu / ret sebebi
+  paymentReportedAt DateTime?     // satıcı "ödemeyi yaptım" dediği an (admin'e bildirilir)
   approvedAt   DateTime?
   approvedById String?            // onaylayan admin user id
   createdAt    DateTime           @default(now())

@@ -17,6 +17,7 @@ interface Purchase {
   remaining: number;
   expiresAt: string | null;
   adminNote: string | null;
+  paymentReportedAt: string | null;
   createdAt: string;
 }
 
@@ -29,6 +30,26 @@ export function AuctionRightsContent() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
+  const [reporting, setReporting] = useState<string | null>(null);
+
+  const reportPayment = async (purchaseId: string) => {
+    setReporting(purchaseId);
+    try {
+      const res = await fetch('/api/seller/auction-rights', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'report_payment', purchaseId }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d?.error ?? 'İşlem başarısız'); return; }
+      toast.success('Ödeme bildiriminiz alındı — admin en kısa sürede onaylayacak');
+      fetchData();
+    } catch {
+      toast.error('İşlem başarısız');
+    } finally {
+      setReporting(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -191,6 +212,21 @@ export function AuctionRightsContent() {
                   </div>
                   {p.status === 'REJECTED' && p.adminNote && (
                     <p className="w-full text-xs text-red-400">Sebep: {p.adminNote}</p>
+                  )}
+                  {p.status === 'PENDING' && (
+                    <div className="w-full">
+                      {p.paymentReportedAt ? (
+                        <p className="text-xs text-green-500">✓ Ödeme bildiriminiz alındı ({formatDate(p.paymentReportedAt)}) — admin onayı bekleniyor.</p>
+                      ) : (
+                        <button
+                          onClick={() => reportPayment(p.id)}
+                          disabled={reporting === p.id}
+                          className="rounded-lg bg-[#d4af37] text-black px-3 py-1.5 text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50"
+                        >
+                          {reporting === p.id ? 'Gönderiliyor...' : 'Ödemeyi Yaptım'}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
