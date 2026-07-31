@@ -170,13 +170,14 @@ export async function POST(request: Request) {
       console.error('[SellerRegister] Verification email error:', err);
     }
 
-    // Admin bildirimi — e-posta
+    // Admin bildirimi — e-posta (TÜM admin adreslerine, dinamik)
     try {
-      await sendNotificationEmail({
-        recipientEmail: 'bilginoz@icloud.com',
+      const adminEmails = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { email: true } });
+      await Promise.all(adminEmails.filter((a) => a.email).map((a) => sendNotificationEmail({
+        recipientEmail: a.email,
         subject: `Yeni Satıcı Başvurusu - ${companyName}`,
         body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${email}</p>${contactEmail ? `<p><strong>Firma E-posta:</strong> ${contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
-      });
+      })));
     } catch (notifError: any) {
       console.error('[SellerRegister] Notification email failed:', notifError?.message ?? notifError);
     }

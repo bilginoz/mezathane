@@ -49,15 +49,14 @@ export async function POST(request: Request) {
     // Role SELLER yapılıyor ama seller status PENDING olduğu sürece işlem yapamaz
     await prisma.user.update({ where: { id: userId }, data: { role: 'SELLER' } });
 
-    // Notify admin — hem e-posta hem uygulama içi bildirim
+    // Notify admin — e-posta (TÜM admin adreslerine, dinamik) + uygulama içi bildirim
     try {
-      console.log('[Seller Apply] Sending notification for:', body.companyName);
-      const emailResult = await sendNotificationEmail({
-        recipientEmail: 'bilginoz@icloud.com',
+      const adminEmails = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { email: true } });
+      await Promise.all(adminEmails.filter((a) => a.email).map((a) => sendNotificationEmail({
+        recipientEmail: a.email,
         subject: `Yeni Satıcı Başvurusu - ${body.companyName}`,
         body: `<div style="font-family:Arial;max-width:600px;margin:0 auto;"><h2 style="color:#d4af37;">Yeni Satıcı Başvurusu</h2><p><strong>${body.companyName}</strong> satıcı olarak başvurdu.</p><p><strong>Başvuran:</strong> ${session.user?.email ?? 'Bilinmiyor'}</p>${body.contactEmail ? `<p><strong>Firma E-posta:</strong> ${body.contactEmail}</p>` : ''}<p>Admin panelinden (<a href="${process.env.NEXTAUTH_URL}/admin/saticilar">Satıcı Yönetimi</a>) onaylayabilirsiniz.</p></div>`,
-      });
-      console.log('[Seller Apply] Email result:', JSON.stringify(emailResult));
+      })));
     } catch (notifError: any) {
       console.error('[Seller Apply] Notification email failed:', notifError?.message ?? notifError);
     }

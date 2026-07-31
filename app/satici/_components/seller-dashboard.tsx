@@ -582,9 +582,19 @@ export function SellerDashboard() {
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Komisyon (%)</label>
-                    <div className="w-full rounded-lg border border-border bg-muted/50 py-2 px-3 text-sm font-mono">%{data?.seller?.commissionRate ?? 0}</div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Admin tarafından belirlenir</p>
+                    {paymentMode === 'DIRECT' ? (
+                      <>
+                        <label className="text-sm font-medium mb-1 block">Alıcı Komisyonunuz (%)</label>
+                        <div className="w-full rounded-lg border border-border bg-muted/50 py-2 px-3 text-sm font-mono">%{data?.seller?.buyerPremiumRate ?? 7}</div>
+                        <p className="text-[10px] text-muted-foreground mt-1">Sizin belirlediğiniz oran · <a href="/satici/profil" className="text-[#d4af37] hover:underline">Profil'den düzenleyin</a></p>
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-sm font-medium mb-1 block">Komisyon (%)</label>
+                        <div className="w-full rounded-lg border border-border bg-muted/50 py-2 px-3 text-sm font-mono">%{data?.seller?.commissionRate ?? 0}</div>
+                        <p className="text-[10px] text-muted-foreground mt-1">Admin tarafından belirlenir</p>
+                      </>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Ödeme Süresi (gün)</label>
