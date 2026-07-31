@@ -373,7 +373,7 @@ export function Header() {
                               <Shield className="h-4 w-4" /> Admin Panel
                             </Link>
                           )}
-                          {user?.role !== 'SELLER' && (user?.sellerStatus === 'APPROVED') && (
+                          {(user?.role === 'SELLER' || user?.sellerStatus === 'APPROVED') && (
                             <Link href="/satici" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors text-[#d4af37]">
                               <Store className="h-4 w-4" /> Satıcı Paneli
                             </Link>
@@ -568,7 +568,7 @@ export function Header() {
                         <Shield className="h-4 w-4" /> Admin Panel
                       </Link>
                     )}
-                    {user?.role !== 'SELLER' && (user?.sellerStatus === 'APPROVED') && (
+                    {(user?.role === 'SELLER' || user?.sellerStatus === 'APPROVED') && (
                       <Link href="/satici" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-muted text-[#d4af37]">
                         <Store className="h-4 w-4" /> Satıcı Paneli
                       </Link>
