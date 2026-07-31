@@ -2,11 +2,13 @@
 
 // Admin — Satıcılar finans: ne sattı, ne tahsil etti, ne bekliyor + Müzayede Hakkı özeti.
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader2, Store, Search, Download } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function AdminSellersFinance() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [q, setQ] = useState('');
@@ -72,8 +74,8 @@ export function AdminSellersFinance() {
             </thead>
             <tbody>
               {filtered.map((s) => (
-                <tr key={s.sellerId} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="px-3 py-2.5 font-medium">{s.name}<span className="block text-[10px] text-muted-foreground">{s.soldCount} satış</span></td>
+                <tr key={s.sellerId} onClick={() => router.push(`/admin/finans/satici/${s.sellerId}`)} className="border-b border-border/50 hover:bg-muted/30 cursor-pointer">
+                  <td className="px-3 py-2.5 font-medium text-[#d4af37]">{s.name}<span className="block text-[10px] text-muted-foreground font-normal">{s.soldCount} satış · detay için tıkla</span></td>
                   <td className="px-3 py-2.5 text-right font-mono">{formatPrice(s.totalAmount)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-green-500">{formatPrice(s.collected)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-amber-500">{s.pending > 0 ? formatPrice(s.pending) : '—'}</td>
