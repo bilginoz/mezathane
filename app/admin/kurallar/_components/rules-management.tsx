@@ -56,7 +56,7 @@ export function RulesManagement() {
   };
 
   // DIRECT uçtan-uca test: test verisi oluştur / bitir / check-live tetikle / temizle.
-  const runTest = async (action: 'seed' | 'end_now' | 'cleanup' | 'checklive') => {
+  const runTest = async (action: 'seed' | 'accounts_only' | 'end_now' | 'cleanup' | 'checklive') => {
     setTestBusy(action);
     try {
       if (action === 'checklive') {
@@ -72,6 +72,7 @@ export function RulesManagement() {
       const d = await res.json();
       if (!res.ok) { toast.error(d?.error ?? 'İşlem başarısız'); return; }
       if (action === 'seed') { setTestInfo(d); toast.success('Test verisi oluşturuldu'); }
+      else if (action === 'accounts_only') { setTestInfo(d); toast.success('Test hesapları oluşturuldu'); }
       else if (action === 'cleanup') { setTestInfo(null); toast.success('Test verisi temizlendi'); }
       else if (action === 'end_now') { toast.success('Müzayede bitti işaretlendi — şimdi check-live tetikleyin'); }
     } catch {
@@ -206,9 +207,13 @@ export function RulesManagement() {
               <strong>5)</strong> Ödeme Modu=ESCROW'a al → <strong>6)</strong> Temizle.
             </p>
             <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => runTest('accounts_only')} disabled={!!testBusy}
+                className="rounded-lg bg-sky-600 text-white px-3 py-2 text-sm font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50">
+                {testBusy === 'accounts_only' ? '...' : '👤 Sadece Hesap Oluştur (satıcı+alıcı)'}
+              </button>
               <button onClick={() => runTest('seed')} disabled={!!testBusy}
                 className="rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                {testBusy === 'seed' ? '...' : '1) Test Verisi Oluştur'}
+                {testBusy === 'seed' ? '...' : '1) Test Verisi Oluştur (müzayedeli)'}
               </button>
               <button onClick={() => runTest('end_now')} disabled={!!testBusy}
                 className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50">

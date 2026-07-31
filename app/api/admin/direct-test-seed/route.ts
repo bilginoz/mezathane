@@ -67,6 +67,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, message: 'Müzayede bitti işaretlendi. Şimdi check-live tetikleyin.' });
     }
 
+    if (action === 'accounts_only') {
+      // Temiz test hesapları: onaylı satıcı (IBAN+komisyon+haklar) + alıcı. Müzayede/teklif oluşturmaz.
+      await cleanup();
+      const password = await bcrypt.hash(TEST_PASSWORD, 12);
+      const now = new Date();
+
+      const sellerUser = await prisma.user.create({
+        data: {
+          email: SELLER_EMAIL, password, fullName: '[TEST] Satıcı', phone: SELLER_PHONE,
+          role: 'SELLER', isActive: true, isEmailVerified: true, emailVerified: now,
+          isPhoneVerified: true, hasAcceptedTerms: true, hasKvkkConsent: true,
+        },
+      });
+      const sellerProfile = await prisma.sellerProfile.create({
+        data: {
+          userId: sellerUser.id, companyName: '[DIRECT-TEST] Test Müzayede Evi',
+          status: 'APPROVED', iban: SELLER_IBAN, commissionRate: 0,
+          buyerPremiumRate: BUYER_PREMIUM_RATE,
+          salesTerms: 'TEST: Ürünler faturalıdır, kargo 3 iş günü içinde gönderilir. İade 7 gün içinde kabul edilir.',
+        },
+      });
+      // 5 adet onaylı Müzayede Hakkı — satıcı hemen müzayede açabilsin.
+      await prisma.auctionRightPurchase.create({
+        data: {
+          sellerId: sellerProfile.id, quantity: 5, unitPrice: 1900, totalAmount: 5 * 1900,
+          status: 'APPROVED', remaining: 5, expiresAt: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000),
+          approvedAt: now, sellerNote: 'Test hakkı (otomatik)',
+        },
+      });
+
+      await prisma.user.create({
+        data: {
+          email: BUYER_EMAIL, password, fullName: '[TEST] Alıcı', phone: BUYER_PHONE,
+          role: 'BUYER', isActive: true, isEmailVerified: true, emailVerified: now,
+          isPhoneVerified: true, hasAcceptedTerms: true, hasKvkkConsent: true,
+          shippingAddress: 'Test Mah. Test Sok. No:1 Marmaris/Muğla', city: 'Muğla', district: 'Marmaris',
+        },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        message: 'Test hesapları oluşturuldu (satıcı onaylı + 5 müzayede hakkı, alıcı).',
+        credentials: {
+          seller: { email: SELLER_EMAIL, password: TEST_PASSWORD },
+          buyer: { email: BUYER_EMAIL, password: TEST_PASSWORD },
+        },
+      });
+    }
+
     if (action === 'seed') {
       await cleanup(); // önceki test kalıntılarını temizle
       const password = await bcrypt.hash(TEST_PASSWORD, 12);
