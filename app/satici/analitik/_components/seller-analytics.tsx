@@ -10,8 +10,10 @@ import {
   Layers, ShoppingBag, Percent, Target, Activity, DollarSign,
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { usePaymentMode } from '@/hooks/use-payment-mode';
 
 export function SellerAnalytics() {
+  const paymentMode = usePaymentMode();
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -54,7 +56,9 @@ export function SellerAnalytics() {
     { icon: Activity, label: 'Ort. Teklif/Lot', value: o.avgBidsPerLot ?? 0, color: 'text-pink-400' },
     { icon: Eye, label: 'Toplam Görüntülenme', value: o.totalViews ?? 0, color: 'text-sky-400' },
     { icon: Heart, label: 'Favori Sayısı', value: o.watchlistCount ?? 0, color: 'text-red-400' },
-    { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 0}`, color: 'text-[#d4af37]' },
+    paymentMode === 'DIRECT'
+      ? { icon: Percent, label: 'Alıcı Komisyonunuz', value: `%${o.buyerPremiumRate ?? 7}`, color: 'text-[#d4af37]' }
+      : { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 0}`, color: 'text-[#d4af37]' },
   ];
 
   return (
@@ -151,6 +155,39 @@ export function SellerAnalytics() {
                   );
                 })}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* En Çok Alışveriş Yapan Alıcılar */}
+        <div className="rounded-xl border border-border bg-card mb-8">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-display font-semibold">En Çok Alışveriş Yapan Alıcılar</h2>
+          </div>
+          <div className="overflow-x-auto">
+            {(data?.topBuyers ?? []).length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Henüz alıcı verisi yok</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="text-left p-3">Alıcı</th>
+                    <th className="text-center p-3">Sipariş</th>
+                    <th className="text-left p-3">Aldıkları</th>
+                    <th className="text-right p-3">Toplam Harcama</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {(data?.topBuyers ?? []).map((b: any, i: number) => (
+                    <tr key={i} className="hover:bg-muted/50">
+                      <td className="p-3 font-medium">{b.name}</td>
+                      <td className="p-3 text-center font-mono">{b.orderCount}</td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-[280px] truncate" title={b.lots.join(', ')}>{b.lots.slice(0, 2).join(', ')}{b.lots.length > 2 ? ` +${b.lots.length - 2} daha` : ''}</td>
+                      <td className="p-3 text-right font-mono text-[#d4af37]">{formatPrice(b.totalSpent)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>

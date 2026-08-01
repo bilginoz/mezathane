@@ -108,6 +108,30 @@ export async function GET() {
       revenue: c._sum.soldPrice ?? 0,
     })).sort((a, b) => b.revenue - a.revenue);
 
+    // En çok alışveriş yapan alıcılar (kim ne almış) — DIRECT'te "cari"nin özet/rapor versiyonu
+    const soldPayments = await prisma.payment.findMany({
+      where: { lot: { auction: { sellerId }, status: 'SOLD' } },
+      select: {
+        totalAmount: true,
+        lot: { select: { title: true, lotNumber: true } },
+        user: { select: { id: true, fullName: true, companyName: true } },
+      },
+    });
+    const buyerMap = new Map<string, { name: string; orderCount: number; totalSpent: number; lots: string[] }>();
+    for (const p of soldPayments) {
+      const b = p.user;
+      const key = b?.id ?? 'unknown';
+      if (!buyerMap.has(key)) buyerMap.set(key, { name: b?.companyName || b?.fullName || 'Bilinmeyen', orderCount: 0, totalSpent: 0, lots: [] });
+      const rec = buyerMap.get(key)!;
+      rec.orderCount += 1;
+      rec.totalSpent += p.totalAmount ?? 0;
+      if (p.lot?.title) rec.lots.push(`#${p.lot.lotNumber} ${p.lot.title}`);
+    }
+    const topBuyers = Array.from(buyerMap.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 8)
+      .map((b) => ({ ...b, totalSpent: Math.round(b.totalSpent * 100) / 100 }));
+
     // Son 30 gün teklif trendi (günlük)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -147,9 +171,11 @@ export async function GET() {
         avgBidsPerLot: Math.round(avgBidsPerLot * 10) / 10,
         watchlistCount,
         commissionRate: seller.commissionRate,
+        buyerPremiumRate: (seller as any).buyerPremiumRate ?? 7, // DIRECT modda gösterilecek gerçek oran
       },
       auctionStats,
       categorySales,
+      topBuyers,
       bidTrend,
     });
   } catch (error: any) {
