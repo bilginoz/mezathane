@@ -16,7 +16,7 @@ import { useTheme } from 'next-themes';
 import { useBrowserNotifications } from '@/hooks/use-browser-notifications';
 
 export function Header() {
-  const { data: session, status } = useSession() || {};
+  const { data: session, status, update: updateSession } = useSession() || {};
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -35,6 +35,8 @@ export function Header() {
   const { sendNotification } = useBrowserNotifications();
   const prevUnreadRef = useRef(0);
   const user = session?.user as any;
+  // Satıcı ise firma adını göster (kişi ismi değil). Firma yoksa isme düşer.
+  const displayName = (user?.role === 'SELLER' && user?.companyName) ? user.companyName : (user?.name ?? 'Kullanıcı');
 
   useEffect(() => {
     fetch('/api/site-settings').then(r => r.json()).then(d => setSiteSettings(d?.settings)).catch(() => {});
@@ -55,6 +57,9 @@ export function Header() {
                 tag: 'mezathane-' + latest.id,
                 data: { url: latest.link || '/bildirimler' },
               });
+              // Ad/firma/onay durumu gibi admin tarafında değişen bilgiler yeni bildirimle birlikte
+              // oturuma yansısın diye tazelenir (isim değişikliği vb. oturumda hep eski kalmasın).
+              updateSession?.();
             }
             prevUnreadRef.current = newCount;
             setUnreadCount(newCount);
@@ -325,10 +330,10 @@ export function Header() {
                     className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted transition-colors"
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#d4af37] text-black text-xs font-bold">
-                      {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                      {displayName?.[0]?.toUpperCase() ?? "U"}
                     </div>
                     <span className="hidden lg:block text-sm font-medium max-w-[100px] truncate">
-                      {user?.name ?? 'Kullanıcı'}
+                      {displayName}
                     </span>
                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   </button>
@@ -341,7 +346,7 @@ export function Header() {
                         className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-border bg-card shadow-lg overflow-hidden z-50"
                       >
                         <div className="p-3 border-b border-border">
-                          <p className="text-sm font-medium truncate">{user?.name}</p>
+                          <p className="text-sm font-medium truncate">{displayName}</p>
                           <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                         </div>
                         <div className="p-1">

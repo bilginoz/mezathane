@@ -77,6 +77,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.fullName,
+            companyName: user.sellerProfile?.companyName ?? null,
             role: user.role,
             sellerStatus: user.sellerProfile?.status ?? null,
             sellerProfileId: user.sellerProfile?.id ?? null,
@@ -95,6 +96,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger }: any) {
       if (user) {
         token.id = user.id;
+        token.name = user.name;
+        token.companyName = (user as any).companyName ?? null;
         token.role = user.role;
         token.sellerStatus = user.sellerStatus;
         token.sellerProfileId = user.sellerProfileId ?? null;
@@ -111,6 +114,8 @@ export const authOptions: NextAuthOptions = {
             include: { sellerProfile: true },
           });
           if (freshUser) {
+            token.name = freshUser.fullName; // isim değişince oturumda da güncellensin
+            token.companyName = freshUser.sellerProfile?.companyName ?? null;
             token.isEmailVerified = freshUser.isEmailVerified ?? false;
             token.isPhoneVerified = freshUser.isPhoneVerified ?? false;
             token.hasPaymentMethod = freshUser.hasPaymentMethod ?? false;
@@ -128,6 +133,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: any) {
       if (session?.user) {
         (session.user as any).id = token.id;
+        if (token.name) (session.user as any).name = token.name;
+        (session.user as any).companyName = token.companyName ?? null;
         (session.user as any).role = token.role;
         (session.user as any).sellerStatus = token.sellerStatus;
         (session.user as any).sellerProfileId = token.sellerProfileId ?? null;
