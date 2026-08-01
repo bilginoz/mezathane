@@ -31,6 +31,31 @@ export function AuctionRightsContent() {
   const [submitting, setSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
   const [reporting, setReporting] = useState<string | null>(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState<string | null>(null);
+
+  // Onaylı Müzayede Hakkı satın alması için ödeme özeti (makbuz) PDF'i indir.
+  // Not: bu bir vergi faturası değildir — DIRECT modda platform ürün satışından fatura kesmez.
+  const downloadReceipt = async (purchaseId: string) => {
+    setDownloadingReceipt(purchaseId);
+    try {
+      const res = await fetch('/api/seller/auction-rights/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseId }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.error(d?.error ?? 'Özet oluşturulamadı'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `muzayede-hakki-ozeti-${purchaseId.slice(-6).toUpperCase()}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Özet indirilemedi');
+    } finally {
+      setDownloadingReceipt(null);
+    }
+  };
 
   const reportPayment = async (purchaseId: string) => {
     setReporting(purchaseId);
@@ -212,6 +237,16 @@ export function AuctionRightsContent() {
                   </div>
                   {p.status === 'REJECTED' && p.adminNote && (
                     <p className="w-full text-xs text-red-400">Sebep: {p.adminNote}</p>
+                  )}
+                  {p.status === 'APPROVED' && (
+                    <button
+                      onClick={() => downloadReceipt(p.id)}
+                      disabled={downloadingReceipt === p.id}
+                      className="flex items-center gap-1.5 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors disabled:opacity-50"
+                    >
+                      {downloadingReceipt === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Banknote className="h-3 w-3" />}
+                      {downloadingReceipt === p.id ? 'Oluşturuluyor...' : 'Ödeme Özeti (PDF)'}
+                    </button>
                   )}
                   {p.status === 'PENDING' && (
                     <div className="w-full">
