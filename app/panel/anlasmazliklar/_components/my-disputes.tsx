@@ -88,7 +88,7 @@ export function MyDisputes() {
       <div className="max-w-3xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <button onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></button>
+            <Link href="/panel" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></Link>
             <AlertTriangle className="h-6 w-6 text-[#d4af37]" />
             <h1 className="font-display text-2xl font-bold">Anlaşmazlıklarım</h1>
           </div>

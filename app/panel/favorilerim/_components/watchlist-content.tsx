@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Heart, ArrowLeft } from 'lucide-react';
 import { LotCard } from '@/components/lot-card';
 
@@ -27,7 +28,7 @@ export function WatchlistContent() {
     <main className="flex-1 py-8">
       <div className="mx-auto max-w-[1200px] px-4">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></button>
+          <Link href="/panel" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></Link>
           <div>
             <h1 className="font-display text-2xl font-bold">Favorilerim</h1>
             <p className="text-xs text-muted-foreground mt-0.5">🔔 Favori lotlarınızın müzayedesi başlamadan 15 dk önce size hatırlatma gönderilir.</p>

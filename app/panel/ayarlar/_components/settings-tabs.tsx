@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { User, Bell, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { ProfileSettings } from './profile-settings';
 import NotificationSettings from './notification-settings';
@@ -15,9 +16,9 @@ export default function SettingsTabs() {
     <main className="flex-1 py-8">
       <div className="max-w-[800px] mx-auto px-4">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
+          <Link href="/panel" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
             <ArrowLeft className="h-4 w-4" />
-          </button>
+          </Link>
           <h1 className="font-display text-2xl font-bold">Hesap Ayarları</h1>
         </div>
 

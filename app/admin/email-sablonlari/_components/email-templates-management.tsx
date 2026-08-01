@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Mail, ArrowLeft, Loader2, Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronUp, Code } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -108,9 +109,9 @@ export function EmailTemplatesManagement() {
   return (
     <div>
       <div className="mb-6">
-        <button type="button" onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors inline-flex items-center gap-2 text-sm mb-4">
-          <ArrowLeft className="h-4 w-4" /> Geri
-        </button>
+        <Link href="/admin" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors inline-flex items-center gap-2 text-sm mb-4">
+          <ArrowLeft className="h-4 w-4" /> Admin Paneline Dön
+        </Link>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Mail className="h-6 w-6 text-[#d4af37]" /> E-posta Şablonları
         </h1>

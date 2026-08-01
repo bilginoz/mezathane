@@ -29,7 +29,7 @@ export function MyBidsContent() {
     <main className="flex-1 py-8">
       <div className="mx-auto max-w-[1200px] px-4">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></button>
+          <Link href="/panel" className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"><ArrowLeft className="h-4 w-4" /></Link>
           <h1 className="font-display text-2xl font-bold">Tekliflerim</h1>
         </div>
         {loading ? (

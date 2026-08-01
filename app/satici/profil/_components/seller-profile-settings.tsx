@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -292,9 +293,9 @@ export function SellerProfileSettings() {
     <main className="container mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
-        <button onClick={() => router.back()} className="h-10 w-10 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
+        <Link href="/satici" className="h-10 w-10 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </Link>
         <div>
           <h1 className="font-display text-2xl font-bold">Mağaza Profilim</h1>
           <p className="text-sm text-muted-foreground">Firma bilgilerinizi ve logonuzu yönetin</p>
