@@ -25,7 +25,12 @@ interface ExpenseData {
 }
 
 interface ProfitLoss {
-  income: { buyerPremium: number; sellerCommission: number; total: number; collected: number; pending: number; salesVolume: number; soldCount: number };
+  mode?: 'ESCROW' | 'DIRECT';
+  income: {
+    buyerPremium: number; sellerCommission: number; total: number; collected: number; pending: number;
+    salesVolume: number; soldCount: number;
+    rights: { approvedRevenue: number; approvedCount: number; pendingRevenue: number; pendingCount: number } | null;
+  };
   expense: { total: number; kdv: number; count: number; byCategory: Record<string, number> };
   netProfit: number;
   netProfitCollected: number;
@@ -156,6 +161,13 @@ export function ExpensesManagement() {
           </button>
         </div>
 
+        {pl?.mode === 'DIRECT' && (
+          <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-2.5 mb-6 text-xs text-muted-foreground">
+            Doğrudan ödeme modelinde platform ürün satışından pay almaz; buradaki gelir yalnızca
+            satıcıların satın aldığı <strong className="text-foreground">Müzayede Hakkı</strong> tutarıdır.
+          </div>
+        )}
+
         {/* Dönem seçimi */}
         <div className="flex flex-wrap items-end gap-3 mb-6 rounded-xl border border-border bg-card p-4">
           <div>
@@ -182,10 +194,12 @@ export function ExpensesManagement() {
         {pl && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4">
-              <div className="flex items-center gap-2 text-green-400 mb-1"><TrendingUp className="h-4 w-4" /><span className="text-xs font-medium">Gelir</span></div>
+              <div className="flex items-center gap-2 text-green-400 mb-1"><TrendingUp className="h-4 w-4" /><span className="text-xs font-medium">Gelir {pl.mode === 'DIRECT' ? '(Müzayede Hakkı)' : ''}</span></div>
               <p className="text-xl font-bold font-mono">{formatPrice(pl.income.total)}</p>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Alıcı primi {formatPrice(pl.income.buyerPremium)} · Satıcı kom. {formatPrice(pl.income.sellerCommission)}
+                {pl.mode === 'DIRECT'
+                  ? `${pl.income.rights?.approvedCount ?? 0} onaylı hak satışı${(pl.income.rights?.pendingCount ?? 0) > 0 ? ` · ${pl.income.rights?.pendingCount} onay bekliyor` : ''}`
+                  : <>Alıcı primi {formatPrice(pl.income.buyerPremium)} · Satıcı kom. {formatPrice(pl.income.sellerCommission)}</>}
               </p>
             </div>
             <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
@@ -209,7 +223,11 @@ export function ExpensesManagement() {
         {pl && pl.income.pending > 0 && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 mb-6 text-sm">
             <strong className="text-amber-400">{formatPrice(pl.income.pending)}</strong>
-            <span className="text-muted-foreground"> gelir henüz tahsil edilmedi. Bu tutar &quot;Net Kâr&quot;a dahil, &quot;Kasaya Giren&quot;e değil.</span>
+            {pl.mode === 'DIRECT' ? (
+              <span className="text-muted-foreground"> tutarında Müzayede Hakkı talebi admin onayı bekliyor. Onaylanınca gelire eklenir.</span>
+            ) : (
+              <span className="text-muted-foreground"> gelir henüz tahsil edilmedi. Bu tutar &quot;Net Kâr&quot;a dahil, &quot;Kasaya Giren&quot;e değil.</span>
+            )}
           </div>
         )}
 
