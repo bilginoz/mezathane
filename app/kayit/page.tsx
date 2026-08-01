@@ -171,6 +171,7 @@ function RegisterPageInner() {
             {/* Kimlik Bilgileri */}
             <div className="space-y-3 border-t border-border pt-4">
               <h3 className="text-sm font-semibold text-[#d4af37] flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> Kimlik / Vergi Bilgileri</h3>
+              <p className="text-xs text-muted-foreground -mt-2">Bu bilgiler yalnızca kazandığınız lotlar için düzenlenecek yasal faturada kullanılır; başka bir amaçla kullanılmaz.</p>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="accountType" checked={!form.isCompany} onChange={() => setForm(p => ({ ...p, isCompany: false }))} className="accent-[#d4af37]" />

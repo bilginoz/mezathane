@@ -60,12 +60,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Telefon numarası zorunludur' }, { status: 400 });
     }
 
-    // TC Kimlik doğrulama
-    if (!tcKimlikNo) {
-      return NextResponse.json({ error: 'TC Kimlik No zorunludur' }, { status: 400 });
-    }
-    if (!validateTCKimlikNo(tcKimlikNo)) {
-      return NextResponse.json({ error: 'Geçersiz TC Kimlik No. Lütfen doğru TC Kimlik numaranızı girin.' }, { status: 400 });
+    // TC Kimlik doğrulama — artık ZORUNLU değil (satıcı kurumsal başvuruyor); doldurulursa geçerliliği kontrol edilir.
+    if (tcKimlikNo && !validateTCKimlikNo(tcKimlikNo)) {
+      return NextResponse.json({ error: 'Geçersiz TC Kimlik No. Lütfen doğru TC Kimlik numaranızı girin veya boş bırakın.' }, { status: 400 });
     }
 
     // === Şirket alanları doğrulama ===

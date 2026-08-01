@@ -73,9 +73,10 @@ export default function SellerApplyPage() {
       if (accountForm.password !== accountForm.confirmPassword) {
         toast.error('Şifreler eşleşmiyor'); return;
       }
-      if (!accountForm.tcKimlikNo) { toast.error('TC Kimlik No zorunludur'); return; }
-      if (!validateTCKimlikNo(accountForm.tcKimlikNo)) {
-        toast.error('Geçersiz TC Kimlik No. Lütfen doğru TC Kimlik numaranızı girin.'); return;
+      // TC Kimlik No artık ZORUNLU değil: satıcı bir şirket olarak başvuruyor, kurumsal
+      // (firma/vergi) bilgiler yeterli. Doldurulursa yine de geçerliliği kontrol edilir.
+      if (accountForm.tcKimlikNo && !validateTCKimlikNo(accountForm.tcKimlikNo)) {
+        toast.error('Geçersiz TC Kimlik No. Lütfen doğru TC Kimlik numaranızı girin veya boş bırakın.'); return;
       }
       if (!accountForm.address.trim()) { toast.error('Adres bilgisi zorunludur'); return; }
       if (!accepted) { toast.error('Üyelik sözleşmesini onaylamalısınız'); return; }
@@ -322,8 +323,8 @@ export default function SellerApplyPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-1.5 block">TC Kimlik No *</label>
-                      <input type="text" value={accountForm.tcKimlikNo} onChange={handleAccountChange('tcKimlikNo')} placeholder="11 haneli TC Kimlik Numaranız" maxLength={11} className="w-full rounded-lg border border-border bg-background py-2.5 px-4 text-sm focus:border-[#d4af37] focus:outline-none" required />
+                      <label className="text-sm font-medium mb-1.5 block">TC Kimlik No (isteğe bağlı)</label>
+                      <input type="text" value={accountForm.tcKimlikNo} onChange={handleAccountChange('tcKimlikNo')} placeholder="11 haneli TC Kimlik Numaranız (opsiyonel)" maxLength={11} className="w-full rounded-lg border border-border bg-background py-2.5 px-4 text-sm focus:border-[#d4af37] focus:outline-none" />
                     </div>
                   </div>
 
