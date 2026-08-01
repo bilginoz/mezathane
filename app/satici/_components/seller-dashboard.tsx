@@ -24,7 +24,7 @@ export function SellerDashboard() {
   const [auctionForm, setAuctionForm] = useState({
     title: '', description: '', startDate: '', endDate: '', liveDate: '',
     waitingTime: 20, fairWaitingTime: 5, liveDelayMinutes: 30, paymentDays: 5,
-    liveOnly: false,
+    liveOnly: false, buyerPremiumRate: null as number | null, // null = profil varsayılanı kullanılır
   });
   const [livePreset, setLivePreset] = useState<'fast' | 'normal' | 'relaxed' | 'custom'>('normal');
   const [creating, setCreating] = useState(false);
@@ -114,6 +114,7 @@ export function SellerDashboard() {
           waitingTime: auctionForm.waitingTime,
           fairWaitingTime: auctionForm.fairWaitingTime,
           paymentDays: auctionForm.paymentDays,
+          buyerPremiumRate: auctionForm.buyerPremiumRate ?? undefined, // null/dokunulmamışsa profil oranı kullanılır
           status: 'DRAFT',
         }),
       });
@@ -519,17 +520,26 @@ export function SellerDashboard() {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Canlı Müzayede Tarihi *</label>
                     <input type="datetime-local" value={auctionForm.liveDate} onChange={(e) => setAuctionForm(p => ({ ...p, liveDate: e.target.value }))} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none" required />
+                    {auctionForm.liveDate && (
+                      <p className="text-[10px] text-[#d4af37] mt-1 font-medium">✓ Seçilen: {new Date(auctionForm.liveDate).toLocaleString('tr-TR', { dateStyle: 'long', timeStyle: 'short' })}</p>
+                    )}
                     <p className="text-[10px] text-muted-foreground mt-1">Belirtilen saatte canlı müzayede direkt başlar. Lotlar önceden görünecek ama teklif verilemeyecek.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Ön Teklif Başlangıcı *</label>
+                      <label className="text-sm font-medium mb-1 block">Müzayede Başlangıcı *</label>
                       <input type="datetime-local" value={auctionForm.startDate} onChange={(e) => setAuctionForm(p => ({ ...p, startDate: e.target.value }))} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none" required />
+                      {auctionForm.startDate && (
+                        <p className="text-[10px] text-[#d4af37] mt-1 font-medium">✓ Seçilen: {new Date(auctionForm.startDate).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                      )}
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Ön Teklif Bitişi *</label>
+                      <label className="text-sm font-medium mb-1 block">Müzayede Bitişi *</label>
                       <input type="datetime-local" value={auctionForm.endDate} onChange={(e) => setAuctionForm(p => ({ ...p, endDate: e.target.value }))} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none" required />
+                      {auctionForm.endDate && (
+                        <p className="text-[10px] text-[#d4af37] mt-1 font-medium">✓ Seçilen: {new Date(auctionForm.endDate).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -572,9 +582,9 @@ export function SellerDashboard() {
                       </div>
                       {!auctionForm.liveOnly && (
                         <div>
-                          <label className="text-xs font-medium mb-1 block">Gecikme (dk)</label>
+                          <label className="text-xs font-medium mb-1 block">Canlı Tura Geçiş Süresi (dk)</label>
                           <input type="number" min={0} max={1440} value={auctionForm.liveDelayMinutes} onChange={(e) => setAuctionForm(p => ({ ...p, liveDelayMinutes: Math.min(1440, Math.max(0, Number(e.target.value))) }))} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none" />
-                          <p className="text-[10px] text-muted-foreground mt-0.5">0–1440 dk (24 saat)</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Yazılı müzayede bittikten kaç dakika sonra canlı tur başlasın (0–1440 dk / 24 saat)</p>
                         </div>
                       )}
                     </div>
@@ -584,9 +594,14 @@ export function SellerDashboard() {
                   <div>
                     {paymentMode === 'DIRECT' ? (
                       <>
-                        <label className="text-sm font-medium mb-1 block">Alıcı Komisyonunuz (%)</label>
-                        <div className="w-full rounded-lg border border-border bg-muted/50 py-2 px-3 text-sm font-mono">%{data?.seller?.buyerPremiumRate ?? 7}</div>
-                        <p className="text-[10px] text-muted-foreground mt-1">Sizin belirlediğiniz oran · <a href="/satici/profil" className="text-[#d4af37] hover:underline">Profil'den düzenleyin</a></p>
+                        <label className="text-sm font-medium mb-1 block">Bu Müzayede İçin Alıcı Komisyonu (%)</label>
+                        <input
+                          type="number" min={0} max={30} step="0.5"
+                          value={auctionForm.buyerPremiumRate ?? (data?.seller?.buyerPremiumRate ?? 7)}
+                          onChange={(e) => setAuctionForm(p => ({ ...(p ?? {}), buyerPremiumRate: e.target.value === '' ? null : Number(e.target.value) }))}
+                          className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Varsayılan profil oranınızdır (%{data?.seller?.buyerPremiumRate ?? 7}); bu müzayedeye özel değiştirebilirsiniz.</p>
                       </>
                     ) : (
                       <>

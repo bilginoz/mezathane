@@ -64,6 +64,13 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    // Alıcı komisyon oranı (DIRECT modda): müzayede bazında satıcının belirlediği oran,
+    // profildeki varsayılan orana ÖNCELİKLİDİR. Geçersiz/aralık dışıysa profil oranına düşer.
+    const customPremium = Number(body.buyerPremiumRate);
+    const resolvedPremiumRate = Number.isFinite(customPremium) && customPremium >= 0 && customPremium <= 30
+      ? customPremium
+      : ((seller as any).buyerPremiumRate ?? 7.0);
+
     // Müzayede açmak 1 "Müzayede Hakkı" kullanır (kontör modeli). Kontrol + hak düşme +
     // müzayede oluşturma tek transaction'da atomik yapılır. Hak yoksa oluşturulmaz.
     let auction;
@@ -86,7 +93,7 @@ export async function POST(request: Request) {
             waitingTime: Math.min(120, Math.max(5, body.waitingTime ?? 20)),
             fairWaitingTime: Math.min(15, Math.max(5, body.fairWaitingTime ?? 5)),
             commissionRate: seller.commissionRate,
-            buyerPremiumRate: (seller as any).buyerPremiumRate ?? 7.0, // DIRECT modda alıcı komisyonu; anlık kopya
+            buyerPremiumRate: resolvedPremiumRate, // DIRECT modda alıcı komisyonu; müzayede bazlı belirlenebilir
             paymentDays: Math.min(7, Math.max(2, body.paymentDays ?? 5)),
             isPublic: body.isPublic ?? true,
           },
