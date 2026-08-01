@@ -23,7 +23,9 @@ export default function SellerLoginPage() {
     const user = sessionData?.user as any;
 
     if (user && !user.isEmailVerified) {
-      toast.info('Lütfen e-posta adresinizi doğrulayın.');
+      // Not: e-posta doğrulama ile admin onayı ayrı adımlardır; doğrulama sayfası satıcı için
+      // bunu ayrıca belirtir (kullanıcı "kod girince her şey biter" sanmasın).
+      toast.info('Önce e-posta adresinizi doğrulamanız gerekiyor.');
       router.replace('/dogrulama');
     } else if (user?.role === 'SELLER' || user?.role === 'ADMIN') {
       toast.success('Satıcı girişi başarılı!');

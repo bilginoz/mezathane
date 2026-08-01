@@ -21,6 +21,10 @@ export default function VerificationPage() {
   const userEmail = session?.user?.email;
 
   const userRole = (session?.user as any)?.role;
+  const sellerStatus = (session?.user as any)?.sellerStatus;
+  // Satıcı başvurusu hâlâ admin onayı bekliyorsa, kullanıcı "e-posta doğrulanınca her şey
+  // biter" sanmasın diye ayrıca bilgilendirilir (e-posta doğrulama ile admin onayı ayrı adımlardır).
+  const sellerPendingNote = userRole === 'SELLER' && sellerStatus && sellerStatus !== 'APPROVED';
   // Zaten doğrulanmışsa role'e göre yönlendir
   useEffect(() => {
     if (isVerified) {
@@ -93,14 +97,16 @@ export default function VerificationPage() {
       setSuccess(true);
       toast.success('E-posta doğrulaması başarılı!');
 
-      // Session'ı güncelle
-      await update();
+      // Session'ı güncelle — bu çağrı başarısız/yavaş olsa bile yönlendirmeyi ENGELLEMESİN
+      // (önceden burada takılırsa kullanıcı "yönlendiriliyorsunuz" ekranında sonsuza kalıyordu).
+      try { await update(); } catch { /* sessiz geç, yine de yönlendir */ }
 
       setTimeout(() => {
-        if (userRole === 'SELLER') router.replace('/satici');
-        else if (userRole === 'ADMIN') router.replace('/admin');
-        else router.replace('/');
-      }, 2000);
+        // Tam sayfa yenileme: sunucu bileşenleri (ör. satıcı paneli) taze session/DB durumunu
+        // görsün diye router.replace yerine kesin/güvenilir bir hard navigation kullanılır.
+        const dest = userRole === 'SELLER' ? '/satici' : userRole === 'ADMIN' ? '/admin' : '/';
+        window.location.href = dest;
+      }, 1200);
     } catch (err: any) {
       toast.error(err?.message ?? 'Doğrulama başarısız');
       setCode(['', '', '', '', '', '']);
@@ -155,6 +161,13 @@ export default function VerificationPage() {
           <p className="text-sm text-muted-foreground mt-1">
             <strong>{userEmail}</strong> adresine gönderilen 6 haneli kodu girin
           </p>
+          {sellerPendingNote && (
+            <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mt-3">
+              Not: E-posta doğrulaması ile satıcı başvurunuzun admin onayı ayrı adımlardır. Kodu
+              girdikten sonra satıcı panelinize yönlendirileceksiniz; orada başvurunuzun onay
+              durumunu görebilirsiniz.
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
