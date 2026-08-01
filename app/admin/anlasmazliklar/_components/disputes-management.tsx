@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, Eye, MessageSquare, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatPrice } from '@/lib/utils';
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   OPEN: { label: 'Açık', color: 'bg-red-500/20 text-red-400', icon: AlertTriangle },
@@ -138,6 +138,26 @@ export function DisputesManagement() {
                         <h4 className="text-xs font-medium text-white/40 mb-1">Şikayet Detayı</h4>
                         <p className="text-sm text-white/80 bg-white/5 rounded-lg p-3">{d.description}</p>
                       </div>
+
+                      {/* İlgili Satış — admin ayrı ekrana gitmeden tutar/ödeme/kargo durumunu görsün */}
+                      {(() => {
+                        const p = d.lot?.payments?.[0];
+                        if (!p) return null;
+                        const paid = p.sellerPaymentConfirmedAt || p.status === 'PAID' || p.buyerPaymentReceived;
+                        return (
+                          <div className="bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-lg p-3">
+                            <p className="text-xs font-medium text-[#d4af37] mb-2">İlgili Satış</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                              <div><span className="text-white/40 block">Lot</span><span className="text-white/80">#{d.lot.lotNumber} {d.lot.title}</span></div>
+                              <div><span className="text-white/40 block">Satıcı</span><span className="text-white/80">{d.lot.auction?.seller?.companyName ?? '—'}</span></div>
+                              <div><span className="text-white/40 block">Tutar</span><span className="text-white/80 font-mono">{formatPrice(p.totalAmount)}</span></div>
+                              <div><span className="text-white/40 block">Ödeme</span><span className={paid ? 'text-green-400' : 'text-amber-400'}>{paid ? 'Ödendi' : p.buyerReportedPaidAt ? 'Alıcı bildirdi, onay bekliyor' : 'Bekliyor'}</span></div>
+                              <div><span className="text-white/40 block">Kargo</span><span className="text-white/80">{p.shippingStatus === 'DELIVERED' ? 'Teslim edildi' : p.shippingStatus === 'SHIPPED' ? 'Kargoda' : 'Hazırlanıyor'}</span></div>
+                              {p.dueDate && <div><span className="text-white/40 block">Vade</span><span className="text-white/80">{formatDate(p.dueDate)}</span></div>}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Taraflar */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -21,7 +21,22 @@ export async function GET(request: Request) {
     const disputes = await prisma.dispute.findMany({
       where,
       include: {
-        lot: { select: { id: true, title: true, lotNumber: true } },
+        // Admin, şikayeti değerlendirirken ayrı bir ekrana gitmeden ilgili SATIŞI (tutar,
+        // ödeme/kargo durumu) görsün diye lot'a bağlı satış bilgisi de getirilir.
+        lot: {
+          select: {
+            id: true, title: true, lotNumber: true, status: true,
+            auction: { select: { title: true, seller: { select: { companyName: true } } } },
+            payments: {
+              select: {
+                totalAmount: true, status: true, shippingStatus: true,
+                buyerPaymentReceived: true, sellerPaymentConfirmedAt: true,
+                buyerReportedPaidAt: true, paidAt: true, dueDate: true,
+              },
+              take: 1,
+            },
+          },
+        },
         reporter: { select: { id: true, fullName: true, email: true } },
         against: { select: { id: true, fullName: true, email: true } },
       },
