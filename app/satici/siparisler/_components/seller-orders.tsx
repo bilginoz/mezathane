@@ -367,9 +367,9 @@ export function SellerOrders() {
                             <p className="text-sm font-mono font-bold">{formatPrice(order.salePrice)}</p>
                           </div>
                           <div className="rounded-lg bg-green-500/10 p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground">Platform Komisyonu</p>
-                            <p className="text-sm font-mono font-bold text-green-500">0 ₺</p>
-                            <p className="text-[8px] text-muted-foreground">Tahsilatın tamamı size aittir</p>
+                            <p className="text-[10px] text-muted-foreground">Size Ödenecek Tutar</p>
+                            <p className="text-sm font-mono font-bold text-green-500">{formatPrice(order.salePrice)}</p>
+                            <p className="text-[8px] text-muted-foreground">Platform kesinti yapmaz, tamamı size aittir</p>
                           </div>
                         </div>
                       ) : (
