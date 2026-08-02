@@ -141,6 +141,34 @@ export async function GET(request: Request) {
     });
     const conversionRate = allLotsInPeriod > 0 ? Math.round((soldLotsInPeriod / allLotsInPeriod) * 100) : 0;
 
+    // ====== Kategori arz-talep dengesizliği ======
+    // Arz: kategoride yayında olan (aktif/planlanmış/canlı) lot sayısı.
+    // Talep: aynı lotlara gelen toplam teklif + favori sayısı.
+    // Oran yüksekse (talep/arz) o kategoride alıcı ilgisine göre satıcı arzı yetersiz demektir —
+    // admin mevcut satıcıları o kategoriye yönlendirebilir ya da o alanda yeni satıcı arayabilir.
+    const liveLots = await prisma.lot.findMany({
+      where: { auction: { status: { in: ['SCHEDULED', 'ACTIVE', 'LIVE'] }, isPublic: true, seller: { status: 'APPROVED' } } },
+      select: { categoryId: true, bidCount: true, watchCount: true },
+    });
+    const demandMap = new Map<string, { supply: number; demand: number }>();
+    for (const l of liveLots) {
+      if (!l.categoryId) continue;
+      const d = demandMap.get(l.categoryId) ?? { supply: 0, demand: 0 };
+      d.supply += 1;
+      d.demand += l.bidCount + l.watchCount;
+      demandMap.set(l.categoryId, d);
+    }
+    const demandCategoryIds = Array.from(demandMap.keys());
+    const demandCategoriesData = demandCategoryIds.length > 0 ? await prisma.category.findMany({
+      where: { id: { in: demandCategoryIds } }, select: { id: true, name: true },
+    }) : [];
+    const categoryDemand = demandCategoriesData
+      .map((c) => {
+        const d = demandMap.get(c.id)!;
+        return { name: c.name, supply: d.supply, demand: d.demand, ratio: d.supply > 0 ? Math.round((d.demand / d.supply) * 10) / 10 : 0 };
+      })
+      .sort((a, b) => b.ratio - a.ratio);
+
     // Özet istatistikler
     const totalBidsInPeriod = bids.length;
     const totalVolumeInPeriod = bids.reduce((sum, b) => sum + b.amount, 0);
@@ -153,6 +181,7 @@ export async function GET(request: Request) {
       categoryChart,
       auctionChart,
       topSellers: topSellers ?? [],
+      categoryDemand,
       summary: {
         totalBidsInPeriod,
         totalVolumeInPeriod,

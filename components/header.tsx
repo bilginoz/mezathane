@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Bell, Menu, X, User, LogOut, LayoutDashboard,
   ChevronDown, Gavel, Store, Shield, Heart, Settings, Sun, Moon, UserCheck,
-  CreditCard, Package, Tag, Calendar, MessageCircle, HelpCircle
+  CreditCard, Package, Tag, Calendar, MessageCircle, HelpCircle, BarChart3
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -367,6 +367,9 @@ export function Header() {
                           <Link href="/panel/favorilerim" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors">
                             <Heart className="h-4 w-4" /> Favorilerim
                           </Link>
+                          <Link href="/panel/analitik" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors">
+                            <BarChart3 className="h-4 w-4" /> Analitiğim
+                          </Link>
                           <Link href={user?.role === 'SELLER' ? '/satici/mesajlar' : '/panel/mesajlar'} onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors">
                             <MessageCircle className="h-4 w-4" /> Mesajlarım
                           </Link>
@@ -551,6 +554,9 @@ export function Header() {
                     </Link>
                     <Link href="/panel/favorilerim" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-muted">
                       <Heart className="h-4 w-4 text-muted-foreground" /> Favorilerim
+                    </Link>
+                    <Link href="/panel/analitik" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-muted">
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" /> Analitiğim
                     </Link>
                     <Link href={user?.role === 'SELLER' ? '/satici/mesajlar' : '/panel/mesajlar'} onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-muted">
                       <MessageCircle className="h-4 w-4 text-muted-foreground" /> Mesajlarım

@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, TrendingUp, BarChart3, Eye, Heart, Gavel,
   Layers, ShoppingBag, Percent, Target, Activity, DollarSign,
+  Zap, FileCheck, Image as ImageIcon, AlertTriangle,
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
@@ -191,6 +192,140 @@ export function SellerAnalytics() {
             )}
           </div>
         </div>
+
+        {/* Son Dakika Rekabeti */}
+        {data?.lastMinuteRatio != null && (
+          <div className="rounded-xl border border-border bg-card p-5 mb-8">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="h-4 w-4 text-amber-400" />
+              <h2 className="font-display font-semibold">Son Dakika Rekabeti</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Satılan lotlarınızın <strong className="text-foreground font-mono">%{data.lastMinuteRatio}</strong>'i, bitiş anına 90 saniyeden yakın gelen bir teklifle kapandı.
+              {data.lastMinuteRatio < 15
+                ? ' Bu oran düşük — rekabet erken bitiyor olabilir, uzatma süresini (Uzatma Süresi ayarı) artırmayı deneyebilirsiniz.'
+                : ' Platformun anti-sniping mekanizması (son 60 sn içinde teklif gelirse süre uzar) sayesinde bu genelde daha yüksek satış fiyatı demektir.'}
+            </p>
+          </div>
+        )}
+
+        {/* Kalite ↔ Fiyat Korelasyonu */}
+        {data?.qualityCorrelation && (
+          <div className="rounded-xl border border-border bg-card mb-8">
+            <div className="p-4 border-b border-border">
+              <h2 className="font-display font-semibold">Açıklama Kalitesi ↔ Satış Çarpanı</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Çarpan = satış fiyatı / başlangıç fiyatı. En az 2 örneği olan gruplar gösterilir.</p>
+            </div>
+            <div className="p-4 grid sm:grid-cols-3 gap-4">
+              {[
+                { key: 'provenance', label: 'Menşe/Köken bilgisi', icon: FileCheck },
+                { key: 'restoration', label: 'Restorasyon beyanı', icon: FileCheck },
+                { key: 'photos', label: '3+ fotoğraf', icon: ImageIcon },
+              ].map(({ key, label, icon: Icon }) => {
+                const c = data.qualityCorrelation[key];
+                if (!c || (c.with == null && c.without == null)) return null;
+                return (
+                  <div key={key} className="rounded-lg bg-muted/30 p-3">
+                    <div className="flex items-center gap-1.5 mb-2"><Icon className="h-3.5 w-3.5 text-muted-foreground" /><p className="text-xs font-medium">{label}</p></div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-400 font-mono">{c.with != null ? `${c.with}x` : '—'} <span className="text-[10px] text-muted-foreground">(n={c.withCount})</span></span>
+                      <span className="text-muted-foreground font-mono">{c.without != null ? `${c.without}x` : '—'} <span className="text-[10px]">(n={c.withoutCount})</span></span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">solda: var / sağda: yok</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Standart vs Sadece-Canlı */}
+        {data?.formatComparison && (
+          <div className="rounded-xl border border-border bg-card mb-8">
+            <div className="p-4 border-b border-border">
+              <h2 className="font-display font-semibold">Standart vs Sadece-Canlı Performansı</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="text-left p-3">Tür</th>
+                    <th className="text-center p-3">Lot</th>
+                    <th className="text-center p-3">Satış Oranı</th>
+                    <th className="text-center p-3">Ort. Çarpan</th>
+                    <th className="text-center p-3">Ort. Teklif/Lot</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr>
+                    <td className="p-3 font-medium">📋 Standart</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.standard.lotCount}</td>
+                    <td className="p-3 text-center font-mono">%{data.formatComparison.standard.saleRatePct}</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.standard.avgMultiplier != null ? `${data.formatComparison.standard.avgMultiplier}x` : '—'}</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.standard.avgBidsPerLot}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">🔴 Sadece Canlı</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.liveOnly.lotCount}</td>
+                    <td className="p-3 text-center font-mono">%{data.formatComparison.liveOnly.saleRatePct}</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.liveOnly.avgMultiplier != null ? `${data.formatComparison.liveOnly.avgMultiplier}x` : '—'}</td>
+                    <td className="p-3 text-center font-mono">{data.formatComparison.liveOnly.avgBidsPerLot}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Satılmayan Lotlar — Olası Neden */}
+        {(data?.unsoldReasons ?? []).length > 0 && (
+          <div className="rounded-xl border border-border bg-card mb-8">
+            <div className="p-4 border-b border-border">
+              <h2 className="font-display font-semibold">Satılmayan Lotlar — Olası Neden</h2>
+            </div>
+            <div className="divide-y divide-border">
+              {data.unsoldReasons.map((u: any) => (
+                <Link key={u.lotId} href={`/lot/${u.lotId}`} className="flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">#{u.lotNumber} {u.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{u.reason}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Favoriledi Ama Teklif Vermedi */}
+        {(data?.interestedNonBidders ?? []).length > 0 && (
+          <div className="rounded-xl border border-border bg-card mb-8">
+            <div className="p-4 border-b border-border">
+              <h2 className="font-display font-semibold">Favoriledi Ama Hiç Teklif Vermedi</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Benzer bir lot çıkardığınızda bu alıcılara özel ulaşmak isteyebilirsiniz.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="text-left p-3">Alıcı</th>
+                    <th className="text-center p-3">Kaç Lotta</th>
+                    <th className="text-left p-3">Hangi Lotlar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {data.interestedNonBidders.map((b: any, i: number) => (
+                    <tr key={i} className="hover:bg-muted/50">
+                      <td className="p-3 font-medium">{b.name}</td>
+                      <td className="p-3 text-center font-mono">{b.lots.length}</td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-[280px] truncate" title={b.lots.join(', ')}>{b.lots.slice(0, 2).join(', ')}{b.lots.length > 2 ? ` +${b.lots.length - 2} daha` : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Bid Trend */}
         {(data?.bidTrend ?? []).length > 0 && (

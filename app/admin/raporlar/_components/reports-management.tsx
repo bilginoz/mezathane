@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, TrendingUp, Users, Gavel, DollarSign, ArrowLeft, ShoppingBag, Percent, Trophy, Wallet } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Gavel, DollarSign, ArrowLeft, ShoppingBag, Percent, Trophy, Wallet, HeartPulse, AlertTriangle, Sparkles } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
@@ -22,6 +22,8 @@ export function ReportsManagement() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30');
+  const [sellerHealth, setSellerHealth] = useState<any[]>([]);
+  const [healthLoading, setHealthLoading] = useState(true);
 
   const user = session?.user as any;
 
@@ -37,6 +39,17 @@ export function ReportsManagement() {
         .finally(() => setLoading(false));
     }
   }, [status, router, user?.role, period]);
+
+  // Satıcı sağlığı dönemden bağımsız (tüm zamanlar), bu yüzden ayrı ve tek seferlik çekiliyor.
+  useEffect(() => {
+    if (status === 'authenticated' && user?.role === 'ADMIN') {
+      fetch('/api/admin/seller-health')
+        .then(r => r.json())
+        .then(d => setSellerHealth(d?.sellers ?? []))
+        .catch(() => {})
+        .finally(() => setHealthLoading(false));
+    }
+  }, [status, user?.role]);
 
   if (status === 'loading' || loading) {
     return (
@@ -223,7 +236,7 @@ export function ReportsManagement() {
         )}
 
         {/* Category Distribution */}
-        <div className="rounded-xl border border-border bg-card p-4">          <h2 className="font-display font-semibold mb-4">Kategori Dağılımı</h2>
+        <div className="rounded-xl border border-border bg-card p-4 mb-6">          <h2 className="font-display font-semibold mb-4">Kategori Dağılımı</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data?.categoryChart ?? []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -233,6 +246,100 @@ export function ReportsManagement() {
               <Bar dataKey="lotSayisi" fill="#d4af37" radius={[0, 4, 4, 0]} name="Lot Sayısı" />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Kategori Arz-Talep Dengesizliği */}
+        {(data?.categoryDemand?.length ?? 0) > 0 && (
+          <div className="rounded-xl border border-border bg-card p-4 mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="h-5 w-5 text-[#d4af37]" />
+              <h2 className="font-display font-semibold">Kategori Arz-Talep Dengesi</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Oran = (teklif + favori) / yayındaki lot sayısı. Yüksek oran → alıcı ilgisine göre satıcı arzı
+              yetersiz (mevcut satıcıları bu kategoriye yönlendirin veya yeni satıcı arayın). Düşük oran → arz fazlası.
+            </p>
+            <div className="space-y-2">
+              {data.categoryDemand.slice(0, 8).map((c: any, i: number) => {
+                const maxRatio = data.categoryDemand[0]?.ratio || 1;
+                const pct = maxRatio > 0 ? (c.ratio / maxRatio) * 100 : 0;
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-muted-foreground">arz: {c.supply} lot · talep: {c.demand} · oran: <strong className="text-foreground">{c.ratio}</strong></span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-[#d4af37] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Satıcı Sağlığı */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <HeartPulse className="h-5 w-5 text-red-400" />
+            <h2 className="font-display font-semibold">Satıcı Sağlığı</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Skor = satış oranı (%40) + düşük anlaşmazlık (%30) + kalite bilgisi kullanımı — menşe/restorasyon
+            beyanı (%30). En riskli/düşen satıcılar üstte; onlara proaktif öneri gönderebilirsiniz. Bu, "kim
+            Müzayede Hakkı almadı" listesi değil — o da ROI sütununda tek bir bileşen olarak yer alıyor.
+          </p>
+          {healthLoading ? (
+            <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-10 bg-muted rounded animate-pulse" />)}</div>
+          ) : sellerHealth.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">Henüz onaylı satıcı/satış verisi yok</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="text-left p-2">Satıcı</th>
+                    <th className="text-center p-2">Skor</th>
+                    <th className="text-center p-2">Satış Oranı</th>
+                    <th className="text-center p-2">Anlaşmazlık</th>
+                    <th className="text-center p-2">Son Dk. Rekabeti</th>
+                    <th className="text-center p-2">Onboarding</th>
+                    <th className="text-center p-2">Hak ROI</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {sellerHealth.map((s: any) => (
+                    <tr key={s.sellerId} className="hover:bg-muted/50">
+                      <td className="p-2 font-medium">{s.companyName}</td>
+                      <td className="p-2 text-center">
+                        {s.healthScore == null ? (
+                          <span className="text-muted-foreground text-xs">veri yok</span>
+                        ) : (
+                          <span className={`font-mono font-bold px-2 py-0.5 rounded-full text-xs ${
+                            s.healthScore >= 70 ? 'bg-green-500/20 text-green-400' :
+                            s.healthScore >= 40 ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>{s.healthScore}</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-center font-mono">{s.saleRatePct != null ? `%${s.saleRatePct}` : '—'}</td>
+                      <td className="p-2 text-center font-mono">
+                        {s.disputeCount > 0 ? <span className="text-red-400 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />%{s.disputeRatePct}</span> : '—'}
+                      </td>
+                      <td className="p-2 text-center font-mono">{s.lastMinuteRatioPct != null ? `%${s.lastMinuteRatioPct}` : '—'}</td>
+                      <td className="p-2 text-center">
+                        {!s.isNewSeller ? <span className="text-muted-foreground text-xs">—</span> :
+                          s.onboardingHealthy ? <span className="text-green-400 text-xs">Sattı ✓</span> :
+                          <span className="text-amber-400 text-xs">Henüz satmadı</span>}
+                      </td>
+                      <td className="p-2 text-center font-mono">{s.roi != null ? `${s.roi}x` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </main>
