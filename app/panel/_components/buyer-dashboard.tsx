@@ -182,7 +182,7 @@ export function BuyerDashboard() {
                 <Link key={bid?.id} href={`/lot/${bid?.lotId ?? ''}`} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
                   <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <Image
-                      src={bid?.lot?.images?.[0]?.imageUrl ?? 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png'}
+                      src={bid?.lot?.images?.[0]?.imageUrl ?? '/logo.png'}
                       alt="" fill className="object-cover" sizes="48px"
                     />
                   </div>

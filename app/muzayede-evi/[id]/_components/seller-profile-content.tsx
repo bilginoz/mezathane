@@ -17,7 +17,7 @@ interface SellerProfileContentProps {
 
 export function SellerProfileContent({ seller, stats, showTermsLink }: SellerProfileContentProps) {
   const auctions = seller?.auctions ?? [];
-  const defaultLogo = 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png';
+  const defaultLogo = '/logo.png';
 
   return (
     <main className="flex-1 py-8">

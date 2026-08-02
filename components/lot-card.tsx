@@ -22,7 +22,7 @@ interface LotCardProps {
 export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = false }: LotCardProps) {
   const { data: session } = useSession() || {};
   const router = useRouter();
-  const imageUrl = lot?.images?.[0]?.imageUrl ?? 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png';
+  const imageUrl = lot?.images?.[0]?.imageUrl ?? '/logo.png';
   const categoryName = lot?.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot?.category?.name ?? '');
 
   // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcı oranı "satıcı komisyonu".

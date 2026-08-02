@@ -165,7 +165,7 @@ export function BuyerAccount() {
                     <div key={it.paymentId} className="flex items-center gap-4 p-4 hover:bg-muted/40 transition-colors">
                       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                         <Image
-                          src={it.lotImage ?? 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png'}
+                          src={it.lotImage ?? '/logo.png'}
                           alt={it.lotTitle} fill className="object-cover" sizes="56px"
                         />
                       </div>

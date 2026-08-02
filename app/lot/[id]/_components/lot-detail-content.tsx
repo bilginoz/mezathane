@@ -159,7 +159,7 @@ export function LotDetailContent({ lot }: { lot: any }) {
     return () => clearInterval(poll);
   }, [lot?.id]);
   const hasImages = (images?.length ?? 0) > 0;
-  const defaultImg = 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png';
+  const defaultImg = '/logo.png';
 
   const handleWatch = async () => {
     if (!session?.user) {

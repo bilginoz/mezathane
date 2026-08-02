@@ -12,15 +12,6 @@ import { useInView } from 'react-intersection-observer';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getTimeRemaining } from '@/lib/utils';
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  'antika': 'https://cdn.abacus.ai/images/a03523e7-5461-4450-b73e-62a3715561a1.png',
-  'tesbih': 'https://i.etsystatic.com/18812058/r/il/859531/6897798128/il_fullxfull.6897798128_ao7v.jpg',
-  'koleksiyon': 'https://nessbros.s3.amazonaws.com/2024/09/16162241/288.jpg',
-  'mucevher': 'https://assets.cdn.filesafe.space/IKsTHgDQrxdlZ6pzpBr0/media/69b03bfcddc8c73cb1e98143.png',
-  'resim': 'https://serlachius.fi/wp-content/uploads/kartanon-klassikot-5.jpg',
-  'numismatik': 'https://cdn.shopify.com/s/files/1/0714/1792/1822/files/numismatic-coin-collection.png',
-};
-
 function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string }) {
   const [count, setCount] = useState(0);
   const { ref, inView } = useInView({ triggerOnce: true });
@@ -92,7 +83,7 @@ export function HomeContent({ auctions, completedAuctions, categories, featuredL
       <section className="relative min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src={siteSettings?.heroImageUrl || "https://cdn.abacus.ai/images/67c2b70f-927c-4a36-8f9e-8edc1a05d101.png"}
+            src={siteSettings?.heroImageUrl || "/logo.png"}
             alt="Premium müzayede salonu"
             fill
             className="object-cover"
@@ -289,7 +280,7 @@ export function HomeContent({ auctions, completedAuctions, categories, featuredL
                 <Link href={`/muzayedeler?category=${cat?.slug ?? ''}&view=lots`}>
                   <div className="group relative rounded-xl overflow-hidden aspect-[4/3] bg-muted">
                     <Image
-                      src={cat?.imageUrl ?? CATEGORY_IMAGES[cat?.slug ?? ''] ?? 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png'}
+                      src={cat?.imageUrl ?? '/logo.png'}
                       alt={`${cat?.name ?? 'Kategori'} kategorisi - Mezathane.tr açık artırma`}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
