@@ -79,8 +79,14 @@ export function AdminSellerCari({ sellerId }: { sellerId: string }) {
 
         {/* Müzayede Hakkı özeti — AYNI EKRANDA */}
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5"><Ticket className="h-3.5 w-3.5 text-[#d4af37]" /> Müzayede Hakkı</p>
+        {r.unlimitedActive && (
+          <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3 mb-3 text-sm">
+            <span className="text-green-500 font-semibold">🔁 Aylık Sınırsız Paket aktif</span>
+            {r.unlimitedExpiresAt && <span className="text-muted-foreground"> — {formatDate(r.unlimitedExpiresAt)} tarihine kadar</span>}
+          </div>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-          <Card label="Kalan Hak" value={String(r.remaining ?? 0)} tone={r.remaining > 0 ? 'green' : undefined} />
+          <Card label="Kalan Hak (adet bazlı)" value={String(r.remaining ?? 0)} tone={r.remaining > 0 ? 'green' : undefined} />
           <Card label="Kullanılan" value={String(r.usedQty ?? 0)} />
           <Card label="Onaylı (toplam)" value={String(r.approvedQty ?? 0)} />
           <Card label="Onay Bekleyen" value={String(r.pendingCount ?? 0)} tone={r.pendingCount > 0 ? 'amber' : undefined} />

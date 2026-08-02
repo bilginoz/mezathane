@@ -10,6 +10,7 @@ import { formatPrice, formatDateTime } from '@/lib/utils';
 
 interface Purchase {
   id: string;
+  planType?: 'PER_AUCTION' | 'UNLIMITED_MONTHLY';
   quantity: number;
   totalAmount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -117,7 +118,10 @@ export function AuctionRightsManagement() {
                       {statusBadge(p.status)}
                     </div>
                     <p className="text-sm text-muted-foreground">{p.seller?.user?.email}</p>
-                    <p className="text-sm mt-1"><b>{p.quantity} hak</b> · {formatPrice(p.totalAmount)} · {formatDateTime(p.createdAt)}</p>
+                    <p className="text-sm mt-1">
+                      <b>{p.planType === 'UNLIMITED_MONTHLY' ? '🔁 Aylık Sınırsız Paket' : `${p.quantity} hak`}</b>
+                      {' '}· {formatPrice(p.totalAmount)} · {formatDateTime(p.createdAt)}
+                    </p>
                     {p.status === 'APPROVED' && <p className="text-xs text-muted-foreground mt-1">Kalan: {p.remaining}{p.expiresAt ? ` · Son: ${formatDateTime(p.expiresAt)}` : ''}</p>}
                     {p.sellerNote && <p className="text-xs text-muted-foreground mt-1">Satıcı notu: {p.sellerNote}</p>}
                     {p.status === 'PENDING' && p.paymentReportedAt && (

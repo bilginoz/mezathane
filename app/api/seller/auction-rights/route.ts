@@ -4,7 +4,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
-import { getSellerRightBalance, AUCTION_RIGHT_UNIT_PRICE, AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_MAX_QTY } from '@/lib/auction-rights';
+import {
+  getSellerRightBalance, AUCTION_RIGHT_UNIT_PRICE, AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_MAX_QTY,
+  AUCTION_RIGHT_UNLIMITED_PRICE, AUCTION_RIGHT_UNLIMITED_KDV_RATE, AUCTION_RIGHT_UNLIMITED_DAYS,
+} from '@/lib/auction-rights';
 
 async function getSeller(userId: string) {
   return prisma.sellerProfile.findUnique({
@@ -22,7 +25,7 @@ export async function GET() {
   if (!seller) return NextResponse.json({ error: 'Satıcı profili yok' }, { status: 403 });
 
   try {
-    const [{ balance, soonestExpiry }, purchases, settings] = await Promise.all([
+    const [{ balance, soonestExpiry, unlimitedActive, unlimitedExpiresAt }, purchases, settings] = await Promise.all([
       getSellerRightBalance(seller.id),
       prisma.auctionRightPurchase.findMany({
         where: { sellerId: seller.id },
@@ -38,10 +41,15 @@ export async function GET() {
     return NextResponse.json({
       balance,
       soonestExpiry,
+      unlimitedActive,
+      unlimitedExpiresAt,
       purchases,
       unitPrice: AUCTION_RIGHT_UNIT_PRICE,
       validityDays: AUCTION_RIGHT_VALIDITY_DAYS,
       maxQty: AUCTION_RIGHT_MAX_QTY,
+      unlimitedPrice: AUCTION_RIGHT_UNLIMITED_PRICE,
+      unlimitedKdvRate: AUCTION_RIGHT_UNLIMITED_KDV_RATE,
+      unlimitedDays: AUCTION_RIGHT_UNLIMITED_DAYS,
       bankInfo: settings ?? null,
     });
   } catch (e) {
@@ -61,18 +69,39 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const quantity = Math.floor(Number(body.quantity));
-    if (!Number.isFinite(quantity) || quantity < 1 || quantity > AUCTION_RIGHT_MAX_QTY) {
-      return NextResponse.json({ error: `Adet 1 ile ${AUCTION_RIGHT_MAX_QTY} arasında olmalı` }, { status: 400 });
-    }
+    const planType = body.planType === 'UNLIMITED_MONTHLY' ? 'UNLIMITED_MONTHLY' : 'PER_AUCTION';
     const sellerNote = typeof body.sellerNote === 'string' ? body.sellerNote.slice(0, 500) : null;
 
-    const total = quantity * AUCTION_RIGHT_UNIT_PRICE;
+    let quantity: number, unitPrice: number, kdvAmount: number, total: number;
+    if (planType === 'UNLIMITED_MONTHLY') {
+      // Aynı anda birden fazla aktif sınırsız plan anlamsız — zaten aktif olan varsa engelle.
+      const existing = await prisma.auctionRightPurchase.findFirst({
+        where: { sellerId: seller.id, planType: 'UNLIMITED_MONTHLY', status: { in: ['PENDING', 'APPROVED'] } },
+      });
+      if (existing) {
+        return NextResponse.json({ error: 'Zaten bekleyen veya aktif bir Aylık Sınırsız Paketiniz var' }, { status: 400 });
+      }
+      quantity = 1;
+      unitPrice = AUCTION_RIGHT_UNLIMITED_PRICE;
+      kdvAmount = Math.round(unitPrice * AUCTION_RIGHT_UNLIMITED_KDV_RATE * 100) / 100;
+      total = unitPrice + kdvAmount;
+    } else {
+      quantity = Math.floor(Number(body.quantity));
+      if (!Number.isFinite(quantity) || quantity < 1 || quantity > AUCTION_RIGHT_MAX_QTY) {
+        return NextResponse.json({ error: `Adet 1 ile ${AUCTION_RIGHT_MAX_QTY} arasında olmalı` }, { status: 400 });
+      }
+      unitPrice = AUCTION_RIGHT_UNIT_PRICE;
+      kdvAmount = 0;
+      total = quantity * unitPrice;
+    }
+
     const purchase = await prisma.auctionRightPurchase.create({
       data: {
         sellerId: seller.id,
+        planType,
         quantity,
-        unitPrice: AUCTION_RIGHT_UNIT_PRICE,
+        unitPrice,
+        kdvAmount,
         totalAmount: total,
         status: 'PENDING',
         remaining: 0,
@@ -80,6 +109,7 @@ export async function POST(request: Request) {
       },
     });
     const ref = `MZH-${purchase.id.slice(-8).toUpperCase()}`;
+    const planLabel = planType === 'UNLIMITED_MONTHLY' ? 'Aylık Sınırsız Paket' : `${quantity} hak`;
 
     // Bildirimler (anlık) — admin başında beklemesin diye.
     try {
@@ -89,7 +119,7 @@ export async function POST(request: Request) {
       await Promise.all(admins.map((a: any) => createInAppNotification({
         userId: a.id,
         title: '🎫 Yeni Müzayede Hakkı talebi',
-        message: `${seller.companyName ?? 'Bir satıcı'} ${quantity} hak (${total.toLocaleString('tr-TR')} ₺) talep etti. Havale bekleniyor. Ref: ${ref}`,
+        message: `${seller.companyName ?? 'Bir satıcı'} ${planLabel} (${total.toLocaleString('tr-TR')} ₺) talep etti. Havale bekleniyor. Ref: ${ref}`,
         type: 'ADMIN',
         link: '/admin/muzayede-haklari',
       })));
@@ -117,8 +147,10 @@ export async function POST(request: Request) {
             </div>
             <div style="padding:24px">
               <p>Merhaba ${seller.user?.fullName ?? ''},</p>
-              <p><strong>${quantity} adet</strong> müzayede hakkı talebiniz oluşturuldu. Toplam tutar:
-                 <strong style="color:#d4af37">${total.toLocaleString('tr-TR')} ₺</strong></p>
+              <p><strong>${planLabel}</strong> talebiniz oluşturuldu.
+                 ${kdvAmount > 0 ? `Tutar: <strong style="color:#d4af37">${unitPrice.toLocaleString('tr-TR')} ₺</strong> + KDV (%20) <strong style="color:#d4af37">${kdvAmount.toLocaleString('tr-TR')} ₺</strong> = ` : ''}
+                 Toplam: <strong style="color:#d4af37">${total.toLocaleString('tr-TR')} ₺</strong>
+                 ${planType === 'UNLIMITED_MONTHLY' ? ` (onaydan itibaren ${AUCTION_RIGHT_UNLIMITED_DAYS} gün sınırsız müzayede açma hakkı)` : ''}</p>
               <p>Aşağıdaki hesaba havale/EFT yaparken <strong>açıklama kısmına referans numaranızı</strong> yazın:</p>
               <div style="background:#1a1a2e;border:1px solid #d4af37;border-radius:8px;padding:8px;margin:16px 0">
                 <table style="width:100%;border-collapse:collapse;font-size:14px">

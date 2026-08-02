@@ -10,8 +10,10 @@ import { formatPrice, formatDate } from '@/lib/utils';
 
 interface Purchase {
   id: string;
+  planType?: 'PER_AUCTION' | 'UNLIMITED_MONTHLY';
   quantity: number;
   unitPrice: number;
+  kdvAmount?: number;
   totalAmount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   remaining: number;
@@ -26,6 +28,7 @@ export function AuctionRightsContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [planType, setPlanType] = useState<'PER_AUCTION' | 'UNLIMITED_MONTHLY'>('PER_AUCTION');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -99,14 +102,29 @@ export function AuctionRightsContent() {
   const maxQty = data?.maxQty ?? 100;
   const total = qty * unitPrice;
 
+  const unlimitedPrice = data?.unlimitedPrice ?? 35000;
+  const unlimitedKdvRate = data?.unlimitedKdvRate ?? 0.20;
+  const unlimitedKdv = Math.round(unlimitedPrice * unlimitedKdvRate * 100) / 100;
+  const unlimitedTotal = unlimitedPrice + unlimitedKdv;
+  const unlimitedDays = data?.unlimitedDays ?? 30;
+  const unlimitedActive = !!data?.unlimitedActive;
+  const unlimitedExpiresAt = data?.unlimitedExpiresAt ? new Date(data.unlimitedExpiresAt) : null;
+  const hasPendingUnlimited = (data?.purchases ?? []).some((p: Purchase) => p.planType === 'UNLIMITED_MONTHLY' && p.status === 'PENDING');
+
   const submit = async () => {
-    if (qty < 1 || qty > maxQty) { toast.error(`Adet 1 ile ${maxQty} arasında olmalı`); return; }
+    if (planType === 'PER_AUCTION' && (qty < 1 || qty > maxQty)) {
+      toast.error(`Adet 1 ile ${maxQty} arasında olmalı`); return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/seller/auction-rights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity: qty, sellerNote: note || null }),
+        body: JSON.stringify(
+          planType === 'UNLIMITED_MONTHLY'
+            ? { planType, sellerNote: note || null }
+            : { planType, quantity: qty, sellerNote: note || null }
+        ),
       });
       const d = await res.json();
       if (!res.ok) { toast.error(d.error || 'Talep oluşturulamadı'); return; }
@@ -157,46 +175,103 @@ export function AuctionRightsContent() {
         </div>
 
         {/* Bakiye */}
-        <div className="rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/5 p-5 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Kullanılabilir hakkınız</p>
-              <p className="text-3xl font-bold text-[#d4af37]">{balance}</p>
+        {unlimitedActive ? (
+          <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-5 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Aylık Sınırsız Paketiniz aktif</p>
+                <p className="text-2xl font-bold text-green-500">Sınırsız müzayede açabilirsiniz</p>
+              </div>
+              <Ticket className="h-10 w-10 text-green-500/40" />
             </div>
-            <Ticket className="h-10 w-10 text-[#d4af37]/40" />
+            {unlimitedExpiresAt && (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Clock className="h-3 w-3" /> {formatDate(unlimitedExpiresAt.toISOString())} tarihine kadar geçerli</p>
+            )}
           </div>
-          {balance > 0 && soonest && (
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Clock className="h-3 w-3" /> En yakın {formatDate(soonest.toISOString())} tarihinde doluyor</p>
-          )}
-          {balance === 0 && (
-            <p className="text-xs text-amber-500 mt-2">Hakkınız yok — müzayede açmak için aşağıdan hak satın alın.</p>
-          )}
-        </div>
+        ) : (
+          <div className="rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/5 p-5 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Kullanılabilir hakkınız</p>
+                <p className="text-3xl font-bold text-[#d4af37]">{balance}</p>
+              </div>
+              <Ticket className="h-10 w-10 text-[#d4af37]/40" />
+            </div>
+            {balance > 0 && soonest && (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Clock className="h-3 w-3" /> En yakın {formatDate(soonest.toISOString())} tarihinde doluyor</p>
+            )}
+            {balance === 0 && (
+              <p className="text-xs text-amber-500 mt-2">Hakkınız yok — müzayede açmak için aşağıdan hak satın alın.</p>
+            )}
+          </div>
+        )}
 
         {/* Satın alma */}
         <div className="rounded-xl border border-border bg-card p-5 mb-6">
           <h2 className="font-semibold mb-3 flex items-center gap-2"><Plus className="h-4 w-4 text-[#d4af37]" /> Hak Satın Al</h2>
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Adet</label>
-              <input
-                type="number" min={1} max={maxQty} value={qty}
-                onChange={e => setQty(Math.max(1, Math.min(maxQty, parseInt(e.target.value) || 1)))}
-                className="w-24 rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-              />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="block">Birim: {formatPrice(unitPrice)}</span>
-              <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(total)}</span>
-            </div>
+
+          {/* Plan seçimi */}
+          <div className="flex gap-2 mb-4">
             <button
-              onClick={submit} disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black font-medium px-4 py-2 text-sm hover:bg-[#c9a431] transition-colors disabled:opacity-50"
+              type="button" onClick={() => setPlanType('PER_AUCTION')}
+              className={`flex-1 rounded-lg border px-4 py-3 text-left transition-colors ${planType === 'PER_AUCTION' ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-border hover:bg-muted/50'}`}
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Talep Oluştur
+              <span className="block text-sm font-semibold">Tek Tek Müzayede Hakkı</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unitPrice)} / müzayede · {validityDays} gün geçerli</span>
+            </button>
+            <button
+              type="button" onClick={() => setPlanType('UNLIMITED_MONTHLY')}
+              disabled={unlimitedActive || hasPendingUnlimited}
+              className={`flex-1 rounded-lg border px-4 py-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${planType === 'UNLIMITED_MONTHLY' ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-border hover:bg-muted/50'}`}
+            >
+              <span className="block text-sm font-semibold">Aylık Sınırsız Paket</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unlimitedTotal)} (KDV dahil) / {unlimitedDays} gün</span>
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">Satın alınan haklar onaydan sonra <b>{validityDays} gün</b> geçerlidir. Talebi oluşturduktan sonra aşağıdaki hesaba havale yapın; ödemeniz görülünce admin onaylar ve haklar hesabınıza yüklenir.</p>
+
+          {planType === 'PER_AUCTION' ? (
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Adet</label>
+                <input
+                  type="number" min={1} max={maxQty} value={qty}
+                  onChange={e => setQty(Math.max(1, Math.min(maxQty, parseInt(e.target.value) || 1)))}
+                  className="w-24 rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <span className="block">Birim: {formatPrice(unitPrice)}</span>
+                <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(total)}</span>
+              </div>
+              <button
+                onClick={submit} disabled={submitting}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black font-medium px-4 py-2 text-sm hover:bg-[#c9a431] transition-colors disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Talep Oluştur
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="text-sm text-muted-foreground">
+                <span className="block">Fiyat: {formatPrice(unlimitedPrice)} + KDV (%20) {formatPrice(unlimitedKdv)}</span>
+                <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(unlimitedTotal)}</span>
+                <span className="block text-xs mt-0.5">{unlimitedDays} gün boyunca sınırsız müzayede açma hakkı</span>
+              </div>
+              <button
+                onClick={submit} disabled={submitting || unlimitedActive || hasPendingUnlimited}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black font-medium px-4 py-2 text-sm hover:bg-[#c9a431] transition-colors disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Talep Oluştur
+              </button>
+              {hasPendingUnlimited && <span className="text-xs text-amber-500">Zaten bekleyen bir talebiniz var.</span>}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground mt-3">
+            {planType === 'PER_AUCTION'
+              ? <>Satın alınan haklar onaydan sonra <b>{validityDays} gün</b> geçerlidir.</>
+              : <>Sınırsız paket onaydan sonra <b>{unlimitedDays} gün</b> boyunca hak düşürmeden müzayede açmanızı sağlar.</>}
+            {' '}Talebi oluşturduktan sonra aşağıdaki hesaba havale yapın; ödemeniz görülünce admin onaylar.
+          </p>
         </div>
 
         {/* Havale bilgileri */}
@@ -227,9 +302,13 @@ export function AuctionRightsContent() {
               {purchases.map(p => (
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">{p.quantity} hak</span>
-                    <span className="text-sm text-muted-foreground">{formatPrice(p.totalAmount)}</span>
-                    {p.status === 'APPROVED' && <span className="text-xs text-muted-foreground">· kalan {p.remaining}{p.expiresAt ? ` · ${formatDate(p.expiresAt)} son` : ''}</span>}
+                    <span className="font-semibold">{p.planType === 'UNLIMITED_MONTHLY' ? 'Aylık Sınırsız Paket' : `${p.quantity} hak`}</span>
+                    <span className="text-sm text-muted-foreground">{formatPrice(p.totalAmount)}{(p.kdvAmount ?? 0) > 0 ? ' (KDV dahil)' : ''}</span>
+                    {p.status === 'APPROVED' && (
+                      p.planType === 'UNLIMITED_MONTHLY'
+                        ? <span className="text-xs text-muted-foreground">{p.expiresAt ? `· ${formatDate(p.expiresAt)} tarihine kadar` : ''}</span>
+                        : <span className="text-xs text-muted-foreground">· kalan {p.remaining}{p.expiresAt ? ` · ${formatDate(p.expiresAt)} son` : ''}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</span>

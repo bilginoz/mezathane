@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { createInAppNotification } from '@/lib/notifications';
-import { AUCTION_RIGHT_VALIDITY_DAYS } from '@/lib/auction-rights';
+import { AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_UNLIMITED_DAYS } from '@/lib/auction-rights';
 
 // Admin: müzayede hakkı satın alma taleplerini listeler (varsayılan: bekleyenler önce).
 export async function GET(request: Request) {
@@ -59,7 +59,9 @@ export async function PATCH(request: Request) {
     }
 
     if (action === 'approve') {
-      const expiresAt = new Date(Date.now() + AUCTION_RIGHT_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+      const isUnlimited = (purchase as any).planType === 'UNLIMITED_MONTHLY';
+      const validityDays = isUnlimited ? AUCTION_RIGHT_UNLIMITED_DAYS : AUCTION_RIGHT_VALIDITY_DAYS;
+      const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000);
       await prisma.auctionRightPurchase.update({
         where: { id },
         data: {
@@ -73,8 +75,10 @@ export async function PATCH(request: Request) {
       });
       await createInAppNotification({
         userId: purchase.seller.userId,
-        title: 'Müzayede haklarınız onaylandı',
-        message: `${purchase.quantity} müzayede hakkı hesabınıza tanımlandı. ${AUCTION_RIGHT_VALIDITY_DAYS} gün geçerlidir.`,
+        title: isUnlimited ? 'Aylık Sınırsız Paketiniz onaylandı' : 'Müzayede haklarınız onaylandı',
+        message: isUnlimited
+          ? `Sınırsız müzayede açma hakkınız ${validityDays} gün süreyle aktif edildi.`
+          : `${purchase.quantity} müzayede hakkı hesabınıza tanımlandı. ${validityDays} gün geçerlidir.`,
         type: 'AUCTION_RIGHT',
         link: '/satici/haklarim',
       });

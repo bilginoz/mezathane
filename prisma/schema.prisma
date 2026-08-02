@@ -82,12 +82,14 @@ enum AuctionRightStatus {
 model AuctionRightPurchase {
   id           String             @id @default(cuid())
   sellerId     String
-  quantity     Int                // kaç adet müzayede hakkı
-  unitPrice    Float              @default(1900)
-  totalAmount  Float              // quantity * unitPrice
+  planType     String             @default("PER_AUCTION") // PER_AUCTION | UNLIMITED_MONTHLY
+  quantity     Int                // kaç adet müzayede hakkı (UNLIMITED_MONTHLY'de sembolik=1)
+  unitPrice    Float              @default(1900)           // KDV HARİÇ birim fiyat
+  kdvAmount    Float              @default(0)              // unitPrice*quantity üzerinden %20 KDV
+  totalAmount  Float              // (quantity * unitPrice) + kdvAmount — ödenecek toplam
   status       AuctionRightStatus @default(PENDING)
-  remaining    Int                @default(0) // onaylanınca = quantity; kullanıldıkça azalır
-  expiresAt    DateTime?          // onay anında = now + 60 gün (null = süresiz, kullanılmaz)
+  remaining    Int                @default(0) // onaylanınca = quantity; kullanıldıkça azalır (UNLIMITED_MONTHLY'de kullanılmaz)
+  expiresAt    DateTime?          // onay anında = now + geçerlilik günü (null = süresiz, kullanılmaz)
   sellerNote   String?            // satıcının notu (havale açıklaması vb.)
   adminNote    String?            // admin notu / ret sebebi
   paymentReportedAt DateTime?     // satıcı "ödemeyi yaptım" dediği an (admin'e bildirilir)

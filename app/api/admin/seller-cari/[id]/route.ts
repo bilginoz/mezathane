@@ -83,11 +83,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const rightsRows = await prisma.auctionRightPurchase.findMany({
       where: { sellerId },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, quantity: true, remaining: true, status: true, totalAmount: true, expiresAt: true, createdAt: true, paymentReportedAt: true },
+      select: { id: true, planType: true, quantity: true, remaining: true, status: true, totalAmount: true, expiresAt: true, createdAt: true, paymentReportedAt: true },
     });
     let approvedQty = 0, remaining = 0, pendingCount = 0, usedQty = 0, nearestExpiry: Date | null = null;
+    let unlimitedActive = false, unlimitedExpiresAt: Date | null = null;
     for (const r of rightsRows as any[]) {
       if (r.status === 'PENDING') pendingCount += 1;
+      if (r.status === 'APPROVED' && r.planType === 'UNLIMITED_MONTHLY') {
+        if (r.expiresAt && new Date(r.expiresAt) > now) { unlimitedActive = true; unlimitedExpiresAt = new Date(r.expiresAt); }
+        continue; // sınırsız plan adet sayaçlarına dahil edilmez
+      }
       if (r.status === 'APPROVED') {
         approvedQty += r.quantity ?? 0;
         remaining += r.remaining ?? 0;
@@ -97,6 +102,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
     const rights = {
       approvedQty, remaining, usedQty, pendingCount,
+      unlimitedActive, unlimitedExpiresAt,
       nearestExpiry, expiryDaysLeft: nearestExpiry ? daysBetween(nearestExpiry, now) : null,
       history: rightsRows.map((r: any) => ({ ...r, expiryDaysLeft: r.expiresAt ? daysBetween(new Date(r.expiresAt), now) : null })),
     };
