@@ -27,9 +27,13 @@ const ALL_LOCKED_FIELDS: Record<string, { label: string; modelName: string }> = 
 };
 
 export function ProfileSettings() {
-  const { data: session, status } = useSession() || {};
+  const { data: session, status, update: updateSession } = useSession() || {};
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [emailStep, setEmailStep] = useState<'idle' | 'editing' | 'code'>('idle');
+  const [newEmailInput, setNewEmailInput] = useState('');
+  const [emailCodeInput, setEmailCodeInput] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -135,6 +139,50 @@ export function ProfileSettings() {
     }
   };
 
+  // E-posta değiştirme: yeni adrese kod → doğrulama. Şifre değişmez, oturum kapanmaz.
+  const requestEmailChange = async () => {
+    if (!newEmailInput.trim()) { toast.error('Yeni e-posta adresini girin'); return; }
+    setEmailBusy(true);
+    try {
+      const res = await fetch('/api/account/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request', newEmail: newEmailInput.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d?.error ?? 'İşlem başarısız'); return; }
+      toast.success('Doğrulama kodu yeni adresinize gönderildi');
+      setEmailStep('code');
+    } catch {
+      toast.error('İşlem başarısız');
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const confirmEmailChange = async () => {
+    if (!emailCodeInput.trim()) { toast.error('Doğrulama kodunu girin'); return; }
+    setEmailBusy(true);
+    try {
+      const res = await fetch('/api/account/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm', code: emailCodeInput.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d?.error ?? 'Kod hatalı'); return; }
+      toast.success('E-posta adresiniz güncellendi');
+      setEmailStep('idle');
+      setNewEmailInput('');
+      setEmailCodeInput('');
+      await updateSession?.(); // oturumdaki e-postayı tazele
+    } catch {
+      toast.error('İşlem başarısız');
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#d4af37]" /></div>;
   }
@@ -194,8 +242,44 @@ export function ProfileSettings() {
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block flex items-center gap-1"><Mail className="h-3 w-3" /> E-posta Adresi</label>
-          <input type="email" value={(session?.user as any)?.email ?? ''} readOnly className={readOnlyClass} />
-          <p className="text-[10px] text-muted-foreground mt-1">E-posta adresi güvenlik nedeniyle değiştirilemez</p>
+          {emailStep === 'idle' && (
+            <>
+              <input type="email" value={(session?.user as any)?.email ?? ''} readOnly className={readOnlyClass} />
+              <button onClick={() => setEmailStep('editing')} className="text-[11px] text-[#d4af37] hover:underline mt-1 flex items-center gap-1">
+                <Send className="h-3 w-3" /> E-posta Adresimi Değiştir
+              </button>
+            </>
+          )}
+          {emailStep === 'editing' && (
+            <div className="space-y-2">
+              <input
+                type="email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)}
+                placeholder="yeni@eposta.com" className={inputClass}
+              />
+              <div className="flex items-center gap-2">
+                <button onClick={requestEmailChange} disabled={emailBusy} className="rounded-lg bg-[#d4af37] text-black px-3 py-1.5 text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50">
+                  {emailBusy ? 'Gönderiliyor...' : 'Doğrulama Kodu Gönder'}
+                </button>
+                <button onClick={() => { setEmailStep('idle'); setNewEmailInput(''); }} className="text-xs text-muted-foreground hover:text-foreground">Vazgeç</button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Yeni adresinize 6 haneli bir doğrulama kodu gönderilecek. Eski adresinize de bilgilendirme yapılır.</p>
+            </div>
+          )}
+          {emailStep === 'code' && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground"><strong className="text-foreground">{newEmailInput}</strong> adresine gönderilen 6 haneli kodu girin:</p>
+              <input
+                value={emailCodeInput} onChange={(e) => setEmailCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="123456" maxLength={6} className={inputClass + ' font-mono tracking-widest text-center'}
+              />
+              <div className="flex items-center gap-2">
+                <button onClick={confirmEmailChange} disabled={emailBusy} className="rounded-lg bg-[#d4af37] text-black px-3 py-1.5 text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50">
+                  {emailBusy ? 'Doğrulanıyor...' : 'Onayla'}
+                </button>
+                <button onClick={() => { setEmailStep('idle'); setNewEmailInput(''); setEmailCodeInput(''); }} className="text-xs text-muted-foreground hover:text-foreground">Vazgeç</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

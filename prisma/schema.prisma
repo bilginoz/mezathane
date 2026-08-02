@@ -125,6 +125,11 @@ model User {
   resetTokenExpiry   DateTime?
   emailVerifyCode    String?
   emailVerifyExpiry  DateTime?
+  // E-posta değiştirme (2026-08-01): yeni adrese kod gönderilir, doğrulanınca email güncellenir.
+  // Eski adrese de bilgilendirme gider (hesap ele geçirme/hata durumunda fark edilsin).
+  pendingEmail       String?
+  pendingEmailCode   String?
+  pendingEmailExpiry DateTime?
   role               UserRole  @default(BUYER)
   hasPaymentMethod   Boolean   @default(false)
   avatarUrl     String?

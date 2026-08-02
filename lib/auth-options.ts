@@ -115,6 +115,7 @@ export const authOptions: NextAuthOptions = {
           });
           if (freshUser) {
             token.name = freshUser.fullName; // isim değişince oturumda da güncellensin
+            token.email = freshUser.email; // e-posta değişince oturumda da güncellensin
             token.companyName = freshUser.sellerProfile?.companyName ?? null;
             token.isEmailVerified = freshUser.isEmailVerified ?? false;
             token.isPhoneVerified = freshUser.isPhoneVerified ?? false;
@@ -134,6 +135,7 @@ export const authOptions: NextAuthOptions = {
       if (session?.user) {
         (session.user as any).id = token.id;
         if (token.name) (session.user as any).name = token.name;
+        if (token.email) (session.user as any).email = token.email;
         (session.user as any).companyName = token.companyName ?? null;
         (session.user as any).role = token.role;
         (session.user as any).sellerStatus = token.sellerStatus;
