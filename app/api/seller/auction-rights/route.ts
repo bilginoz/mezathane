@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import {
   getSellerRightBalance, AUCTION_RIGHT_UNIT_PRICE, AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_MAX_QTY,
-  AUCTION_RIGHT_UNLIMITED_PRICE, AUCTION_RIGHT_UNLIMITED_KDV_RATE, AUCTION_RIGHT_UNLIMITED_DAYS,
+  AUCTION_RIGHT_UNLIMITED_PRICE, AUCTION_RIGHT_UNLIMITED_DAYS,
 } from '@/lib/auction-rights';
 
 async function getSeller(userId: string) {
@@ -48,7 +48,6 @@ export async function GET() {
       validityDays: AUCTION_RIGHT_VALIDITY_DAYS,
       maxQty: AUCTION_RIGHT_MAX_QTY,
       unlimitedPrice: AUCTION_RIGHT_UNLIMITED_PRICE,
-      unlimitedKdvRate: AUCTION_RIGHT_UNLIMITED_KDV_RATE,
       unlimitedDays: AUCTION_RIGHT_UNLIMITED_DAYS,
       bankInfo: settings ?? null,
     });
@@ -81,10 +80,12 @@ export async function POST(request: Request) {
       if (existing) {
         return NextResponse.json({ error: 'Zaten bekleyen veya aktif bir Aylık Sınırsız Paketiniz var' }, { status: 400 });
       }
+      // KDV kararı (2026-08-01): tahsil edilen tutar HER ZAMAN KDV'siz rakamın kendisi;
+      // ekranlarda yalnızca "+KDV" ibaresi metin olarak gösterilir, ayrıca hesaplanmaz.
       quantity = 1;
       unitPrice = AUCTION_RIGHT_UNLIMITED_PRICE;
-      kdvAmount = Math.round(unitPrice * AUCTION_RIGHT_UNLIMITED_KDV_RATE * 100) / 100;
-      total = unitPrice + kdvAmount;
+      kdvAmount = 0;
+      total = unitPrice;
     } else {
       quantity = Math.floor(Number(body.quantity));
       if (!Number.isFinite(quantity) || quantity < 1 || quantity > AUCTION_RIGHT_MAX_QTY) {
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
       await Promise.all(admins.map((a: any) => createInAppNotification({
         userId: a.id,
         title: '🎫 Yeni Müzayede Hakkı talebi',
-        message: `${seller.companyName ?? 'Bir satıcı'} ${planLabel} (${total.toLocaleString('tr-TR')} ₺) talep etti. Havale bekleniyor. Ref: ${ref}`,
+        message: `${seller.companyName ?? 'Bir satıcı'} ${planLabel} (${total.toLocaleString('tr-TR')} ₺ + KDV) talep etti. Havale bekleniyor. Ref: ${ref}`,
         type: 'ADMIN',
         link: '/admin/muzayede-haklari',
       })));
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
         const { sendEmail } = await import('@/lib/mailer');
         await sendEmail({
           to: email,
-          subject: `Müzayede Hakkı ödemesi — ${total.toLocaleString('tr-TR')} ₺ (Ref: ${ref})`,
+          subject: `Müzayede Hakkı ödemesi — ${total.toLocaleString('tr-TR')} ₺ + KDV (Ref: ${ref})`,
           html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#e5e7eb">
             <div style="background:linear-gradient(135deg,#1a1a2e,#0a0a0a);padding:24px;text-align:center;border-bottom:2px solid #d4af37">
               <h1 style="color:#d4af37;margin:0;font-size:20px">🎫 Müzayede Hakkı Talebiniz Alındı</h1>
@@ -148,14 +149,13 @@ export async function POST(request: Request) {
             <div style="padding:24px">
               <p>Merhaba ${seller.user?.fullName ?? ''},</p>
               <p><strong>${planLabel}</strong> talebiniz oluşturuldu.
-                 ${kdvAmount > 0 ? `Tutar: <strong style="color:#d4af37">${unitPrice.toLocaleString('tr-TR')} ₺</strong> + KDV (%20) <strong style="color:#d4af37">${kdvAmount.toLocaleString('tr-TR')} ₺</strong> = ` : ''}
-                 Toplam: <strong style="color:#d4af37">${total.toLocaleString('tr-TR')} ₺</strong>
+                 Tutar: <strong style="color:#d4af37">${total.toLocaleString('tr-TR')} ₺ + KDV</strong>
                  ${planType === 'UNLIMITED_MONTHLY' ? ` (onaydan itibaren ${AUCTION_RIGHT_UNLIMITED_DAYS} gün sınırsız müzayede açma hakkı)` : ''}</p>
               <p>Aşağıdaki hesaba havale/EFT yaparken <strong>açıklama kısmına referans numaranızı</strong> yazın:</p>
               <div style="background:#1a1a2e;border:1px solid #d4af37;border-radius:8px;padding:8px;margin:16px 0">
                 <table style="width:100%;border-collapse:collapse;font-size:14px">
                   ${bankRows}
-                  <tr><td style="padding:4px 10px;color:#9ca3af">Tutar</td><td style="padding:4px 10px;color:#d4af37;font-weight:bold">${total.toLocaleString('tr-TR')} ₺</td></tr>
+                  <tr><td style="padding:4px 10px;color:#9ca3af">Tutar</td><td style="padding:4px 10px;color:#d4af37;font-weight:bold">${total.toLocaleString('tr-TR')} ₺ + KDV</td></tr>
                   <tr><td style="padding:4px 10px;color:#9ca3af">Referans</td><td style="padding:4px 10px;color:#e5e7eb;font-family:monospace">${ref}</td></tr>
                 </table>
               </div>
@@ -209,7 +209,7 @@ export async function PATCH(request: Request) {
       await Promise.all(admins.map((a: any) => createInAppNotification({
         userId: a.id,
         title: '💳 Hak ödemesi bildirildi',
-        message: `${seller.companyName ?? 'Bir satıcı'} "${ref}" için ödemeyi yaptığını bildirdi (${purchase.totalAmount.toLocaleString('tr-TR')} ₺). Hesabı kontrol edip onaylayın.`,
+        message: `${seller.companyName ?? 'Bir satıcı'} "${ref}" için ödemeyi yaptığını bildirdi (${purchase.totalAmount.toLocaleString('tr-TR')} ₺ + KDV). Hesabı kontrol edip onaylayın.`,
         type: 'ADMIN',
         link: '/admin/muzayede-haklari',
       })));

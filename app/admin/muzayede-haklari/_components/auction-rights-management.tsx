@@ -120,7 +120,7 @@ export function AuctionRightsManagement() {
                     <p className="text-sm text-muted-foreground">{p.seller?.user?.email}</p>
                     <p className="text-sm mt-1">
                       <b>{p.planType === 'UNLIMITED_MONTHLY' ? '🔁 Aylık Sınırsız Paket' : `${p.quantity} hak`}</b>
-                      {' '}· {formatPrice(p.totalAmount)} · {formatDateTime(p.createdAt)}
+                      {' '}· {formatPrice(p.totalAmount)} + KDV · {formatDateTime(p.createdAt)}
                     </p>
                     {p.status === 'APPROVED' && <p className="text-xs text-muted-foreground mt-1">Kalan: {p.remaining}{p.expiresAt ? ` · Son: ${formatDateTime(p.expiresAt)}` : ''}</p>}
                     {p.sellerNote && <p className="text-xs text-muted-foreground mt-1">Satıcı notu: {p.sellerNote}</p>}

@@ -102,10 +102,9 @@ export function AuctionRightsContent() {
   const maxQty = data?.maxQty ?? 100;
   const total = qty * unitPrice;
 
+  // KDV kararı (2026-08-01): tahsil edilen tutar KDV'siz rakamın kendisi; ekranda yalnızca
+  // "+ KDV" ibaresi metin olarak gösterilir, ayrıca hesaplanıp toplama eklenmez.
   const unlimitedPrice = data?.unlimitedPrice ?? 35000;
-  const unlimitedKdvRate = data?.unlimitedKdvRate ?? 0.20;
-  const unlimitedKdv = Math.round(unlimitedPrice * unlimitedKdvRate * 100) / 100;
-  const unlimitedTotal = unlimitedPrice + unlimitedKdv;
   const unlimitedDays = data?.unlimitedDays ?? 30;
   const unlimitedActive = !!data?.unlimitedActive;
   const unlimitedExpiresAt = data?.unlimitedExpiresAt ? new Date(data.unlimitedExpiresAt) : null;
@@ -217,7 +216,7 @@ export function AuctionRightsContent() {
               className={`flex-1 rounded-lg border px-4 py-3 text-left transition-colors ${planType === 'PER_AUCTION' ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-border hover:bg-muted/50'}`}
             >
               <span className="block text-sm font-semibold">Tek Tek Müzayede Hakkı</span>
-              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unitPrice)} / müzayede · {validityDays} gün geçerli</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unitPrice)} + KDV / müzayede · {validityDays} gün geçerli</span>
             </button>
             <button
               type="button" onClick={() => setPlanType('UNLIMITED_MONTHLY')}
@@ -225,7 +224,7 @@ export function AuctionRightsContent() {
               className={`flex-1 rounded-lg border px-4 py-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${planType === 'UNLIMITED_MONTHLY' ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-border hover:bg-muted/50'}`}
             >
               <span className="block text-sm font-semibold">Aylık Sınırsız Paket</span>
-              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unlimitedTotal)} (KDV dahil) / {unlimitedDays} gün</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">{formatPrice(unlimitedPrice)} + KDV / {unlimitedDays} gün</span>
             </button>
           </div>
 
@@ -240,8 +239,8 @@ export function AuctionRightsContent() {
                 />
               </div>
               <div className="text-sm text-muted-foreground">
-                <span className="block">Birim: {formatPrice(unitPrice)}</span>
-                <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(total)}</span>
+                <span className="block">Birim: {formatPrice(unitPrice)} + KDV</span>
+                <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(total)} + KDV</span>
               </div>
               <button
                 onClick={submit} disabled={submitting}
@@ -253,8 +252,7 @@ export function AuctionRightsContent() {
           ) : (
             <div className="flex flex-wrap items-end gap-4">
               <div className="text-sm text-muted-foreground">
-                <span className="block">Fiyat: {formatPrice(unlimitedPrice)} + KDV (%20) {formatPrice(unlimitedKdv)}</span>
-                <span className="block font-semibold text-foreground text-base">Toplam: {formatPrice(unlimitedTotal)}</span>
+                <span className="block font-semibold text-foreground text-base">Fiyat: {formatPrice(unlimitedPrice)} + KDV</span>
                 <span className="block text-xs mt-0.5">{unlimitedDays} gün boyunca sınırsız müzayede açma hakkı</span>
               </div>
               <button
@@ -303,7 +301,7 @@ export function AuctionRightsContent() {
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">{p.planType === 'UNLIMITED_MONTHLY' ? 'Aylık Sınırsız Paket' : `${p.quantity} hak`}</span>
-                    <span className="text-sm text-muted-foreground">{formatPrice(p.totalAmount)}{(p.kdvAmount ?? 0) > 0 ? ' (KDV dahil)' : ''}</span>
+                    <span className="text-sm text-muted-foreground">{formatPrice(p.totalAmount)} + KDV</span>
                     {p.status === 'APPROVED' && (
                       p.planType === 'UNLIMITED_MONTHLY'
                         ? <span className="text-xs text-muted-foreground">{p.expiresAt ? `· ${formatDate(p.expiresAt)} tarihine kadar` : ''}</span>

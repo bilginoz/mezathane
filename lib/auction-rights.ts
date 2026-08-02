@@ -5,11 +5,12 @@ export const AUCTION_RIGHT_UNIT_PRICE = 1900; // TL / hak (bu model KDV içermez
 export const AUCTION_RIGHT_VALIDITY_DAYS = 60; // onaydan itibaren geçerlilik
 export const AUCTION_RIGHT_MAX_QTY = 100; // tek talepte en fazla
 
-// Aylık Sınırsız Paket (2026-08-01, kullanıcı kararı): sınırsız müzayede açma hakkı, KDV HARİÇ
-// 35.000 TL/ay. Üzerine %20 KDV eklenir (toplam ödenecek 42.000 TL). Aktif olduğu sürece
-// consumeOneRight hiç hak düşmez (bkz. aşağıda).
-export const AUCTION_RIGHT_UNLIMITED_PRICE = 35000; // TL / ay (KDV hariç)
-export const AUCTION_RIGHT_UNLIMITED_KDV_RATE = 0.20;
+// Aylık Sınırsız Paket (2026-08-01, kullanıcı kararı): sınırsız müzayede açma hakkı, 35.000 TL/ay.
+// KDV KARARI (2026-08-01, kullanıcı netleştirdi): sistem KDV'yi hesaplayıp tahsil ETMEZ — tahsil
+// edilen/havale istenen tutar tam olarak bu rakamdır. Ekranlarda yalnızca "+KDV" ibaresi metin
+// olarak gösterilir (KDV'nin ayrıca/muhasebe tarafında ele alınacağını belirtmek için).
+// Aktif olduğu sürece consumeOneRight hiç hak düşmez (bkz. aşağıda).
+export const AUCTION_RIGHT_UNLIMITED_PRICE = 35000; // TL / ay — tahsil edilen tam tutar budur
 export const AUCTION_RIGHT_UNLIMITED_DAYS = 30;
 
 // Satıcının aktif (süresi dolmamış, onaylı) Aylık Sınırsız Paketi varsa döner.

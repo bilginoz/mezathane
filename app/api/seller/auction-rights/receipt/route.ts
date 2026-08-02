@@ -77,13 +77,9 @@ function generateReceiptHTML(d: {
     </thead>
     <tbody>
       <tr>
-        <td>${p.planType === 'UNLIMITED_MONTHLY' ? 'Aylık Sınırsız Paket (KDV hariç)' : `Müzayede Hakkı (${p.quantity} adet × ${Number(p.unitPrice).toLocaleString('tr-TR')} ₺)`}</td>
-        <td style="text-align:right;font-family:monospace;">${Number(p.unitPrice * (p.planType === 'UNLIMITED_MONTHLY' ? 1 : p.quantity)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>
+        <td>${p.planType === 'UNLIMITED_MONTHLY' ? 'Aylık Sınırsız Paket' : `Müzayede Hakkı (${p.quantity} adet × ${Number(p.unitPrice).toLocaleString('tr-TR')} ₺)`}</td>
+        <td style="text-align:right;font-family:monospace;">${Number(p.unitPrice * (p.planType === 'UNLIMITED_MONTHLY' ? 1 : p.quantity)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺ + KDV</td>
       </tr>
-      ${(p.kdvAmount ?? 0) > 0 ? `<tr>
-        <td>KDV (%20)</td>
-        <td style="text-align:right;font-family:monospace;">${Number(p.kdvAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>
-      </tr>` : ''}
       <tr>
         <td>Onay Tarihi</td>
         <td style="text-align:right;">${p.approvedAt ? new Date(p.approvedAt).toLocaleDateString('tr-TR') : '—'}</td>
@@ -97,7 +93,7 @@ function generateReceiptHTML(d: {
 
   <div class="summary">
     <table>
-      <tr><td>Ödenen Toplam Tutar</td><td style="text-align:right;font-family:monospace;">${Number(p.totalAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td></tr>
+      <tr><td>Ödenen Toplam Tutar</td><td style="text-align:right;font-family:monospace;">${Number(p.totalAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺ + KDV</td></tr>
     </table>
   </div>
 

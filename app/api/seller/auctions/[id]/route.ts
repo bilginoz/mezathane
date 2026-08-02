@@ -53,7 +53,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const seller = await prisma.sellerProfile.findUnique({ where: { userId } });
     if (!seller) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-    const existing = await prisma.auction.findFirst({ where: { id, sellerId: seller.id } });
+    const existing = await prisma.auction.findFirst({
+      where: { id, sellerId: seller.id },
+      include: { lots: { select: { _count: { select: { bids: true } } } } },
+    });
     if (!existing) return NextResponse.json({ error: 'Müzayede bulunamadı' }, { status: 404 });
 
     const body = await request.json();
@@ -99,6 +102,31 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ...liveStartFix,
       },
     });
+
+    // Boş müzayede iptal edilirse (hiç lot yok VEYA hiç teklif yok) harcanan Müzayede Hakkı
+    // otomatik iade edilir (kullanıcı kararı, 2026-08-01). Teklif almış bir müzayede iptal
+    // edilirse hak iade EDİLMEZ (aç-teklif topla-iptal et-tekrar aç kötüye kullanımını önler).
+    if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+      const totalBids = existing.lots.reduce((s, l) => s + (l._count?.bids ?? 0), 0);
+      const isEmpty = existing.lots.length === 0 || totalBids === 0;
+      if (isEmpty) {
+        const batch = await prisma.auctionRightPurchase.findFirst({
+          where: {
+            sellerId: seller.id,
+            planType: 'PER_AUCTION',
+            status: 'APPROVED',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          orderBy: { expiresAt: 'desc' },
+          select: { id: true },
+        });
+        // Yalnızca tekli (PER_AUCTION) hak varsa iade edilir. Müzayede, o sırada aktif bir
+        // Aylık Sınırsız Paket ile açılmışsa zaten hiç hak düşülmemişti — iadeye gerek yok.
+        if (batch) {
+          await prisma.auctionRightPurchase.update({ where: { id: batch.id }, data: { remaining: { increment: 1 } } });
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, auction });
   } catch (error: any) {
