@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, TrendingUp, Users, Gavel, DollarSign, ArrowLeft, ShoppingBag, Percent, Trophy, Wallet, HeartPulse, AlertTriangle, Sparkles } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Gavel, DollarSign, ArrowLeft, ShoppingBag, Percent, Trophy, Wallet, HeartPulse, AlertTriangle, Sparkles, ShieldAlert, Network } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
@@ -24,6 +24,8 @@ export function ReportsManagement() {
   const [period, setPeriod] = useState('30');
   const [sellerHealth, setSellerHealth] = useState<any[]>([]);
   const [healthLoading, setHealthLoading] = useState(true);
+  const [shillData, setShillData] = useState<any>(null);
+  const [shillLoading, setShillLoading] = useState(true);
 
   const user = session?.user as any;
 
@@ -48,6 +50,17 @@ export function ReportsManagement() {
         .then(d => setSellerHealth(d?.sellers ?? []))
         .catch(() => {})
         .finally(() => setHealthLoading(false));
+    }
+  }, [status, user?.role]);
+
+  // Şüpheli teklif (shill-bid) taraması da dönemden bağımsız.
+  useEffect(() => {
+    if (status === 'authenticated' && user?.role === 'ADMIN') {
+      fetch('/api/admin/shill-detection')
+        .then(r => r.json())
+        .then(d => setShillData(d))
+        .catch(() => {})
+        .finally(() => setShillLoading(false));
     }
   }, [status, user?.role]);
 
@@ -339,6 +352,91 @@ export function ReportsManagement() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        {/* Şüpheli Teklif (Shill-Bid) Taraması */}
+        <div className="rounded-xl border border-border bg-card p-4 mt-6">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldAlert className="h-5 w-5 text-red-400" />
+            <h2 className="font-display font-semibold">Şüpheli Teklif Taraması</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Bu bir otomatik engelleme değil — sadece incelemeniz için işaretliyor. Yanlış pozitif olabilir
+            (ör. aynı evden/ofisten iki gerçek kullanıcı), karar her zaman sizde.
+          </p>
+
+          {shillLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-10 bg-muted rounded animate-pulse" />)}</div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-2 mt-4">
+                <Network className="h-4 w-4 text-amber-400" />
+                <h3 className="text-sm font-semibold">Aynı IP'yi Paylaşan Hesaplar</h3>
+              </div>
+              {(shillData?.ipSharing?.length ?? 0) === 0 ? (
+                <p className="text-xs text-muted-foreground pb-4">Şu an işaretlenmiş bir IP paylaşımı yok.</p>
+              ) : (
+                <div className="overflow-x-auto mb-6">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs text-muted-foreground">
+                        <th className="text-left p-2">Hesap 1</th>
+                        <th className="text-left p-2">Hesap 2</th>
+                        <th className="text-center p-2">Ortak Lot</th>
+                        <th className="text-left p-2">Hangi Lotlar / Satıcılar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {shillData.ipSharing.map((p: any, i: number) => (
+                        <tr key={i} className={p.sharedLotCount >= 2 ? 'bg-red-500/5' : ''}>
+                          <td className="p-2 font-medium">{p.user1}</td>
+                          <td className="p-2 font-medium">{p.user2}</td>
+                          <td className="p-2 text-center font-mono">{p.sharedLotCount >= 2 ? <span className="text-red-400 font-bold">{p.sharedLotCount}</span> : p.sharedLotCount}</td>
+                          <td className="p-2 text-xs text-muted-foreground max-w-[320px] truncate" title={p.lots.map((l: any) => `#${l.lotNumber} ${l.title} (${l.sellerName})`).join(', ')}>
+                            {p.lots.slice(0, 2).map((l: any) => `#${l.lotNumber} ${l.title}`).join(', ')}{p.lots.length > 2 ? ` +${p.lots.length - 2} daha` : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                <h3 className="text-sm font-semibold">Tek Satıcıya Yoğunlaşıp Hiç Kazanmayan Alıcılar</h3>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">Tekliflerinin ≥%70'i tek bir satıcıda toplanan ve o satıcıdan hiç lot kazanmamış alıcılar — fiyat şişirip çekilme deseni olabilir.</p>
+              {(shillData?.concentrationFlags?.length ?? 0) === 0 ? (
+                <p className="text-xs text-muted-foreground">Şu an işaretlenmiş bir konsantrasyon uyarısı yok.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs text-muted-foreground">
+                        <th className="text-left p-2">Alıcı</th>
+                        <th className="text-left p-2">Satıcı</th>
+                        <th className="text-center p-2">Bu Satıcıya Teklif</th>
+                        <th className="text-center p-2">Toplam Teklifi</th>
+                        <th className="text-center p-2">Yoğunlaşma</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {shillData.concentrationFlags.map((c: any, i: number) => (
+                        <tr key={i}>
+                          <td className="p-2 font-medium">{c.buyerName}</td>
+                          <td className="p-2">{c.sellerName}</td>
+                          <td className="p-2 text-center font-mono">{c.bidsOnSeller}</td>
+                          <td className="p-2 text-center font-mono text-muted-foreground">{c.totalBids}</td>
+                          <td className="p-2 text-center font-mono text-amber-400">%{c.concentrationPct}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
