@@ -122,8 +122,9 @@ export function BulkLotUpload() {
             <Download className="h-4 w-4" /> Şablonu İndir (CSV)
           </button>
           <div className="mt-3 text-[10px] text-muted-foreground space-y-0.5">
-            <p><strong>Sütunlar:</strong> Lot Adı; Açıklama; Notlar; Kategori; Başlangıç Fiyatı; Tahmini Fiyat; Görsel URL; Durum; Menşe</p>
-            <p><strong>Durum ve Menşe isteğe bağlıdır.</strong> Durum için önerilen değerler: Mükemmel, Çok İyi, İyi, Orta, Restore Edilmiş. Eski (7 sütunlu) dosyalarınız da çalışmaya devam eder.</p>
+            <p><strong>Sütunlar:</strong> Lot Adı; Açıklama; Notlar; Kategori; Başlangıç Fiyatı; Tahmini Fiyat; Görsel URL; Durum; Menşe; Min. Artış Tutarı; KDV Oranı; Kargo Tipi; Tahmini Kargo Ücreti; Restorasyon Beyanı</p>
+            <p><strong>Görsel URL'de birden fazla resim</strong> için "|" ile ayırın (ör. url1.jpg|url2.jpg).</p>
+            <p><strong>Son 7 sütun isteğe bağlıdır.</strong> Durum için önerilen değerler: Mükemmel, Çok İyi, İyi, Orta, Restore Edilmiş. KDV Oranı: 20, 10 veya 1 (boşsa %20). Kargo Tipi: "Alıcı Öder" veya "Ücretsiz" (boşsa Alıcı Öder). Min. Artış Tutarı boş bırakılırsa fiyata göre otomatik hesaplanır. Eski, daha az sütunlu dosyalarınız da çalışmaya devam eder.</p>
             <p><strong>Ayırıcı:</strong> Noktalı virgül (;) veya virgül (,)</p>
             <p><strong>Kodlama:</strong> UTF-8 (Türkçe karakter desteği)</p>
           </div>

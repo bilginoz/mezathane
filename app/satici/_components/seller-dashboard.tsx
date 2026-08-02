@@ -67,6 +67,17 @@ export function SellerDashboard() {
     }
   }, [status, router, user?.role]);
 
+  // "Bu Müzayede İçin Alıcı Komisyonu" alanına, profil varsayılanını GERÇEK bir sayı olarak
+  // bir kez yazıyoruz. Önceden bu değer her render'da value={... ?? profilVarsayılanı} ile
+  // canlı hesaplanıyordu; kullanıcı alanı silip boşalttığında state null'a düştüğü an aynı
+  // varsayılan tekrar beliriyordu — yani alan hiç boşalmıyor, iki haneli yeni bir oran
+  // (ör. 10 -> 20) yazmak neredeyse imkansız hale geliyordu.
+  useEffect(() => {
+    if (data?.seller?.buyerPremiumRate != null && auctionForm.buyerPremiumRate === null) {
+      setAuctionForm(prev => ({ ...prev, buyerPremiumRate: data.seller.buyerPremiumRate }));
+    }
+  }, [data]);
+
   const handleCreateAuction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (auctionForm.liveOnly) {
@@ -597,7 +608,7 @@ export function SellerDashboard() {
                         <label className="text-sm font-medium mb-1 block">Bu Müzayede İçin Alıcı Komisyonu (%)</label>
                         <input
                           type="number" min={0} max={30} step="0.5"
-                          value={auctionForm.buyerPremiumRate ?? (data?.seller?.buyerPremiumRate ?? 7)}
+                          value={auctionForm.buyerPremiumRate ?? ''}
                           onChange={(e) => setAuctionForm(p => ({ ...(p ?? {}), buyerPremiumRate: e.target.value === '' ? null : Number(e.target.value) }))}
                           className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none"
                         />

@@ -55,6 +55,22 @@ function normalizeCondition(raw: string | undefined): string | null {
   return match ?? value;
 }
 
+// KDV oranı tekil lot formundaki üç sabit seçenekle sınırlı; boşsa/tanımsızsa varsayılan %20.
+const KDV_RATE_OPTIONS = [20, 10, 1];
+function normalizeKdvRate(raw: string | undefined): number {
+  const value = raw?.trim().replace('%', '').replace(',', '.');
+  if (!value) return 20;
+  const n = parseFloat(value);
+  return KDV_RATE_OPTIONS.includes(n) ? n : 20;
+}
+
+// Kargo tipi: "Alıcı Öder" (varsayılan) / "Ücretsiz". Tekil lot formundaki iki seçenekle aynı.
+function normalizeShippingType(raw: string | undefined): 'BUYER_PAYS' | 'FREE_SELLER' {
+  const value = raw?.trim().toLocaleLowerCase('tr') ?? '';
+  if (value.startsWith('ücretsiz') || value.startsWith('ucretsiz') || value === 'free_seller') return 'FREE_SELLER';
+  return 'BUYER_PAYS';
+}
+
 // GET: Download sample CSV template
 export async function GET(request: Request) {
   try {
@@ -62,10 +78,11 @@ export async function GET(request: Request) {
     if (!session?.user) return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 });
     
     const bom = '\uFEFF';
-    // Not: "Durum" ve "Menşe" sütunları EN SONA eklendi; eski 7 sütunlu dosyalar
-    // bu yüzden çalışmaya devam eder (o sütunlar boş kabul edilir).
-    const header = 'Lot Adı;Açıklama;Notlar;Kategori;Başlangıç Fiyatı;Tahmini Fiyat;Görsel URL;Durum;Menşe';
-    const example = 'Antika Vazo;Osmanlı dönemi vazo;İyi durumda;Antika;5000;8000;;Çok İyi;Aile koleksiyonundan, 1990 İstanbul';
+    // Not: yeni sütunlar hep EN SONA eklenir; eski, daha az sütunlu dosyalar bu yüzden
+    // çalışmaya devam eder (eksik sütunlar boş/varsayılan kabul edilir).
+    // Görsel URL: birden fazla resim için "|" ile ayırın (ör. url1.jpg|url2.jpg).
+    const header = 'Lot Adı;Açıklama;Notlar;Kategori;Başlangıç Fiyatı;Tahmini Fiyat;Görsel URL;Durum;Menşe;Min. Artış Tutarı;KDV Oranı;Kargo Tipi;Tahmini Kargo Ücreti;Restorasyon Beyanı';
+    const example = 'Antika Vazo;Osmanlı dönemi vazo;İyi durumda;Antika;5000;8000;https://.../vazo1.jpg|https://.../vazo2.jpg;Çok İyi;Aile koleksiyonundan, 1990 İstanbul;;20;Alıcı Öder;200;';
     const csv = bom + header + '\n' + example;
     
     return new NextResponse(csv, {
@@ -145,17 +162,24 @@ export async function POST(request: Request) {
       const rowNum = i + 2; // 1-based + header
       
       // Beklenen: Lot Adı, Açıklama, Notlar, Kategori, Başlangıç Fiyatı, Tahmini Fiyat,
-      // Görsel URL, Durum, Menşe. Son iki sütun isteğe bağlıdır — eski 7 sütunlu
-      // dosyalarda bulunmaz ve boş kabul edilir.
+      // Görsel URL, Durum, Menşe, Min. Artış Tutarı, KDV Oranı, Kargo Tipi,
+      // Tahmini Kargo Ücreti, Restorasyon Beyanı. Son sütunlar isteğe bağlıdır — eski,
+      // daha az sütunlu dosyalarda bulunmaz ve boş/varsayılan kabul edilir.
       const title = row[0] || '';
       const description = row[1] || null;
       const notes = row[2] || null;
       const categoryName = row[3] || '';
       const startingPriceStr = row[4] || '';
       const estimatedPriceStr = row[5] || '';
-      const imageUrl = row[6] || '';
+      // Görsel URL: "|" ile ayrılmış birden fazla URL desteklenir (çoklu resim).
+      const imageUrls = (row[6] || '').split('|').map(s => s.trim()).filter(Boolean);
       const condition = normalizeCondition(row[7]);
       const provenance = row[8]?.trim() ? row[8].trim() : null;
+      const customBidIncrementStr = row[9] || '';
+      const kdvRate = normalizeKdvRate(row[10]);
+      const shippingType = normalizeShippingType(row[11]);
+      const estimatedShippingStr = row[12] || '';
+      const restorationNote = row[13]?.trim() ? row[13].trim() : null;
 
       // Validate
       if (!title) {
@@ -176,6 +200,10 @@ export async function POST(request: Request) {
       }
 
       const estimatedPrice = estimatedPriceStr ? parseFloat(estimatedPriceStr.replace(/[^0-9.,]/g, '').replace(',', '.')) : null;
+      const customBidIncrement = customBidIncrementStr ? parseFloat(customBidIncrementStr.replace(/[^0-9.,]/g, '').replace(',', '.')) : null;
+      const estimatedShipping = shippingType === 'BUYER_PAYS' && estimatedShippingStr
+        ? parseFloat(estimatedShippingStr.replace(/[^0-9.,]/g, '').replace(',', '.'))
+        : null;
 
       try {
         const createdLot = await prisma.lot.create({
@@ -193,8 +221,13 @@ export async function POST(request: Request) {
             currentPrice: startingPrice,
             status: 'PENDING',
             sortOrder: nextSortOrder,
-            images: imageUrl ? {
-              create: [{ imageUrl, isPublic: true, sortOrder: 0 }],
+            customBidIncrement: customBidIncrement && !isNaN(customBidIncrement) ? customBidIncrement : null,
+            kdvRate,
+            shippingType,
+            estimatedShipping: estimatedShipping && !isNaN(estimatedShipping) ? estimatedShipping : null,
+            restorationNote,
+            images: imageUrls.length > 0 ? {
+              create: imageUrls.map((imageUrl, idx) => ({ imageUrl, isPublic: true, sortOrder: idx })),
             } : undefined,
           },
         });

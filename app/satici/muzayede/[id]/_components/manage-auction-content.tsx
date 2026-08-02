@@ -793,12 +793,6 @@ export default function ManageAuctionContent() {
                 <label className="text-sm font-medium mb-1 block">Uzatma Süresi (sn)</label>
                 <input type="number" value={auctionForm.fairWaitingTime} onChange={e => setAuctionForm(p => ({ ...p, fairWaitingTime: e.target.value }))} min={5} max={15} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-amber-500 focus:outline-none" />
               </div>
-              {!auctionForm.liveOnly && (
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Gecikme (dk)</label>
-                  <input type="number" value={auctionForm.liveDelayMinutes} onChange={e => setAuctionForm(p => ({ ...p, liveDelayMinutes: e.target.value }))} min={0} max={1440} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-amber-500 focus:outline-none" />
-                </div>
-              )}
               <div>
                 <label className="text-sm font-medium mb-1 block">Ödeme Süresi</label>
                 <select value={auctionForm.paymentDays} onChange={e => setAuctionForm(p => ({ ...p, paymentDays: e.target.value }))} className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-amber-500 focus:outline-none">
@@ -827,9 +821,6 @@ export default function ManageAuctionContent() {
               <div><span className="text-muted-foreground">Komisyon Oranı:</span> <span className="font-medium ml-1">%{auction.commissionRate}</span></div>
               <div><span className="text-muted-foreground">Lot Süresi:</span> <span className="font-medium ml-1">{auction.waitingTime} sn</span></div>
               <div><span className="text-muted-foreground">Uzatma:</span> <span className="font-medium ml-1">{auction.fairWaitingTime} sn</span></div>
-              {!auction.liveOnly && (
-                <div><span className="text-muted-foreground">Gecikme:</span> <span className="font-medium ml-1">{auction.liveDelayMinutes} dk</span></div>
-              )}
               <div><span className="text-muted-foreground">Ödeme Süresi:</span> <span className="font-medium ml-1">{auction.paymentDays} gün</span></div>
             </div>
           </div>
