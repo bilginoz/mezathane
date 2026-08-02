@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Store, MapPin, Calendar, Gavel, Layers, Users, ArrowRight, ArrowLeft, Star, CheckCircle } from 'lucide-react';
+import { Store, MapPin, Calendar, Gavel, Layers, Users, ArrowRight, ArrowLeft, Star, CheckCircle, FileText } from 'lucide-react';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { CountdownTimer } from '@/components/countdown-timer';
 import { AuctionBanner } from '@/components/auction-banner';
@@ -12,9 +12,10 @@ import { VerifiedBadge } from '@/components/verified-badge';
 interface SellerProfileContentProps {
   seller: any;
   stats: any;
+  showTermsLink?: boolean;
 }
 
-export function SellerProfileContent({ seller, stats }: SellerProfileContentProps) {
+export function SellerProfileContent({ seller, stats, showTermsLink }: SellerProfileContentProps) {
   const auctions = seller?.auctions ?? [];
   const defaultLogo = 'https://cdn.abacus.ai/images/46235948-79f3-4f4e-aab0-cdfd81b98b42.png';
 
@@ -76,6 +77,12 @@ export function SellerProfileContent({ seller, stats }: SellerProfileContentProp
             {/* Açıklama */}
             {seller?.description && (
               <p className="mt-4 text-sm text-muted-foreground leading-relaxed">{seller.description}</p>
+            )}
+
+            {showTermsLink && (
+              <Link href={`/muzayede-evi/${seller.id}/sartlar`} className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium text-[#d4af37] hover:underline">
+                <FileText className="h-3.5 w-3.5" /> Satış Şartlarını Görüntüle
+              </Link>
             )}
           </div>
         </motion.div>

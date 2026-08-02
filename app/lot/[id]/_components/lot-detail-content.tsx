@@ -436,11 +436,19 @@ export function LotDetailContent({ lot }: { lot: any }) {
                 </div>
               )}
               {/* Satıcının kendi satış/iade/teslimat şartları — yalnızca DIRECT modda ve satıcı doldurmuşsa.
-                  Satışın asıl tarafı satıcı olduğundan kendi şartları alıcıya gösterilir. */}
+                  Kısa önizleme burada + tam metin ayrı bir sayfada (bkz. /muzayede-evi/[id]/sartlar),
+                  platformun kendi yasal metinleriyle karışmaması için. */}
               {paymentMode === 'DIRECT' && lot?.auction?.seller?.salesTerms && (
                 <div className="rounded-lg border border-border bg-muted/40 px-3 py-3 mt-1">
                   <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Store className="h-3 w-3" /> Satıcının Satış / İade / Teslimat Şartları</span>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{lot.auction.seller.salesTerms}</p>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {lot.auction.seller.salesTerms.length > 240
+                      ? `${lot.auction.seller.salesTerms.slice(0, 240).trim()}…`
+                      : lot.auction.seller.salesTerms}
+                  </p>
+                  <Link href={`/muzayede-evi/${lot.auction.sellerId}/sartlar`} className="inline-block mt-2 text-xs font-medium text-[#d4af37] hover:underline">
+                    Tüm şartları görüntüle →
+                  </Link>
                 </div>
               )}
               {lot?.estimatedPrice != null && lot.estimatedPrice > 0 && (

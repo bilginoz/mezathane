@@ -3,6 +3,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { SellerProfileContent } from './_components/seller-profile-content';
 import { notFound } from 'next/navigation';
+import { getPaymentMode } from '@/lib/payment-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,11 +57,12 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
   }
 
   if (!seller) return notFound();
+  const isDirect = (await getPaymentMode()) === 'DIRECT';
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <SellerProfileContent seller={seller} stats={stats} />
+      <SellerProfileContent seller={seller} stats={stats} showTermsLink={isDirect} />
       <Footer />
     </div>
   );
