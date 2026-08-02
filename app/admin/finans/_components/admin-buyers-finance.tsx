@@ -2,7 +2,8 @@
 
 // Admin — Alıcılar finans/ödeme takibi: kim ne aldı, ne ödedi, ne bekliyor, vade/kaç gün kaldı.
 import { useState, useEffect } from 'react';
-import { Loader2, Users, Search, ChevronDown, ChevronRight, Download } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Users, Search, ChevronDown, ChevronRight, Download, ArrowUpRight } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -78,6 +79,11 @@ export function AdminBuyersFinance() {
                   ) : (<p className="font-mono font-bold text-sm text-green-500">✓ Ödendi</p>)}
                 </div>
               </button>
+              <div className="px-3 pb-2 -mt-1">
+                <Link href={`/admin/finans/alici/${b.buyerId}`} className="inline-flex items-center gap-1 text-[11px] text-[#d4af37] hover:underline" onClick={(e) => e.stopPropagation()}>
+                  Detaylı cari görünüm <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </div>
               {expanded === b.buyerId && (
                 <div className="border-t border-border/60 bg-muted/20 px-3 py-2 overflow-x-auto">
                   <table className="w-full text-xs">
