@@ -285,13 +285,20 @@ export function RulesManagement() {
             </div>
           </motion.div>
 
-          {/* Otomatik askı */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-display font-semibold text-lg mb-1 flex items-center gap-2"><Ban className="h-5 w-5 text-[#d4af37]" /> Otomatik Askı</h2>
-            <p className="text-xs text-muted-foreground mb-4">Vadesi geçmiş ödenmemiş siparişi (default) olan üye, bu eşiğe ulaşınca hesabı otomatik askıya alınır (giriş kapanır, bilgilendirme e-postası gider). Admin elle geri açabilir.</p>
+          {/* Otomatik askı — 2026-08-01 itibarıyla PASİF */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-border bg-card p-6 opacity-70">
+            <h2 className="font-display font-semibold text-lg mb-1 flex items-center gap-2"><Ban className="h-5 w-5 text-muted-foreground" /> Otomatik Askı (şu an devre dışı)</h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              2026-08-01'de kaldırıldı: borcunu geç de olsa ödemek isteyen kullanıcı, hesabı kilitlenince ödeme
+              sayfasına da erişemiyordu. Artık tek yaptırım, teklif verirken kontrol edilen borç/limit engeli —
+              kullanıcı ödeyene kadar yalnızca <strong>yeni teklif veremiyor</strong>, girişi kapanmıyor. Vadesi{' '}
+              <strong>15 gün</strong> geçen ödemeler için admin'e bildirim gider, hesabı elle askıya almak isterseniz
+              Kullanıcılar sayfasından yapabilirsiniz. Bu alan aşağıda kayıtlı kalır, ileride otomatik askı tekrar
+              istenirse buradan devreye alınabilir.
+            </p>
             <div className="max-w-xs">
-              <label className="text-sm font-medium mb-1 block">Kaç ihlalden sonra askıya alınsın</label>
-              <input type="number" min={1} value={settings?.autoSuspendAfterDefaults ?? ''} onChange={e => updateField('autoSuspendAfterDefaults', e.target.value)} className={numInput} />
+              <label className="text-sm font-medium mb-1 block text-muted-foreground">Kaç ihlalden sonra askıya alınsın (şu an okunmuyor)</label>
+              <input type="number" min={1} value={settings?.autoSuspendAfterDefaults ?? ''} onChange={e => updateField('autoSuspendAfterDefaults', e.target.value)} className={numInput} disabled />
             </div>
           </motion.div>
         </div>

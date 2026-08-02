@@ -105,45 +105,53 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ====== OTOMATİK ASKI: ödeme yapmayan (default) kullanıcılar ======
-    // Vadesi geçmiş ödenmemiş siparişi olan BUYER'lar, ayarlanan eşiğe ulaşınca
-    // otomatik askıya alınır (isActive=false → giriş engellenir). Bu görev saatlik
-    // çalıştığı için ayrı bir cron gerekmez. Admin, hesabı elle geri açabilir.
-    let suspendedCount = 0;
+    // ====== KRONİK ÖDEMESİZLİK: otomatik kilit YERİNE admin'e bildirim (2026-08-01, kullanıcı kararı) ======
+    // Önceden burada 1 vade aşımında hesap TAMAMEN kilitleniyordu (isActive=false → giriş dahi
+    // engelleniyordu). Kaldırıldı: borcunu geç de olsa ödemek isteyen kullanıcıyı (ör. hastalık,
+    // seyahat) ödeme sayfasına bile erişemez hale getiriyordu — kendi kendini çelişkiye düşürüyordu.
+    // Artık TEK canlı yaptırım, teklif verirken kontrol edilen mevcut borç/limit engeli
+    // (bkz. app/api/bids/route.ts) — kullanıcı istediği an giriş yapıp ödeyebilir, yalnızca
+    // ödeyene kadar YENİ teklif veremez. Buna ek olarak: vade 15+ gün geçerse (kronik/uzamış
+    // ödemesizlik) hesap OTOMATİK kilitlenmez, yalnızca admin'e bildirim gider — admin isterse
+    // elle askıya alır (Kullanıcılar → Engelle). İleride istenirse otomatiğe çevrilebilir.
+    const CHRONIC_OVERDUE_DAYS = 15;
+    let chronicNotified = 0;
     try {
-      const ps = await prisma.platformSettings.findFirst();
-      const threshold = ps?.autoSuspendAfterDefaults ?? 1;
-      const overdueGroups = await prisma.payment.groupBy({
-        by: ['userId'],
-        where: { status: 'PENDING', buyerPaymentReceived: false, dueDate: { lt: now } },
-        _count: { id: true },
+      const chronicCutoff = new Date(now.getTime() - CHRONIC_OVERDUE_DAYS * 24 * 60 * 60 * 1000);
+      const chronicPayments = await prisma.payment.findMany({
+        where: {
+          status: 'PENDING',
+          buyerPaymentReceived: false,
+          chronicOverdueNotifiedAt: null,
+          dueDate: { lt: chronicCutoff },
+        },
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+          lot: { select: { title: true } },
+        },
       });
-      for (const g of overdueGroups) {
-        if ((g._count.id ?? 0) < threshold) continue;
-        const u = await prisma.user.findUnique({
-          where: { id: g.userId },
-          select: { id: true, isActive: true, role: true, email: true, fullName: true },
-        });
-        if (!u || !u.isActive || u.role !== 'BUYER') continue; // sadece aktif BUYER'lar
-        await prisma.user.update({ where: { id: u.id }, data: { isActive: false } });
-        suspendedCount++;
-        try {
-          await sendEmail({
-            to: u.email,
-            subject: 'Mezathane — Hesabınız askıya alındı',
-            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#e5e7eb;background:#0a0a0a"><h2 style="color:#d4af37">Hesabınız askıya alındı</h2><p>Merhaba ${u.fullName ?? ''},</p><p>Kazandığınız bir veya daha fazla lot için ödeme süresi dolduğu hâlde ödeme yapılmadığından hesabınız askıya alınmıştır. Borcunuzu kapatıp hesabınızı yeniden açtırmak için lütfen bizimle iletişime geçin: bilgi@mezathane.tr</p></div>`,
+      if (chronicPayments.length > 0) {
+        const { notifyAdmins } = await import('@/lib/notifications');
+        for (const p of chronicPayments) {
+          const daysOverdue = p.dueDate ? Math.floor((now.getTime() - new Date(p.dueDate).getTime()) / (1000 * 60 * 60 * 24)) : CHRONIC_OVERDUE_DAYS;
+          await notifyAdmins({
+            title: '⏰ Kronik ödemesizlik — inceleme gerekli',
+            message: `${p.user?.fullName ?? 'Bir alıcı'} (${p.user?.email ?? ''}), "${p.lot?.title ?? ''}" için ${daysOverdue} gündür ödeme yapmadı. Hesabı inceleyip gerekirse elle askıya alın.`,
+            link: '/admin/kullanicilar',
           });
-        } catch {}
+          await prisma.payment.update({ where: { id: p.id }, data: { chronicOverdueNotifiedAt: now } });
+          chronicNotified++;
+        }
       }
     } catch (e) {
-      console.error('Auto-suspend error:', e);
+      console.error('Chronic overdue notify error:', e);
     }
 
     return NextResponse.json({
       success: true,
       paymentsProcessed: pendingPayments.length,
       emailsSent,
-      suspendedCount,
+      chronicNotified,
     });
   } catch (error) {
     console.error('Payment reminder error:', error);
