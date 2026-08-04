@@ -866,6 +866,16 @@ model AuditLog {
   @@index([action])
 }
 
+// Kalıcı (DB tabanlı) rate limit sayacı — serverless'te bellek-içi sayaç örnekler arası paylaşılmadığı
+// için brute-force koruması buradan işler. key = "login:<ip>" gibi; pencere dolunca sıfırlanır.
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
 // Lot Durum Geçmişi — kronolojik olay kaydı
 model LotHistory {
   id          String   @id @default(cuid())

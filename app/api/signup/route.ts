@@ -6,12 +6,12 @@ import { encrypt } from '@/lib/encryption';
 import { prisma } from '@/lib/prisma';
 import { validateTCKimlikNo } from '@/lib/tc-kimlik';
 import { generateEmailVerifyCode, sendVerificationEmail } from '@/lib/email-verify';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request);
-    const rl = checkRateLimit(`register:${ip}`, RATE_LIMITS.REGISTER);
+    const rl = await checkRateLimitDB(`register:${ip}`, RATE_LIMITS.REGISTER);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla kayıt denemesi. Lütfen 15 dakika sonra tekrar deneyin.' },

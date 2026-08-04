@@ -3,13 +3,13 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/mailer';
 
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request);
-    const rl = checkRateLimit(`forgot:${ip}`, RATE_LIMITS.FORGOT_PASSWORD);
+    const rl = await checkRateLimitDB(`forgot:${ip}`, RATE_LIMITS.FORGOT_PASSWORD);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla istek. Lütfen 15 dakika sonra tekrar deneyin.' },

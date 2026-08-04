@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { getMinBidIncrement } from '@/lib/utils';
 import { createInAppNotification, sendCheckedNotificationEmail } from '@/lib/notifications';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 import { logLotEvent } from '@/lib/lot-history';
 import { getEmailTemplate } from '@/lib/email-templates';
 import { triggerLiveUpdate } from '@/lib/realtime';
@@ -183,7 +183,7 @@ export async function POST(request: Request) {
 
     // Rate limiting: 30 teklif/dk
     const clientIp = getClientIP(request);
-    const rl = checkRateLimit(`bid:${clientIp}`, RATE_LIMITS.BID);
+    const rl = await checkRateLimitDB(`bid:${clientIp}`, RATE_LIMITS.BID);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla teklif gönderdiniz. Lütfen biraz bekleyin.' },

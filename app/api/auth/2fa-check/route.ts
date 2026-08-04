@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 /*
   Giriş akışının 1. adımı: e-posta/telefon + şifre doğruysa, bu hesapta iki adımlı
@@ -19,7 +19,7 @@ import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request);
-    const rl = checkRateLimit(`login:${ip}`, RATE_LIMITS.LOGIN);
+    const rl = await checkRateLimitDB(`login:${ip}`, RATE_LIMITS.LOGIN);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.' },

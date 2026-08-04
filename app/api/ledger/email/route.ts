@@ -1,11 +1,15 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { resolveLedger } from '@/lib/ledger-resolve';
 import { buildLedgerHtml } from '@/lib/ledger-html';
 import { sendEmail } from '@/lib/mailer';
 
-// Ekstreyi e-posta ile gönder (HTML gövde). Alıcı/satıcı kendi adresine veya admin belirtilen adrese.
+// Ekstreyi e-posta ile gönder (HTML gövde). resolveLedger yetkiyi zaten uyguluyor (giriş + sahiplik).
+// Güvenlik: yalnızca ADMIN serbest bir adrese gönderebilir; normal kullanıcı SADECE kendi
+// ekstresini kendi adresine yollayabilir (rastgele adrese gönderim = spam vektörü, kapatıldı).
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -15,7 +19,10 @@ export async function POST(request: Request) {
     const res = await resolveLedger(scope, type, id, { from: periodFrom, to: periodTo });
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status });
 
-    const to = recipientEmail || res.data.header.email;
+    const session = await getServerSession(authOptions);
+    const isAdmin = (session?.user as any)?.role === 'ADMIN';
+    // Admin dışı: recipientEmail yok sayılır, her zaman ekstre sahibinin kayıtlı adresine gider.
+    const to = isAdmin ? (recipientEmail || res.data.header.email) : res.data.header.email;
     if (!to) return NextResponse.json({ error: 'Alıcı e-posta adresi bulunamadı' }, { status: 400 });
 
     const html = buildLedgerHtml(res.data);

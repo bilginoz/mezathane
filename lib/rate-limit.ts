@@ -1,5 +1,10 @@
-// In-memory rate limiter for API routes
-// No external dependencies, no extra credits
+// Rate limiter for API routes.
+// - checkRateLimit: bellek-içi (senkron). Serverless'te örnekler arası paylaşılmaz → tek örnek içi burst
+//   yakalar ama dağıtık saldırıyı tam engellemez. checkRateLimitDB'nin YEDEĞİ olarak kullanılır.
+// - checkRateLimitDB: kalıcı (Postgres). Örnekler arası ortak sayaç → gerçek brute-force koruması.
+//   DB hatasında bellek-içine düşer (FAIL-OPEN: login/teklif asla kilitlenmez).
+
+import { prisma } from '@/lib/prisma';
 
 interface RateLimitEntry {
   count: number;
@@ -53,6 +58,38 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
 
   entry.count++;
   return { allowed: true, remaining: options.maxRequests - entry.count, resetAt: entry.resetAt };
+}
+
+/**
+ * Kalıcı (DB) rate limit — serverless örnekleri arası ortak sayaç. DB hatasında bellek-içine düşer.
+ */
+export async function checkRateLimitDB(key: string, options: RateLimitOptions): Promise<RateLimitResult> {
+  const now = new Date();
+  try {
+    const resetAt = new Date(now.getTime() + options.windowSeconds * 1000);
+    const existing = await prisma.rateLimit.findUnique({ where: { key } });
+
+    if (!existing || now > existing.resetAt) {
+      // Yeni pencere (yoksa oluştur, süresi geçmişse sıfırla)
+      await prisma.rateLimit.upsert({
+        where: { key },
+        create: { key, count: 1, resetAt },
+        update: { count: 1, resetAt },
+      });
+      return { allowed: true, remaining: options.maxRequests - 1, resetAt: resetAt.getTime() };
+    }
+
+    if (existing.count >= options.maxRequests) {
+      return { allowed: false, remaining: 0, resetAt: existing.resetAt.getTime() };
+    }
+
+    const updated = await prisma.rateLimit.update({ where: { key }, data: { count: { increment: 1 } } });
+    return { allowed: true, remaining: Math.max(0, options.maxRequests - updated.count), resetAt: existing.resetAt.getTime() };
+  } catch (e) {
+    // FAIL-OPEN: DB erişilemezse kullanıcıyı kilitleme, bellek-içi yedeğe düş.
+    console.error('checkRateLimitDB error, falling back to in-memory:', e);
+    return checkRateLimit(key, options);
+  }
 }
 
 /**

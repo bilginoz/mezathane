@@ -8,7 +8,7 @@ import { validateTCKimlikNo } from '@/lib/tc-kimlik';
 import { generateEmailVerifyCode, sendVerificationEmail } from '@/lib/email-verify';
 import { sendNotificationEmail, notifyAdmins } from '@/lib/notifications';
 import { validateIBAN } from '@/lib/iban';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * Anonim ziyaretçi için tek adımda satıcı kaydı:
@@ -19,7 +19,7 @@ import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request);
-    const rl = checkRateLimit(`register:${ip}`, RATE_LIMITS.REGISTER);
+    const rl = await checkRateLimitDB(`register:${ip}`, RATE_LIMITS.REGISTER);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla kayıt denemesi. Lütfen 15 dakika sonra tekrar deneyin.' },

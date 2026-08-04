@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
     const ip = getClientIP(request);
-    const rl = checkRateLimit(`contact:${ip}`, RATE_LIMITS.CONTACT);
+    const rl = await checkRateLimitDB(`contact:${ip}`, RATE_LIMITS.CONTACT);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Çok fazla mesaj gönderildi. Lütfen 15 dakika sonra tekrar deneyin.' },
