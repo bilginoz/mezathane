@@ -716,10 +716,10 @@ export default function ManageAuctionContent() {
                   </button>
                 )}
               </div>
-              {/* Proforma & Toplu Yükleme */}
+              {/* Lot Listesi (Katalog) & Toplu Yükleme */}
               <div className="flex flex-wrap gap-2 mt-2">
                 <button onClick={async () => {
-                  toast.info('Proforma fatura oluşturuluyor...');
+                  toast.info('Lot listesi oluşturuluyor...');
                   try {
                     const res = await fetch('/api/seller/proforma', {
                       method: 'POST',
@@ -731,14 +731,14 @@ export default function ManageAuctionContent() {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `proforma-${auction?.title?.slice(0, 20)}.pdf`;
+                    a.download = `lot-listesi-${auction?.title?.slice(0, 20)}.pdf`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast.success('Proforma fatura indirildi');
-                  } catch { toast.error('Proforma oluşturulamadı'); }
+                    toast.success('Lot listesi indirildi');
+                  } catch { toast.error('Lot listesi oluşturulamadı'); }
                 }}
                   className="rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors flex items-center gap-1">
-                  <FileDown className="h-3 w-3" /> Proforma Fatura
+                  <FileDown className="h-3 w-3" /> Lot Listesi (PDF)
                 </button>
                 {auction.status === 'DRAFT' && (
                   <Link href={`/satici/toplu-yukleme?auctionId=${auction?.id}`}
