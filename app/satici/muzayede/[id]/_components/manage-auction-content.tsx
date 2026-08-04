@@ -300,6 +300,26 @@ export default function ManageAuctionContent() {
     setLotImages(prev => prev.filter((_, i) => i !== idx));
   };
 
+  // Seçilen görseli listenin başına alır → kapak fotoğrafı olur (kaydederken sıra = sortOrder).
+  const setLotCover = (idx: number) => {
+    setLotImages(prev => {
+      if (idx <= 0 || idx >= prev.length) return prev;
+      const next = [...prev];
+      const [chosen] = next.splice(idx, 1);
+      next.unshift(chosen);
+      return next;
+    });
+  };
+
+  // Görsel yükleme alanına sürükle-bırak
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setImageDragActive(false);
+    if (imageUploading || lotImages.length >= 6) return;
+    if (e.dataTransfer?.files?.length) handleLotImageUpload(e.dataTransfer.files);
+  };
+
   // Edit lot form state
   const [editLot, setEditLot] = useState({
     title: '',
@@ -1051,12 +1071,27 @@ export default function ManageAuctionContent() {
                           >
                             <X className="w-3 h-3 text-white" />
                           </button>
-                          {idx === 0 && <span className="absolute bottom-0 inset-x-0 bg-[#d4af37] text-black text-[8px] text-center font-bold">Kapak</span>}
+                          {idx === 0 ? (
+                            <span className="absolute bottom-0 inset-x-0 bg-[#d4af37] text-black text-[8px] text-center font-bold">Kapak</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setLotCover(idx)}
+                              className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[8px] text-center font-medium py-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#d4af37] hover:text-black"
+                            >
+                              Kapak Yap
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
-                  <label className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-border py-4 cursor-pointer hover:border-amber-500/50 transition-colors ${imageUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <label
+                    onDragOver={e => { e.preventDefault(); if (!imageUploading && lotImages.length < 6) setImageDragActive(true); }}
+                    onDragLeave={e => { e.preventDefault(); setImageDragActive(false); }}
+                    onDrop={handleImageDrop}
+                    className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed py-4 cursor-pointer transition-colors ${imageDragActive ? 'border-amber-500 bg-amber-500/10' : 'border-border hover:border-amber-500/50'} ${imageUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
                     <input
                       type="file"
                       multiple
@@ -1068,7 +1103,7 @@ export default function ManageAuctionContent() {
                     {imageUploading ? (
                       <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
                     ) : (
-                      <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">Fotoğraf Seç ({lotImages.length}/6)</span></>
+                      <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">{imageDragActive ? 'Bırakın, yüklensin' : `Fotoğraf sürükleyip bırakın veya seçin (${lotImages.length}/6)`}</span></>
                     )}
                   </label>
                 </div>
