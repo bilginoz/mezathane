@@ -350,6 +350,9 @@ model Auction {
 model Lot {
   id              String    @id @default(cuid())
   lotNumber       Int
+  // Global tekil lot kodu: "MZT" + 2 haneli yıl + 6 haneli global sıra (yılda 1'den başlar).
+  // Örn. MZT26000042. Lot oluşturulunca atanır; hem katalog kimliği hem ödeme referansı olarak kullanılır.
+  lotCode         String?   @unique
   title           String
   description     String?
   notes           String?

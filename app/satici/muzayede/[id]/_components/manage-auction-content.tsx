@@ -22,6 +22,7 @@ interface LotImage {
 interface LotData {
   id: string;
   lotNumber: number;
+  lotCode?: string | null;
   title: string;
   description: string | null;
   notes: string | null;
@@ -1269,6 +1270,7 @@ export default function ManageAuctionContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{lot.title}</h3>
+                        {lot.lotCode && <p className="text-[11px] font-mono text-[#d4af37]">{lot.lotCode}</p>}
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{lot.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot.category?.name ?? '')}</span>
                           <span>•</span>

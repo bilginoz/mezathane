@@ -386,8 +386,9 @@ export function LotDetailContent({ lot }: { lot: any }) {
                 <span className="mx-1">·</span>
                 <Link href={`/muzayede/${lot?.auction?.id ?? ''}`} className="hover:text-[#d4af37] transition-colors">{lot?.auction?.title ?? ''}</Link>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="rounded-full bg-[#d4af37]/10 px-3 py-0.5 text-xs font-medium text-[#d4af37]">Lot {lot?.lotNumber ?? 0}</span>
+                {lot?.lotCode && <span className="rounded-full border border-[#d4af37]/30 px-3 py-0.5 text-xs font-mono text-[#d4af37]" title="Lot kodu (ödeme referansı)">{lot.lotCode}</span>}
                 {(lot?.lotCategories?.length ? lot.lotCategories : (lot?.category ? [{ category: lot.category }] : [])).map((lc: any, i: number) => (
                   <span key={i} className="rounded-full bg-muted px-3 py-0.5 text-xs text-muted-foreground flex items-center gap-1">
                     <Tag className="h-3 w-3" /> {lc.category?.name}

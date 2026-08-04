@@ -385,7 +385,7 @@ export function BuyerOrders() {
                               </>
                             )}
                             <BankRow label="IBAN" value={paymentMode === 'DIRECT' ? (order as any).sellerIban : bankInfo.bankIban} copied={copiedField} onCopy={(v, l) => { navigator.clipboard.writeText(v); setCopiedField(l); toast.success(`${l} kopyalandı`); setTimeout(() => setCopiedField(''), 2000); }} />
-                            <BankRow label="Açıklama" value={`MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} copied={copiedField} onCopy={(v, l) => { navigator.clipboard.writeText(v); setCopiedField(l); toast.success(`${l} kopyalandı`); setTimeout(() => setCopiedField(''), 2000); }} />
+                            <BankRow label="Açıklama" value={(order as any).lotCode || `MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} copied={copiedField} onCopy={(v, l) => { navigator.clipboard.writeText(v); setCopiedField(l); toast.success(`${l} kopyalandı`); setTimeout(() => setCopiedField(''), 2000); }} />
                             <p className="text-[10px] text-amber-400 mt-2">⚠️ Havale/EFT açıklamasına yukarıdaki kodu mutlaka yazın.{paymentMode === 'DIRECT' ? ' Ödeme doğrudan satıcıya yapılır.' : ''}</p>
                           </div>
                         )}

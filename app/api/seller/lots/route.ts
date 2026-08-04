@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { nextLotCode } from '@/lib/lot-code';
 
 export async function POST(request: Request) {
   try {
@@ -39,41 +40,53 @@ export async function POST(request: Request) {
       orderBy: { lotNumber: 'desc' },
     });
 
-    const lot = await prisma.lot.create({
-      data: {
-        lotNumber: (lastLot?.lotNumber ?? 0) + 1,
-        title,
-        description: description ?? null,
-        notes: notes ?? null,
-        condition: condition?.trim() ? condition.trim() : null,
-        provenance: provenance?.trim() ? provenance.trim() : null,
-        auctionId,
-        categoryId: resolvedCategoryIds[0] ?? null,
-        secondaryCategoryId: resolvedCategoryIds[1] ?? null,
-        startingPrice: startingPrice ?? 0,
-        estimatedPrice: estimatedPrice ?? null,
-        reservePrice: reservePrice ?? null,
-        customBidIncrement: customBidIncrement ?? null,
-        shippingType: shippingType === 'FREE_SELLER' ? 'FREE_SELLER' : 'BUYER_PAYS',
-        estimatedShipping: shippingType === 'FREE_SELLER' ? null : (estimatedShipping != null && estimatedShipping !== '' ? parseFloat(estimatedShipping) : null),
-        kdvRate: [1, 10, 20].includes(Number(kdvRate)) ? Number(kdvRate) : 20,
-        videoUrl: typeof videoUrl === 'string' && videoUrl.trim() ? videoUrl.trim() : null,
-        restorationNote: typeof restorationNote === 'string' && restorationNote.trim() ? restorationNote.trim() : null,
-        certificateUrl: typeof certificateUrl === 'string' && certificateUrl.trim() ? certificateUrl.trim() : null,
-        currentPrice: startingPrice ?? 0,
-        status: 'PENDING',
-        sortOrder: (lastLot?.sortOrder ?? 0) + 1,
-        images: images?.length ? {
-          create: (images as any[]).map((img: any, idx: number) => ({
-            imageUrl: img.imageUrl ?? img.url ?? '',
-            cloudStoragePath: img.cloudStoragePath ?? null,
-            isPublic: true,
-            sortOrder: idx,
-          })),
-        } : undefined,
-      },
-      include: { images: true, category: true, lotCategories: { include: { category: true } } },
-    });
+    const lotData: any = {
+      lotNumber: (lastLot?.lotNumber ?? 0) + 1,
+      title,
+      description: description ?? null,
+      notes: notes ?? null,
+      condition: condition?.trim() ? condition.trim() : null,
+      provenance: provenance?.trim() ? provenance.trim() : null,
+      auctionId,
+      categoryId: resolvedCategoryIds[0] ?? null,
+      secondaryCategoryId: resolvedCategoryIds[1] ?? null,
+      startingPrice: startingPrice ?? 0,
+      estimatedPrice: estimatedPrice ?? null,
+      reservePrice: reservePrice ?? null,
+      customBidIncrement: customBidIncrement ?? null,
+      shippingType: shippingType === 'FREE_SELLER' ? 'FREE_SELLER' : 'BUYER_PAYS',
+      estimatedShipping: shippingType === 'FREE_SELLER' ? null : (estimatedShipping != null && estimatedShipping !== '' ? parseFloat(estimatedShipping) : null),
+      kdvRate: [1, 10, 20].includes(Number(kdvRate)) ? Number(kdvRate) : 20,
+      videoUrl: typeof videoUrl === 'string' && videoUrl.trim() ? videoUrl.trim() : null,
+      restorationNote: typeof restorationNote === 'string' && restorationNote.trim() ? restorationNote.trim() : null,
+      certificateUrl: typeof certificateUrl === 'string' && certificateUrl.trim() ? certificateUrl.trim() : null,
+      currentPrice: startingPrice ?? 0,
+      status: 'PENDING',
+      sortOrder: (lastLot?.sortOrder ?? 0) + 1,
+      images: images?.length ? {
+        create: (images as any[]).map((img: any, idx: number) => ({
+          imageUrl: img.imageUrl ?? img.url ?? '',
+          cloudStoragePath: img.cloudStoragePath ?? null,
+          isPublic: true,
+          sortOrder: idx,
+        })),
+      } : undefined,
+    };
+
+    // Global tekil lot kodu (MZT+YY+6 hane) ata; nadir çakışmada @unique yakalar → yeniden dener.
+    let lot: any;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        lot = await prisma.lot.create({
+          data: { ...lotData, lotCode: await nextLotCode() },
+          include: { images: true, category: true, lotCategories: { include: { category: true } } },
+        });
+        break;
+      } catch (e: any) {
+        if (e?.code === 'P2002' && String(e?.meta?.target ?? '').includes('lotCode') && attempt < 5) continue;
+        throw e;
+      }
+    }
 
     // LotCategory join table'a kayıtları ekle
     if (resolvedCategoryIds.length > 0) {

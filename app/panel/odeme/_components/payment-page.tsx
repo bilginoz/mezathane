@@ -179,7 +179,7 @@ export function PaymentPage() {
                   <div className="space-y-4">
                     <InfoRow label="Hesap Sahibi (Satıcı)" value={order.sellerName || 'Satıcı'} onCopy={copyToClipboard} copied={copied} />
                     <InfoRow label="IBAN" value={order.sellerIban} onCopy={copyToClipboard} copied={copied} />
-                    <InfoRow label="Açıklama" value={`MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} onCopy={copyToClipboard} copied={copied} />
+                    <InfoRow label="Açıklama" value={(order as any).lotCode || `MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} onCopy={copyToClipboard} copied={copied} />
                   </div>
                 ) : (
                   <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
@@ -191,7 +191,7 @@ export function PaymentPage() {
                   <InfoRow label="Banka" value={bankInfo.bankName || 'Belirtilmedi'} onCopy={copyToClipboard} copied={copied} />
                   <InfoRow label="Hesap Sahibi" value={bankInfo.bankAccountHolder || 'Belirtilmedi'} onCopy={copyToClipboard} copied={copied} />
                   <InfoRow label="IBAN" value={bankInfo.bankIban || 'Belirtilmedi'} onCopy={copyToClipboard} copied={copied} />
-                  <InfoRow label="Açıklama" value={`MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} onCopy={copyToClipboard} copied={copied} />
+                  <InfoRow label="Açıklama" value={(order as any).lotCode || `MZT-${order.paymentId?.slice(-8)?.toUpperCase() ?? ''}`} onCopy={copyToClipboard} copied={copied} />
                 </div>
               )}
 

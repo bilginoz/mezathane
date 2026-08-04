@@ -70,6 +70,7 @@ export async function GET() {
         lotId: payment.lot.id,
         lotTitle: payment.lot.title,
         lotNumber: payment.lot.lotNumber,
+        lotCode: payment.lot.lotCode ?? null,
         lotImage: payment.lot.images?.[0]?.imageUrl ?? null,
         auctionTitle: payment.lot.auction.title,
         salePrice,

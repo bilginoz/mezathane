@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { nextLotCode } from '@/lib/lot-code';
 import ExcelJS from 'exceljs';
 import { parseCSV } from '@/lib/parse-csv';
 
@@ -214,31 +215,40 @@ export async function POST(request: Request) {
       const kdvRate = normalizeKdvRate(l.kdvRateRaw);
 
       try {
-        const createdLot = await prisma.lot.create({
-          data: {
-            lotNumber: nextLotNumber,
-            title: l.title,
-            description: l.description,
-            notes: l.notes,
-            condition: l.condition,
-            provenance: l.provenance,
-            auctionId,
-            categoryId,
-            startingPrice,
-            estimatedPrice,
-            currentPrice: startingPrice,
-            status: 'PENDING',
-            sortOrder: nextSortOrder,
-            customBidIncrement,
-            kdvRate,
-            shippingType,
-            estimatedShipping,
-            restorationNote: l.restorationNote,
-            images: l.imageUrls.length > 0 ? {
-              create: l.imageUrls.map((imageUrl, idx) => ({ imageUrl, isPublic: true, sortOrder: idx })),
-            } : undefined,
-          },
-        });
+        const bulkLotData: any = {
+          lotNumber: nextLotNumber,
+          title: l.title,
+          description: l.description,
+          notes: l.notes,
+          condition: l.condition,
+          provenance: l.provenance,
+          auctionId,
+          categoryId,
+          startingPrice,
+          estimatedPrice,
+          currentPrice: startingPrice,
+          status: 'PENDING',
+          sortOrder: nextSortOrder,
+          customBidIncrement,
+          kdvRate,
+          shippingType,
+          estimatedShipping,
+          restorationNote: l.restorationNote,
+          images: l.imageUrls.length > 0 ? {
+            create: l.imageUrls.map((imageUrl, idx) => ({ imageUrl, isPublic: true, sortOrder: idx })),
+          } : undefined,
+        };
+        // Global tekil lot kodu (çakışmada @unique yakalar → yeniden dener)
+        let createdLot: any;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            createdLot = await prisma.lot.create({ data: { ...bulkLotData, lotCode: await nextLotCode() } });
+            break;
+          } catch (e: any) {
+            if (e?.code === 'P2002' && String(e?.meta?.target ?? '').includes('lotCode') && attempt < 5) continue;
+            throw e;
+          }
+        }
         await prisma.lotCategory.create({ data: { lotId: createdLot.id, categoryId } });
         nextLotNumber++;
         nextSortOrder++;

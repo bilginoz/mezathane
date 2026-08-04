@@ -21,6 +21,7 @@ interface Order {
   lotId: string;
   lotTitle: string;
   lotNumber: number;
+  lotCode: string | null;
   lotImage: string | null;
   auctionTitle: string;
   salePrice: number;
@@ -340,6 +341,9 @@ export function SellerOrders() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold truncate">#{order.lotNumber} {order.lotTitle}</h3>
                           <p className="text-xs text-muted-foreground">{order.auctionTitle}</p>
+                          {order.lotCode && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Havale referansı: <span className="font-mono text-[#d4af37]">{order.lotCode}</span></p>
+                          )}
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusInfo.color}`}>
                               <StatusIcon className="h-3 w-3" />{statusInfo.label}
