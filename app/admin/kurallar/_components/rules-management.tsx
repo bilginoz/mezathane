@@ -14,10 +14,6 @@ export function RulesManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
-  const [preview, setPreview] = useState<string | null>(null); // admin önizleme durumu
-  const [previewBusy, setPreviewBusy] = useState(false);
-  const [testInfo, setTestInfo] = useState<any>(null); // DIRECT test verisi sonucu
-  const [testBusy, setTestBusy] = useState('');
   const user = session?.user as any;
 
   useEffect(() => {
@@ -29,58 +25,8 @@ export function RulesManagement() {
         .then(d => setSettings(d?.settings || {}))
         .catch(() => toast.error('Ayarlar yüklenemedi'))
         .finally(() => setLoading(false));
-      fetch('/api/admin/payment-preview').then(r => r.json()).then(d => setPreview(d?.preview ?? null)).catch(() => {});
     }
   }, [status, router, user?.role]);
-
-  // Admin önizleme aç/kapa: canlı flag'e dokunmadan yalnızca bu tarayıcıya DIRECT/ESCROW gösterir.
-  const togglePreview = async (mode: 'DIRECT' | 'OFF') => {
-    setPreviewBusy(true);
-    try {
-      const res = await fetch('/api/admin/payment-preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
-      });
-      const d = await res.json();
-      if (!res.ok) { toast.error(d?.error ?? 'Önizleme ayarlanamadı'); return; }
-      setPreview(d?.preview ?? null);
-      toast.success(mode === 'OFF' ? 'Önizleme kapatıldı' : 'DIRECT önizleme açıldı (yalnızca siz görürsünüz)');
-      // Sunucu bileşenleri yeni çereze göre yeniden render olsun diye sayfayı tazele.
-      setTimeout(() => window.location.reload(), 400);
-    } catch {
-      toast.error('Önizleme ayarlanamadı');
-    } finally {
-      setPreviewBusy(false);
-    }
-  };
-
-  // DIRECT uçtan-uca test: test verisi oluştur / bitir / check-live tetikle / temizle.
-  const runTest = async (action: 'seed' | 'accounts_only' | 'end_now' | 'cleanup' | 'checklive') => {
-    setTestBusy(action);
-    try {
-      if (action === 'checklive') {
-        const r = await fetch('/api/cron/check-live');
-        const d = await r.json();
-        toast.success(`check-live çalıştı (geçiş: ${d?.transitioned ?? '?'}, tamamlanan: ${d?.completedAuctions ?? '?'})`);
-        return;
-      }
-      const res = await fetch('/api/admin/direct-test-seed', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      });
-      const d = await res.json();
-      if (!res.ok) { toast.error(d?.error ?? 'İşlem başarısız'); return; }
-      if (action === 'seed') { setTestInfo(d); toast.success('Test verisi oluşturuldu'); }
-      else if (action === 'accounts_only') { setTestInfo(d); toast.success('Test hesapları oluşturuldu'); }
-      else if (action === 'cleanup') { setTestInfo(null); toast.success('Test verisi temizlendi'); }
-      else if (action === 'end_now') { toast.success('Müzayede bitti işaretlendi — şimdi check-live tetikleyin'); }
-    } catch {
-      toast.error('İşlem başarısız');
-    } finally {
-      setTestBusy('');
-    }
-  };
 
   const updateField = (key: string, value: any) => setSettings((prev: any) => ({ ...prev, [key]: value }));
 
@@ -159,86 +105,6 @@ export function RulesManagement() {
             <p className="text-xs text-muted-foreground mt-3">
               Not: Mod değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Geri dönmek için tekrar
               ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
-            </p>
-          </div>
-
-          {/* Admin Önizleme — canlı flag'e dokunmadan yeni sistemi test etmek için */}
-          <div className="rounded-xl border border-sky-500/40 bg-sky-500/5 p-6">
-            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-sky-400" /> DIRECT Önizleme (yalnızca siz)</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Yeni sistemi (DIRECT) canlı flag'i değiştirmeden test edin. Açtığınızda <strong className="text-foreground">yalnızca sizin tarayıcınız</strong> yeni
-              sistemi görür; siteyi gezen diğer satıcı/alıcılar eski sistemde (ESCROW) kalır. Test bitince kapatın.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {preview === 'DIRECT' ? (
-                <>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/15 text-sky-400 px-3 py-2 text-sm font-medium">🔵 DIRECT önizleme AÇIK</span>
-                  <button
-                    onClick={() => togglePreview('OFF')}
-                    disabled={previewBusy}
-                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
-                  >
-                    Önizlemeyi Kapat
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => togglePreview('DIRECT')}
-                  disabled={previewBusy}
-                  className="rounded-lg bg-sky-500 text-white px-4 py-2 text-sm font-semibold hover:bg-sky-600 transition-colors disabled:opacity-50"
-                >
-                  DIRECT Önizlemeyi Aç
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Not: Bu önizleme yalnızca ekranları (etiket, IBAN, yasal metin, satış kaydı vb.) gösterir; gerçek satış
-              matematiği her zaman canlı flag'e göre işler. 6 saat sonra kendiliğinden kapanır.
-            </p>
-          </div>
-
-          {/* DIRECT uçtan-uca test verisi (test satıcı + alıcı + kısa müzayede + kazanan teklif) */}
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-6">
-            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-emerald-400" /> DIRECT Uçtan-Uca Test Verisi</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Gerçek bir test satışı kurar (test satıcı + test alıcı + kısa müzayede + 1 lot + kazanan teklif).
-              Sıra: <strong>1)</strong> Test Verisi Oluştur → <strong>2)</strong> yukarıdan Ödeme Modu=<strong>DIRECT</strong> kaydet →
-              <strong>3)</strong> Müzayedeyi Bitir → <strong>4)</strong> check-live Tetikle → sipariş/ödeme ekranlarını gez →
-              <strong>5)</strong> Ödeme Modu=ESCROW'a al → <strong>6)</strong> Temizle.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <button onClick={() => runTest('accounts_only')} disabled={!!testBusy}
-                className="rounded-lg bg-sky-600 text-white px-3 py-2 text-sm font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50">
-                {testBusy === 'accounts_only' ? '...' : '👤 Sadece Hesap Oluştur (satıcı+alıcı)'}
-              </button>
-              <button onClick={() => runTest('seed')} disabled={!!testBusy}
-                className="rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                {testBusy === 'seed' ? '...' : '1) Test Verisi Oluştur (müzayedeli)'}
-              </button>
-              <button onClick={() => runTest('end_now')} disabled={!!testBusy}
-                className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50">
-                {testBusy === 'end_now' ? '...' : '3) Müzayedeyi Bitir'}
-              </button>
-              <button onClick={() => runTest('checklive')} disabled={!!testBusy}
-                className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50">
-                {testBusy === 'checklive' ? '...' : '4) check-live Tetikle'}
-              </button>
-              <button onClick={() => runTest('cleanup')} disabled={!!testBusy}
-                className="rounded-lg border border-red-500/40 text-red-400 px-3 py-2 text-sm font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50">
-                {testBusy === 'cleanup' ? '...' : '6) Temizle'}
-              </button>
-            </div>
-            {testInfo?.credentials && (
-              <div className="mt-4 rounded-lg bg-card border border-border p-3 text-xs space-y-1">
-                <p className="font-semibold text-foreground">Giriş bilgileri (gizli sekmede giriş yap):</p>
-                <p>🧑‍💼 Satıcı: <span className="font-mono">{testInfo.credentials.seller.email}</span> / <span className="font-mono">{testInfo.credentials.seller.password}</span></p>
-                <p>🛒 Alıcı: <span className="font-mono">{testInfo.credentials.buyer.email}</span> / <span className="font-mono">{testInfo.credentials.buyer.password}</span></p>
-                {testInfo.lotId && <p>🔗 Lot: <a className="text-[#d4af37] underline" href={`/lot/${testInfo.lotId}`} target="_blank" rel="noopener noreferrer">/lot/{testInfo.lotId}</a></p>}
-                {testInfo.expected?.note && <p className="text-muted-foreground">Beklenen: {testInfo.expected.note}</p>}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-3">
-              Bu bir test aracıdır; test bitince "Temizle" ile tüm veri silinir (iki test kullanıcısı silinince müzayede/lot/teklif/ödeme otomatik gider).
             </p>
           </div>
 

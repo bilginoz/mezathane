@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Shield, ShieldOff, ShieldCheck, ChevronLeft, ChevronRight, Pencil, X, Ban, CheckCircle, UserCheck, Store, ArrowLeft, Eye, Package, Gavel, XCircle, RefreshCw, Loader2, AlertTriangle, Wallet, CreditCard, Clock } from 'lucide-react';
+import { Users, Search, Shield, ShieldOff, ShieldCheck, ChevronLeft, ChevronRight, Pencil, X, Ban, CheckCircle, UserCheck, Store, ArrowLeft, Eye, Package, Gavel, XCircle, RefreshCw, Loader2, AlertTriangle, Wallet, CreditCard, Clock, Trash2 } from 'lucide-react';
 import { formatDate, formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -128,6 +128,25 @@ export function UsersManagement() {
       );
       fetchUsers();
       setEditingUser(null);
+    } catch {
+      toast.error('İşlem başarısız');
+    }
+  };
+
+  const handleHardDelete = async (u: UserData) => {
+    if (!confirm(`⚠️ ${u.fullName} (${u.email}) KALICI olarak silinecek.\n\nBu kullanıcıya bağlı TÜM veri (satıcıysa müzayede/lot/teklif/ödeme, alıcıysa teklif/ödeme) geri alınamaz şekilde silinir.\n\nBu, gerçek kullanıcının KVKK silme talebi için DEĞİLDİR (onun için Ayarlar > Hesabı Sil anonimleştirmesi kullanılır). Bu yalnızca test/çöp hesapları tamamen kaldırmak içindir.\n\nDevam edilsin mi?`)) return;
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: u.id, action: 'hardDelete', data: { confirm: true } }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast.error(result.error ?? 'Silme başarısız'); return; }
+      toast.success('Kullanıcı ve tüm verisi kalıcı olarak silindi');
+      setDetailUser(null);
+      setEditingUser(null);
+      fetchUsers();
     } catch {
       toast.error('İşlem başarısız');
     }
@@ -453,6 +472,11 @@ export function UsersManagement() {
                     ) : (
                       <button onClick={() => { handleAction(detailUser.id, 'unban'); setDetailUser(u => u ? { ...u, isActive: true } : u); }} className="inline-flex items-center gap-1 rounded-lg border border-green-500/30 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/10 transition-colors">
                         <UserCheck className="h-3.5 w-3.5" /> Engeli Kaldır
+                      </button>
+                    )}
+                    {detailUser.role !== 'ADMIN' && (
+                      <button onClick={() => handleHardDelete(detailUser)} title="Kalıcı sil (test/çöp hesap — geri alınamaz)" className="inline-flex items-center gap-1 rounded-lg border border-red-600/40 bg-red-600/5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-600/15 transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" /> Kalıcı Sil
                       </button>
                     )}
                     <button onClick={() => setDetailUser(null)} className="rounded-lg p-1 hover:bg-muted"><X className="h-5 w-5" /></button>

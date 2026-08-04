@@ -145,6 +145,35 @@ export async function PATCH(request: Request) {
         break;
       }
 
+      // KALICI SİL — kullanıcıyı ve ona bağlı tüm veriyi (satıcıysa müzayede/lot/teklif/ödeme,
+      // alıcıysa teklif/ödeme/bildirim) DB cascade ile tamamen kaldırır. Geri alınamaz.
+      // Gerçek kullanıcı KVKK talebi için DEĞİL (o anonimleştirme: /api/user/delete-account);
+      // bu, test/çöp hesapları tamamen temizlemek içindir. Onay (confirm:true) zorunlu.
+      case 'hardDelete': {
+        if (data?.confirm !== true) {
+          return NextResponse.json({ error: 'Kalıcı silme için onay gerekli.' }, { status: 400 });
+        }
+        const target = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, fullName: true, email: true, role: true },
+        });
+        if (!target) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
+        if (target.role === 'ADMIN') {
+          return NextResponse.json({ error: 'Admin hesabı kalıcı silinemez.' }, { status: 403 });
+        }
+        await prisma.user.delete({ where: { id: userId } });
+        await logAudit({
+          userId: (session.user as any).id,
+          userName: (session.user as any).name ?? undefined,
+          action: 'HARD_DELETE_USER',
+          entity: 'User',
+          entityId: userId,
+          details: { targetEmail: target.email, targetName: target.fullName, targetRole: target.role },
+          ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? undefined,
+        });
+        return NextResponse.json({ deleted: true, message: 'Kullanıcı ve tüm verisi kalıcı olarak silindi.' });
+      }
+
       default:
         return NextResponse.json({ error: 'Geçersiz action' }, { status: 400 });
     }
