@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 /*
   Otomatik teslim onayı:
@@ -10,8 +11,12 @@ import { prisma } from '@/lib/prisma';
   - Bu cron, sayfa ziyaretlerinde veya zamanlanmış görevle tetiklenir
 */
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Aşırı tetiklemeyi (DoS) engelle — meşru cron seyrek çağırır, sınırın çok altında kalır.
+    const rl = await checkRateLimitDB(`cron-auto-confirm:${getClientIP(request)}`, RATE_LIMITS.CRON);
+    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit' }, { status: 429 });
+
     const now = new Date();
 
     // autoConfirmDate geçmiş, henüz DELIVERED olmamış ödemeleri bul

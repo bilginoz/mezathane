@@ -123,4 +123,6 @@ export const RATE_LIMITS = {
   CONTACT: { maxRequests: 3, windowSeconds: 15 * 60 },
   /** General API: 60 per minute */
   API_GENERAL: { maxRequests: 60, windowSeconds: 60 },
+  /** Cron uçları (check-live/auto-confirm): meşru cron seyrek çağırır; aşırı tetiklemeyi (DoS) keser */
+  CRON: { maxRequests: 20, windowSeconds: 60 },
 } as const;

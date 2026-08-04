@@ -6,6 +6,7 @@ import { createInAppNotification } from '@/lib/notifications';
 import { sendEmail } from '@/lib/mailer';
 import { getPaymentMode } from '@/lib/payment-mode';
 import { computeSalePayment } from '@/lib/sale-math';
+import { checkRateLimitDB, getClientIP, RATE_LIMITS } from '@/lib/rate-limit';
 
 /*
   Müzayede otomatik geçiş kontrolü:
@@ -14,8 +15,12 @@ import { computeSalePayment } from '@/lib/sale-math';
   3. ACTIVE → COMPLETED: endDate geçmiş ve liveStartDate olmayan (yazılı müzayedeler)
   4. Kazanıcıları belirle, lotları SOLD/UNSOLD yap, ödeme kaydı oluştur
 */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Aşırı tetiklemeyi (DoS) engelle — meşru cron seyrek çağırır, sınırın çok altında kalır.
+    const rl = await checkRateLimitDB(`cron-check-live:${getClientIP(request)}`, RATE_LIMITS.CRON);
+    if (!rl.allowed) return NextResponse.json({ error: 'Rate limit' }, { status: 429 });
+
     const now = new Date();
     let transitioned = 0;
 
