@@ -260,9 +260,14 @@ export default function ManageAuctionContent() {
     });
   };
 
-  const handleLotImageUpload = async (files: FileList | null) => {
+  // Ortak görsel yükleyici — hem ekleme hem düzenleme formu kullanır (max 6, sıkıştırılır, R2'ye yüklenir).
+  const uploadImageFiles = async (
+    files: FileList | null,
+    currentCount: number,
+    append: (img: { url: string; cloudStoragePath: string; uploading: boolean }) => void,
+  ) => {
     if (!files || files.length === 0) return;
-    const remaining = 6 - lotImages.length;
+    const remaining = 6 - currentCount;
     const toUpload = Array.from(files).slice(0, remaining);
     if (toUpload.length === 0) {
       toast.error('En fazla 6 görsel yükleyebilirsiniz');
@@ -275,7 +280,6 @@ export default function ManageAuctionContent() {
         continue;
       }
       try {
-        // Görseli sıkıştır
         const { blob: compressed, type: compressedType } = await compressImage(file);
         const compressedExt = compressedType === 'image/webp' ? 'webp' : 'jpg';
         const fileName = `lots/${Date.now()}-${Math.random().toString(36).slice(2)}.${compressedExt}`;
@@ -288,7 +292,7 @@ export default function ManageAuctionContent() {
         const headers: Record<string, string> = { 'Content-Type': compressedType };
         if (uploadUrl.includes('content-disposition')) headers['Content-Disposition'] = 'attachment';
         await fetch(uploadUrl, { method: 'PUT', headers, body: compressed });
-        setLotImages(prev => [...prev, { url: publicUrl, cloudStoragePath: cloud_storage_path, uploading: false }]);
+        append({ url: publicUrl, cloudStoragePath: cloud_storage_path, uploading: false });
       } catch {
         toast.error(`${file.name} yüklenemedi`);
       }
@@ -296,13 +300,12 @@ export default function ManageAuctionContent() {
     setImageUploading(false);
   };
 
-  const removeLotImage = (idx: number) => {
-    setLotImages(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  // Seçilen görseli listenin başına alır → kapak fotoğrafı olur (kaydederken sıra = sortOrder).
-  const setLotCover = (idx: number) => {
-    setLotImages(prev => {
+  // Görseli listenin başına al → kapak (kaydederken sıra = sortOrder, ilk görsel kapak).
+  const moveCover = (
+    idx: number,
+    setter: React.Dispatch<React.SetStateAction<{ url: string; cloudStoragePath: string; uploading: boolean }[]>>,
+  ) => {
+    setter(prev => {
       if (idx <= 0 || idx >= prev.length) return prev;
       const next = [...prev];
       const [chosen] = next.splice(idx, 1);
@@ -311,13 +314,31 @@ export default function ManageAuctionContent() {
     });
   };
 
-  // Görsel yükleme alanına sürükle-bırak
+  // --- Ekleme formu görselleri ---
+  const handleLotImageUpload = (files: FileList | null) =>
+    uploadImageFiles(files, lotImages.length, img => setLotImages(prev => [...prev, img]));
+  const removeLotImage = (idx: number) => setLotImages(prev => prev.filter((_, i) => i !== idx));
+  const setLotCover = (idx: number) => moveCover(idx, setLotImages);
   const [imageDragActive, setImageDragActive] = useState(false);
   const handleImageDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setImageDragActive(false);
     if (imageUploading || lotImages.length >= 6) return;
     if (e.dataTransfer?.files?.length) handleLotImageUpload(e.dataTransfer.files);
+  };
+
+  // --- Düzenleme formu görselleri (çoklu + kapak, ekleme formuyla aynı) ---
+  const [editLotImages, setEditLotImages] = useState<{ url: string; cloudStoragePath: string; uploading: boolean }[]>([]);
+  const [editImageDragActive, setEditImageDragActive] = useState(false);
+  const handleEditLotImageUpload = (files: FileList | null) =>
+    uploadImageFiles(files, editLotImages.length, img => setEditLotImages(prev => [...prev, img]));
+  const removeEditLotImage = (idx: number) => setEditLotImages(prev => prev.filter((_, i) => i !== idx));
+  const setEditLotCover = (idx: number) => moveCover(idx, setEditLotImages);
+  const handleEditImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setEditImageDragActive(false);
+    if (imageUploading || editLotImages.length >= 6) return;
+    if (e.dataTransfer?.files?.length) handleEditLotImageUpload(e.dataTransfer.files);
   };
 
   // Edit lot form state
@@ -380,6 +401,8 @@ export default function ManageAuctionContent() {
   const startEditLot = (lot: LotData) => {
     setEditingLotId(lot.id);
     setShowAddLot(false);
+    // Mevcut görselleri düzenlenebilir listeye yükle (sıra korunur; ilk = kapak).
+    setEditLotImages((lot.images ?? []).map((img: any) => ({ url: img.imageUrl, cloudStoragePath: '', uploading: false })));
     setEditLot({
       title: lot.title,
       description: lot.description ?? '',
@@ -423,7 +446,8 @@ export default function ManageAuctionContent() {
           shippingType: editLot.shippingType,
           estimatedShipping: editLot.estimatedShipping || null,
           kdvRate: parseFloat(editLot.kdvRate) || 20,
-          imageUrl: editLot.imageUrl || undefined,
+          // Çoklu görsel + kapak (sıra = sortOrder, ilk görsel kapak). API mevcut görselleri bununla değiştirir.
+          images: editLotImages.map(img => ({ imageUrl: img.url, cloudStoragePath: img.cloudStoragePath })),
           videoUrl: editLot.videoUrl || null,
           restorationNote: editLot.restorationNote || null,
           certificateUrl: editLot.certificateUrl || null,
@@ -1447,14 +1471,41 @@ export default function ManageAuctionContent() {
                           )}
                         </div>
                         <div className="sm:col-span-2">
-                          <label className="text-sm text-muted-foreground mb-1 block">Görsel URL</label>
-                          <input
-                            type="text"
-                            value={editLot.imageUrl}
-                            onChange={e => setEditLot(p => ({ ...p, imageUrl: e.target.value }))}
-                            className="w-full rounded-lg bg-muted border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                            placeholder="https://npr.brightspotcdn.com/dims3/default/strip/false/crop/2500x3125+0+0/resize/1100/quality/50/format/jpeg/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fd2%2Fc9%2Fa5bc19d74649b30a349d4c8c8913%2F260408-lk-kidcluttter-flowchart.jpg"
-                          />
+                          <label className="text-sm text-muted-foreground mb-1 block">Görseller (max 6)</label>
+                          <div className="space-y-3">
+                            {editLotImages.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {editLotImages.map((img, idx) => (
+                                  <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
+                                    <Image src={img.url} alt={`Görsel ${idx + 1}`} fill className="object-cover" sizes="80px" />
+                                    <button type="button" onClick={() => removeEditLotImage(idx)} className="absolute top-0.5 right-0.5 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <X className="w-3 h-3 text-white" />
+                                    </button>
+                                    {idx === 0 ? (
+                                      <span className="absolute bottom-0 inset-x-0 bg-[#d4af37] text-black text-[8px] text-center font-bold">Kapak</span>
+                                    ) : (
+                                      <button type="button" onClick={() => setEditLotCover(idx)} className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[8px] text-center font-medium py-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#d4af37] hover:text-black">
+                                        Kapak Yap
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <label
+                              onDragOver={e => { e.preventDefault(); if (!imageUploading && editLotImages.length < 6) setEditImageDragActive(true); }}
+                              onDragLeave={e => { e.preventDefault(); setEditImageDragActive(false); }}
+                              onDrop={handleEditImageDrop}
+                              className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed py-4 cursor-pointer transition-colors ${editImageDragActive ? 'border-amber-500 bg-amber-500/10' : 'border-border hover:border-amber-500/50'} ${imageUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
+                              <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleEditLotImageUpload(e.target.files)} disabled={imageUploading || editLotImages.length >= 6} />
+                              {imageUploading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin text-amber-500" /> <span className="text-sm text-muted-foreground">Yükleniyor...</span></>
+                              ) : (
+                                <><Upload className="w-4 h-4 text-amber-500" /> <span className="text-sm text-muted-foreground">{editImageDragActive ? 'Bırakın, yüklensin' : `Fotoğraf sürükleyip bırakın veya seçin (${editLotImages.length}/6)`}</span></>
+                              )}
+                            </label>
+                          </div>
                         </div>
                         <div className="sm:col-span-2">
                           <label className="text-sm text-muted-foreground mb-1 block">Kısa Tanıtım Videosu (isteğe bağlı)</label>

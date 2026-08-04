@@ -76,7 +76,7 @@ export async function PATCH(
       // Sadece status değişikliği ise izin ver (admin tarafından tetiklenecek)
       return NextResponse.json({ error: 'Lotlar sadece müzayede taslak durumundayken düzenlenebilir.' }, { status: 400 });
     }
-    const { title, description, notes, condition, provenance, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, videoUrl, restorationNote, certificateUrl, shippingType, estimatedShipping, kdvRate } = body;
+    const { title, description, notes, condition, provenance, categoryId, categoryIds, startingPrice, estimatedPrice, reservePrice, customBidIncrement, status, imageUrl, images, videoUrl, restorationNote, certificateUrl, shippingType, estimatedShipping, kdvRate } = body;
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -125,8 +125,20 @@ export async function PATCH(
       });
     }
 
-    // Update image if provided
-    if (imageUrl !== undefined) {
+    // Görseller — ÇOKLU (yeni): images dizisi verilirse mevcut görselleri bununla DEĞİŞTİR
+    // (sıra = sortOrder, ilk görsel kapak). Ekleme formuyla aynı davranış.
+    if (Array.isArray(images)) {
+      const clean = images
+        .map((im: any) => (typeof im === 'string' ? im : (im?.imageUrl ?? im?.url ?? '')))
+        .filter((u: string) => typeof u === 'string' && u.trim());
+      await prisma.lotImage.deleteMany({ where: { lotId: id } });
+      if (clean.length > 0) {
+        await prisma.lotImage.createMany({
+          data: clean.map((u: string, idx: number) => ({ lotId: id, imageUrl: u, isPublic: true, sortOrder: idx })),
+        });
+      }
+    } else if (imageUrl !== undefined) {
+      // Eski uyumluluk: tek imageUrl (yalnızca images dizisi gelmediğinde)
       const existingImages = await prisma.lotImage.findMany({ where: { lotId: id } });
       if (existingImages.length > 0) {
         await prisma.lotImage.update({
