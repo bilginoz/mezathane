@@ -86,7 +86,8 @@ export function Footer() {
           <div>
             <h3 className="font-display font-semibold mb-4 text-sm uppercase tracking-wider text-[#d4af37]">Satıcılar İçin</h3>
             <div className="space-y-2">
-              <Link href="/satici-basvuru" className="block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Satıcı Ol</Link>
+              <Link href="/satici-ol" className="block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Satıcı Ol</Link>
+              <Link href="/satici-ol#fiyatlandirma" className="block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Fiyatlandırma</Link>
               <Link href="/giris" className="block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Giriş Yap</Link>
             </div>
           </div>
