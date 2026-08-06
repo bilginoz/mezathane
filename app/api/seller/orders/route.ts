@@ -156,15 +156,28 @@ export async function PATCH(request: Request) {
       if (!pay) return NextResponse.json({ error: 'Sipariş bulunamadı' }, { status: 404 });
       if (pay.sellerPaymentConfirmedAt) return NextResponse.json({ error: 'Zaten onaylandı' }, { status: 400 });
       const now = new Date();
+      const updateData: any = {
+        sellerPaymentConfirmedAt: now,
+        buyerPaymentReceived: true, // ödeme alındı işareti (kargo akışı bunu bekler)
+        status: 'PAID',
+        paidAt: pay.paidAt ?? now,
+        paymentMethod: pay.paymentMethod ?? 'DIRECT_HAVALE',
+      };
+      // AŞAMA 3b (2026-08-06): HİZMET_BEDELİ modelinde hizmet bedeli borcu tam bu anda doğar —
+      // vade kararı (2026-08-06) teslim/kargoya değil, alıcının ödemesinin onaylandığı bu ana bağlı.
+      // KONTOR'da (varsayılan) hiçbir şey hesaplanmaz, davranış değişmez.
+      const { getServiceFeeSettings } = await import('@/lib/revenue-model');
+      const { model, rate } = await getServiceFeeSettings();
+      if (model === 'HIZMET_BEDELI') {
+        const { computeServiceFee } = await import('@/lib/sale-math');
+        const { serviceFeeAmount, serviceFeeKDV } = computeServiceFee(pay.amount, rate);
+        updateData.serviceFeeAmount = serviceFeeAmount;
+        updateData.serviceFeeKDV = serviceFeeKDV;
+        updateData.serviceFeeDueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      }
       await prisma.payment.update({
         where: { id: paymentId },
-        data: {
-          sellerPaymentConfirmedAt: now,
-          buyerPaymentReceived: true, // ödeme alındı işareti (kargo akışı bunu bekler)
-          status: 'PAID',
-          paidAt: pay.paidAt ?? now,
-          paymentMethod: pay.paymentMethod ?? 'DIRECT_HAVALE',
-        },
+        data: updateData,
       });
       // Alıcıya bildirim
       const { createInAppNotification } = await import('@/lib/notifications');

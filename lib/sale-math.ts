@@ -28,6 +28,21 @@ export interface SalePaymentResult {
   totalAmount: number;         // alıcının ödeyeceği toplam
 }
 
+export interface ServiceFeeResult {
+  serviceFeeAmount: number; // platforma borçlanılan hizmet bedeli (KDV hariç)
+  serviceFeeKDV: number;    // hizmet bedelinin KDV'si (sabit %20)
+}
+
+// AŞAMA 3 (HİZMET_BEDELİ modeli, 2026-08-06): DIRECT'te para satıcıya gider, platform üründen
+// pay almaz (commissionAmount=0). Bu modelde platform payını SONRADAN satıcıdan tahsil eder;
+// bu fonksiyon o borcu hammer fiyatı üzerinden hesaplar (ESCROW'daki komisyon mantığının aynısı,
+// sadece kesme değil borçlandırma).
+export function computeServiceFee(hammer: number, serviceFeeRate: number): ServiceFeeResult {
+  const serviceFeeAmount = round2(hammer * (serviceFeeRate / 100));
+  const serviceFeeKDV = round2(serviceFeeAmount * KDV_RATE);
+  return { serviceFeeAmount, serviceFeeKDV };
+}
+
 export function computeSalePayment(input: SalePaymentInput): SalePaymentResult {
   const isDirect = input.mode === 'DIRECT';
 

@@ -140,9 +140,9 @@ export function RulesManagement() {
                 </label>
               </div>
               <p className="text-xs text-red-500 font-medium mt-3">
-                ⚠️ Alt yapı henüz tamamlanmadı: borç hesaplama, satıcı cari ekranı, kısıtlama ve
-                fatura/bildirim adımları (AŞAMA 3b-3e) kodlanana kadar bu ayarı HİZMET BEDELİ'ne
-                çevirmeyin — hiçbir etkisi olmaz, sadece yarım kalmış görünür.
+                ⚠️ Alt yapı henüz eksik: borç artık hesaplanıyor ama satıcı cari ekranı, admin
+                kısıtlaması ve fatura/bildirim adımları (AŞAMA 3c-3e) kodlanana kadar bu ayarı
+                HİZMET BEDELİ'ne çevirmeyin — borç sessizce birikir, kimseye görünmez/hatırlatılmaz.
               </p>
             </div>
           )}

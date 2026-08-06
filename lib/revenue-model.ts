@@ -18,3 +18,17 @@ export async function getDirectRevenueModel(): Promise<DirectRevenueModel> {
 export async function isServiceFeeModel(): Promise<boolean> {
   return (await getDirectRevenueModel()) === 'HIZMET_BEDELI';
 }
+
+// Model + oranı birlikte okur (3b'de borç hesabı için). Ayar okunamazsa güvenli tarafa
+// (KONTOR, oran 7.0) düşer — borç hesaplanmaz.
+export async function getServiceFeeSettings(): Promise<{ model: DirectRevenueModel; rate: number }> {
+  try {
+    const s = await prisma.platformSettings.findFirst({ select: { directRevenueModel: true, serviceFeeRate: true } });
+    return {
+      model: s?.directRevenueModel === 'HIZMET_BEDELI' ? 'HIZMET_BEDELI' : 'KONTOR',
+      rate: s?.serviceFeeRate ?? 7.0,
+    };
+  } catch {
+    return { model: 'KONTOR', rate: 7.0 };
+  }
+}

@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeSalePayment } from './sale-math.ts';
+import { computeSalePayment, computeServiceFee } from './sale-math.ts';
 import { maskName } from './utils.ts';
 
 test('DIRECT: platform komisyonu 0, alıcı komisyonu = satıcı oranı, KDV %20', () => {
@@ -40,6 +40,18 @@ test('ESCROW: satıcı komisyonu 0 iken platform payı 0, alıcı yine %7 öder'
   assert.equal(r.buyerPremiumAmount, 10.5);
   assert.equal(r.buyerPremiumKDV, 2.1);
   assert.equal(r.totalAmount, 162.6);
+});
+
+test('computeServiceFee: HİZMET_BEDELİ borcu hammer üzerinden + %20 KDV (AŞAMA 3b)', () => {
+  const r = computeServiceFee(20000, 7.0);
+  assert.equal(r.serviceFeeAmount, 1400);
+  assert.equal(r.serviceFeeKDV, 280);
+});
+
+test('computeServiceFee: admin panelden değiştirilen oran doğru uygulanır', () => {
+  const r = computeServiceFee(1000, 5.5);
+  assert.equal(r.serviceFeeAmount, 55);
+  assert.equal(r.serviceFeeKDV, 11);
 });
 
 test('maskName: tam isim maskelenir, tek isim korunur, boş → Anonim', () => {
