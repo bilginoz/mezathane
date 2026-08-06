@@ -11,13 +11,15 @@ import { ArrowLeft, Loader2, Ticket, Info, Package, ArrowRight } from 'lucide-re
 import { formatPrice } from '@/lib/utils';
 import { AdminBuyersFinance } from './admin-buyers-finance';
 import { AdminSellersFinance } from './admin-sellers-finance';
+import { AdminServiceFee } from './admin-service-fee';
 
 export function AdminDirectFinance() {
-  const [tab, setTab] = useState<'ozet' | 'alici' | 'satici'>('ozet');
+  const [tab, setTab] = useState<'ozet' | 'alici' | 'satici' | 'hizmet'>('ozet');
   const [loading, setLoading] = useState(true);
   const [approvedRevenue, setApprovedRevenue] = useState(0);
   const [approvedCount, setApprovedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [revenueModel, setRevenueModel] = useState<string>('KONTOR');
 
   useEffect(() => {
     (async () => {
@@ -34,8 +36,22 @@ export function AdminDirectFinance() {
       } finally {
         setLoading(false);
       }
+      try {
+        const res2 = await fetch('/api/admin/platform-settings');
+        const d2 = await res2.json();
+        setRevenueModel(d2?.settings?.directRevenueModel === 'HIZMET_BEDELI' ? 'HIZMET_BEDELI' : 'KONTOR');
+      } catch {
+        // sessiz — sekme gizli kalır
+      }
     })();
   }, []);
+
+  const tabs: { key: 'ozet' | 'alici' | 'satici' | 'hizmet'; label: string }[] = [
+    { key: 'ozet', label: 'Özet' },
+    { key: 'alici', label: 'Alıcılar' },
+    { key: 'satici', label: 'Satıcılar' },
+    ...(revenueModel === 'HIZMET_BEDELI' ? [{ key: 'hizmet' as const, label: 'Hizmet Bedeli' }] : []),
+  ];
 
   return (
     <main className="flex-1 py-8">
@@ -50,13 +66,14 @@ export function AdminDirectFinance() {
 
         {/* Sekmeler */}
         <div className="flex items-center gap-2 mb-5 border-b border-border">
-          {([['ozet', 'Özet'], ['alici', 'Alıcılar'], ['satici', 'Satıcılar']] as const).map(([k, label]) => (
+          {tabs.map(({ key: k, label }) => (
             <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === k ? 'border-[#d4af37] text-[#d4af37]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{label}</button>
           ))}
         </div>
 
         {tab === 'alici' && <AdminBuyersFinance />}
         {tab === 'satici' && <AdminSellersFinance />}
+        {tab === 'hizmet' && <AdminServiceFee />}
 
         {tab === 'ozet' && (<>
         {/* Model açıklaması */}

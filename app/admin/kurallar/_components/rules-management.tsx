@@ -113,8 +113,8 @@ export function RulesManagement() {
 
           {/* DIRECT içi gelir modeli (AŞAMA 3, 2026-08-06) — henüz sadece alt yapı */}
           {settings?.paymentMode === 'DIRECT' && (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-6">
-              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-red-400" /> DIRECT Gelir Modeli (yapım aşamasında)</h2>
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
+              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-amber-400" /> DIRECT Gelir Modeli</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 <strong className="text-foreground">KONTOR:</strong> Satıcı önden Müzayede Hakkı satın alır (mevcut). <br />
                 <strong className="text-foreground">HİZMET BEDELİ:</strong> Satıcı önden ödemez, her satıştan sonra
@@ -139,11 +139,11 @@ export function RulesManagement() {
                   />
                 </label>
               </div>
-              <p className="text-xs text-red-500 font-medium mt-3">
-                ⚠️ Alt yapı henüz eksik: borç hesaplanıyor, satıcı görüp "Ödedim" diyebiliyor —
-                ama admin onay ekranı ve yeni-müzayede kısıtlaması (AŞAMA 3d) henüz yok. Şimdilik
-                satıcının "Ödedim" bildirimini yalnızca uygulama-içi bildirimden görüp elle takip
-                edebilirsiniz; onaylama arayüzü olmadan bu ayarı HİZMET BEDELİ'ne çevirmeyin.
+              <p className="text-xs text-muted-foreground mt-3">
+                Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
+                sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.
+                Kalan: haftalık toplu fatura/makbuz otomasyonu (AŞAMA 3e) — o olmadan da model
+                çalışır, sadece hatırlatma/fatura elle takip edilir.
               </p>
             </div>
           )}
