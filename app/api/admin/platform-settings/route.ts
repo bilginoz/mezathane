@@ -66,6 +66,21 @@ export async function PATCH(request: Request) {
       updateData.paymentMode = body.paymentMode;
     }
 
+    // DIRECT içi gelir modeli (AŞAMA 3) — yalnızca KONTOR veya HİZMET_BEDELİ
+    if (body.directRevenueModel !== undefined) {
+      if (!['KONTOR', 'HIZMET_BEDELI'].includes(body.directRevenueModel)) {
+        return NextResponse.json({ error: 'directRevenueModel yalnızca KONTOR veya HIZMET_BEDELI olabilir.' }, { status: 400 });
+      }
+      updateData.directRevenueModel = body.directRevenueModel;
+    }
+    if (body.serviceFeeRate !== undefined) {
+      const n = Number(body.serviceFeeRate);
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        return NextResponse.json({ error: 'serviceFeeRate için 0-100 arası bir yüzde girin.' }, { status: 400 });
+      }
+      updateData.serviceFeeRate = n;
+    }
+
     // Pazarlama: deneme hakkı kampanyası aç/kapa
     if (body.trialRightEnabled !== undefined) {
       updateData.trialRightEnabled = Boolean(body.trialRightEnabled);

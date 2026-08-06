@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ShieldCheck, Save, ArrowLeft, Users, Wallet, Ban, Gift } from 'lucide-react';
+import { ShieldCheck, Save, ArrowLeft, Users, Wallet, Ban, Gift, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function RulesManagement() {
@@ -44,6 +44,8 @@ export function RulesManagement() {
           autoSuspendAfterDefaults: Number(settings.autoSuspendAfterDefaults),
           paymentMode: settings.paymentMode === 'DIRECT' ? 'DIRECT' : 'ESCROW',
           trialRightEnabled: Boolean(settings.trialRightEnabled),
+          directRevenueModel: settings.directRevenueModel === 'HIZMET_BEDELI' ? 'HIZMET_BEDELI' : 'KONTOR',
+          serviceFeeRate: Number(settings.serviceFeeRate),
         }),
       });
       const data = await res.json();
@@ -108,6 +110,42 @@ export function RulesManagement() {
               ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
             </p>
           </div>
+
+          {/* DIRECT içi gelir modeli (AŞAMA 3, 2026-08-06) — henüz sadece alt yapı */}
+          {settings?.paymentMode === 'DIRECT' && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-6">
+              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-red-400" /> DIRECT Gelir Modeli (yapım aşamasında)</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                <strong className="text-foreground">KONTOR:</strong> Satıcı önden Müzayede Hakkı satın alır (mevcut). <br />
+                <strong className="text-foreground">HİZMET BEDELİ:</strong> Satıcı önden ödemez, her satıştan sonra
+                hizmet bedelini SONRADAN haftalık toplu fatura ile öder.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={settings?.directRevenueModel === 'HIZMET_BEDELI' ? 'HIZMET_BEDELI' : 'KONTOR'}
+                  onChange={e => updateField('directRevenueModel', e.target.value)}
+                  className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none"
+                >
+                  <option value="KONTOR">KONTOR — satıcı önden hak satın alır</option>
+                  <option value="HIZMET_BEDELI">HİZMET BEDELİ — satıcı satış sonrası öder</option>
+                </select>
+                <label className="flex items-center gap-2 text-sm">
+                  Oran (%)
+                  <input
+                    type="number" min={0} max={100} step={0.1}
+                    value={settings?.serviceFeeRate ?? ''}
+                    onChange={e => updateField('serviceFeeRate', e.target.value)}
+                    className="w-20 rounded-lg border border-border bg-muted/50 px-2 py-1.5 text-sm focus:border-[#d4af37] focus:outline-none"
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-red-500 font-medium mt-3">
+                ⚠️ Alt yapı henüz tamamlanmadı: borç hesaplama, satıcı cari ekranı, kısıtlama ve
+                fatura/bildirim adımları (AŞAMA 3b-3e) kodlanana kadar bu ayarı HİZMET BEDELİ'ne
+                çevirmeyin — hiçbir etkisi olmaz, sadece yarım kalmış görünür.
+              </p>
+            </div>
+          )}
 
           {/* Deneme hakkı kampanyası (pazarlama) */}
           <div className="rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/5 p-6">

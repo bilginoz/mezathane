@@ -544,6 +544,13 @@ model Payment {
   payoutRequestedAt     DateTime?     // Satıcı ödeme talep tarihi
   paymentReminderSentAt DateTime?     // Ödeme hatırlatma e-postası gönderildiği an (bir kez gönderilir, tekrar spam olmaz)
   chronicOverdueNotifiedAt DateTime?  // Vade 15+ gün geçtiğinde admin'e bildirim gönderildiği an (2026-08-01, bir kez gönderilir)
+  // DIRECT/HİZMET_BEDELİ (AŞAMA 3, 2026-08-06) — satıcının SONRADAN bize ödeyeceği hizmet bedeli.
+  // Henüz hesaplanmıyor/kullanılmıyor (3b'de check-live borç hesabı eklenecek); şu an sadece alan var.
+  serviceFeeAmount      Float?        // Bu satıştan doğan hizmet bedeli tutarı (KDV hariç)
+  serviceFeeKDV         Float?        // Hizmet bedelinin KDV'si (%20 sabit, ürün KDV'sinden bağımsız)
+  serviceFeeDueDate     DateTime?     // Vade: sellerPaymentConfirmedAt + 7 gün (teslim/kargoya bağlı DEĞİL)
+  serviceFeeReportedAt  DateTime?     // Haftalık toplu faturaya dahil edildiği an (her Pazartesi)
+  serviceFeePaidAt      DateTime?     // Satıcının hizmet bedelini bize fiilen ödediği an
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -577,6 +584,15 @@ model PlatformSettings {
   // Pazarlama: onaylanan her yeni satıcıya 1 kez ücretsiz "deneme" müzayede hakkı ver (30 gün geçerli).
   // Panelden kapatılabilir (kod/deploy gerekmez); kapalıyken yeni onaylarda deneme hakkı verilmez.
   trialRightEnabled           Boolean @default(true)
+  // DIRECT (V2) içi gelir modeli (sürüm anahtarı, AŞAMA 3 — 2026-08-06): KONTOR = satıcı önden
+  // Müzayede Hakkı satın alır (mevcut/varsayılan). HİZMET_BEDELİ = satıcı önden ödeme yapmaz,
+  // her satıştan sonra hizmet bedelini SONRADAN (haftalık toplu fatura ile) bize öder.
+  // ⚠️ 2026-08-06 itibarıyla sadece ALT YAPI (şema+flag) var; borç hesaplama/fatura/kısıtlama
+  // henüz kodlanmadı (3b-3e). Bu flag'i HİZMET_BEDELİ'ye çevirmek şu an HİÇBİR ŞEYİ DEĞİŞTİRMEZ.
+  directRevenueModel          String  @default("KONTOR")
+  // Hizmet bedeli oranı (%) — HİZMET_BEDELİ modelinde satıştan alınacak pay. Varsayılan eski
+  // escrow oranıyla aynı (7.0), admin panelden değiştirilebilir.
+  serviceFeeRate               Float  @default(7.0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
