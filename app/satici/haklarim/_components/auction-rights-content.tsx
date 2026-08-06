@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { ArrowLeft, Ticket, Plus, Loader2, Copy, Clock, CheckCircle2, XCircle, Hourglass, Banknote } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 interface Purchase {
   id: string;
@@ -25,6 +26,7 @@ interface Purchase {
 
 export function AuctionRightsContent() {
   const { status } = useSession() || {};
+  const { model: revenueModel } = useRevenueModel();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
@@ -169,10 +171,28 @@ export function AuctionRightsContent() {
           <div className="rounded-full bg-[#d4af37]/10 p-3"><Ticket className="h-6 w-6 text-[#d4af37]" /></div>
           <div>
             <h1 className="font-display text-2xl font-bold">Müzayede Haklarım</h1>
-            <p className="text-sm text-muted-foreground">Müzayede açmak için hak satın alın. 1 hak = 1 müzayede.</p>
+            <p className="text-sm text-muted-foreground">
+              {revenueModel === 'HIZMET_BEDELI' ? 'Bu modelde müzayede hakkı gerekmez.' : 'Müzayede açmak için hak satın alın. 1 hak = 1 müzayede.'}
+            </p>
           </div>
         </div>
 
+        {/* AŞAMA 3 (2026-08-07): HİZMET_BEDELİ modelinde satıcı hiç hak satın almaz — bakiye/satın
+            alma/havale bloklarını gizleyip bilgi kutusu göster. Geçmiş (Taleplerim) yine görünür,
+            geçmişte kontör dönemi olmuşsa o kayıtlar kaybolmasın. KONTOR'da (varsayılan) değişmez. */}
+        {revenueModel === 'HIZMET_BEDELI' ? (
+          <div className="rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/5 p-5 mb-6">
+            <p className="text-sm">
+              Bu modelde müzayede açmak için <strong>önceden hak satın almanız gerekmiyor</strong> —
+              dilediğiniz zaman ücretsiz müzayede açabilirsiniz. Platforma ödeyeceğiniz hizmet bedeli,
+              sadece gerçekleşen satışlar üzerinden ve satış SONRASINDA hesaplanır.
+            </p>
+            <Link href="/satici/cari" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#d4af37] mt-3 hover:underline">
+              Hizmet bedeli / borç durumumu gör →
+            </Link>
+          </div>
+        ) : (
+        <>
         {/* Bakiye */}
         {unlimitedActive ? (
           <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-5 mb-6">
@@ -288,6 +308,8 @@ export function AuctionRightsContent() {
             </div>
             <p className="text-xs text-muted-foreground mt-3">Havale açıklamasına <b>firma adınızı</b> yazın ki ödemeniz eşleştirilebilsin.</p>
           </div>
+        )}
+        </>
         )}
 
         {/* Geçmiş */}

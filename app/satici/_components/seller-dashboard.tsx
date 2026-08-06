@@ -13,11 +13,13 @@ import {
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 export function SellerDashboard() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateAuction, setShowCreateAuction] = useState(false);
@@ -449,7 +451,7 @@ export function SellerDashboard() {
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sm">Müzayede Haklarım</p>
-              <p className="text-xs text-muted-foreground">Müzayede açmak için hak satın al</p>
+              <p className="text-xs text-muted-foreground">{revenueModel === 'HIZMET_BEDELI' ? 'Bu modelde hak gerekmez' : 'Müzayede açmak için hak satın al'}</p>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </Link>

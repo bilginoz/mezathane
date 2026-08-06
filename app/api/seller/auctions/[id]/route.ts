@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { getDirectRevenueModel } from '@/lib/revenue-model';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -106,7 +107,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Boş müzayede iptal edilirse (hiç lot yok VEYA hiç teklif yok) harcanan Müzayede Hakkı
     // otomatik iade edilir (kullanıcı kararı, 2026-08-01). Teklif almış bir müzayede iptal
     // edilirse hak iade EDİLMEZ (aç-teklif topla-iptal et-tekrar aç kötüye kullanımını önler).
-    if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+    // SADECE KONTOR modunda: bu iade, açılışta harcanan bir hakkı telafi eder. HİZMET_BEDELİ'nde
+    // (AŞAMA 3, 2026-08-07) müzayede açılışında hiç hak tüketilmediği için bu blok atlanır —
+    // atlanmasaydı, satıcının elinde eski/hediye bir hak kalmışsa bedavadan +1 hak kazanırdı.
+    const revenueModel = await getDirectRevenueModel();
+    if (status === 'CANCELLED' && existing.status !== 'CANCELLED' && revenueModel === 'KONTOR') {
       const totalBids = existing.lots.reduce((s, l) => s + (l._count?.bids ?? 0), 0);
       const isEmpty = existing.lots.length === 0 || totalBids === 0;
       if (isEmpty) {
