@@ -142,8 +142,11 @@ export function RulesManagement() {
               <p className="text-xs text-muted-foreground mt-3">
                 Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
                 sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.
-                Kalan: haftalık toplu fatura/makbuz otomasyonu (AŞAMA 3e) — o olmadan da model
-                çalışır, sadece hatırlatma/fatura elle takip edilir.
+                Haftalık (her Pazartesi) otomatik hatırlatma cron'u kodlandı ama cron-job.org'a
+                henüz EKLENMEDİ — kullanıcı diğer hatırlatma görevlerindeki gibi
+                <code className="mx-1 px-1 rounded bg-muted">Authorization: Bearer CRON_SECRET</code>
+                başlığıyla haftalık bir görev kurmalı (endpoint: <code className="px-1 rounded bg-muted">/api/cron/service-fee-weekly</code>).
+                O eklenmeden model yine çalışır, sadece haftalık hatırlatma gitmez.
               </p>
             </div>
           )}

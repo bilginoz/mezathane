@@ -18,6 +18,7 @@ export function SellerCari() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [reporting, setReporting] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const loadCari = async () => {
     try {
@@ -49,6 +50,23 @@ export function SellerCari() {
       toast.error('Bildirim gönderilemedi');
     } finally {
       setReporting(false);
+    }
+  };
+
+  const downloadServiceFeePdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch('/api/seller/service-fee/receipt', { method: 'POST' });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.error(d?.error || 'Özet oluşturulamadı'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `hizmet-bedeli-ozeti-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Özet indirilemedi');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -110,14 +128,20 @@ export function SellerCari() {
                   <p className="text-xs text-muted-foreground mt-1">Vade: {formatDate(sf.nextDueDate)}</p>
                 )}
               </div>
-              {sf.owed > 0 && (
-                <button onClick={reportServiceFeePaid} disabled={reporting} className="rounded-lg bg-red-500 text-white px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50 shrink-0">
-                  {reporting ? 'Gönderiliyor...' : 'Ödedim'}
+              <div className="flex gap-2 shrink-0">
+                <button onClick={downloadServiceFeePdf} disabled={downloadingPdf} className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-all disabled:opacity-50 inline-flex items-center gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> {downloadingPdf ? 'Hazırlanıyor...' : 'PDF'}
                 </button>
-              )}
+                {sf.owed > 0 && (
+                  <button onClick={reportServiceFeePaid} disabled={reporting} className="rounded-lg bg-red-500 text-white px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50">
+                    {reporting ? 'Gönderiliyor...' : 'Ödedim'}
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
               Havale ile ödeyip "Ödedim" dediğinizde admin onayına düşer; onaylanınca borç kapanır.
+              Muhasebeye ibraz için "PDF" ile özet indirebilirsiniz.
             </p>
           </div>
         )}
