@@ -81,11 +81,6 @@ export async function PATCH(request: Request) {
       updateData.serviceFeeRate = n;
     }
 
-    // Pazarlama: deneme hakkı kampanyası aç/kapa
-    if (body.trialRightEnabled !== undefined) {
-      updateData.trialRightEnabled = Boolean(body.trialRightEnabled);
-    }
-
     const current = await getOrCreate();
     const settings = await prisma.platformSettings.update({
       where: { id: current.id },

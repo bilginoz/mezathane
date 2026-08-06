@@ -13,44 +13,6 @@ export const AUCTION_RIGHT_MAX_QTY = 100; // tek talepte en fazla
 export const AUCTION_RIGHT_UNLIMITED_PRICE = 35000; // TL / ay — tahsil edilen tam tutar budur
 export const AUCTION_RIGHT_UNLIMITED_DAYS = 30;
 
-// Ücretsiz "deneme" (hoş geldin) hakkı — onaylanan her yeni satıcıya 1 kez, 30 gün geçerli.
-export const AUCTION_RIGHT_TRIAL_DAYS = 30;
-
-// Onaylanan yeni satıcıya ücretsiz "deneme" hakkı tanımlar. Kurallar:
-//  - Kampanya kapalıysa (PlatformSettings.trialRightEnabled = false) hiçbir şey yapmaz.
-//  - Satıcı daha önce deneme hakkı aldıysa (isTrial kaydı varsa) tekrar vermez → satıcı başına 1 kez.
-//  - unitPrice/totalAmount = 0 (gelir tablosunu şişirmez), 30 gün geçerli, anında APPROVED.
-// Döner: { granted, reason? } — reason: 'disabled' | 'already'.
-export async function grantTrialRight(
-  sellerId: string
-): Promise<{ granted: boolean; reason?: 'disabled' | 'already' }> {
-  const settings = await prisma.platformSettings.findFirst({ select: { trialRightEnabled: true } });
-  if (settings && settings.trialRightEnabled === false) return { granted: false, reason: 'disabled' };
-
-  const existing = await prisma.auctionRightPurchase.findFirst({ where: { sellerId, isTrial: true }, select: { id: true } });
-  if (existing) return { granted: false, reason: 'already' };
-
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + AUCTION_RIGHT_TRIAL_DAYS * 24 * 60 * 60 * 1000);
-  await prisma.auctionRightPurchase.create({
-    data: {
-      sellerId,
-      planType: 'PER_AUCTION',
-      quantity: 1,
-      unitPrice: 0,
-      kdvAmount: 0,
-      totalAmount: 0,
-      status: 'APPROVED',
-      remaining: 1,
-      isTrial: true,
-      expiresAt,
-      approvedAt: now,
-      adminNote: 'Hoş geldin — ücretsiz deneme müzayede hakkı',
-    },
-  });
-  return { granted: true };
-}
-
 // Admin'in elle "hediye" hak tanımlaması — istediği satıcıya, istediği adette, ücretsiz.
 // isTrial=false (deneme değil, hediye); tekrar tekrar verilebilir. 0 TL olduğu için gelire yansımaz.
 export async function grantGiftRight(
