@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { getPaymentMode } from '@/lib/payment-mode';
+import { getDirectRevenueModel } from '@/lib/revenue-model';
 
 function round(n: number) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -15,8 +16,11 @@ function round(n: number) {
   tamamen farklıdır (bu yüzden ESCROW hesabı olduğu gibi korunur, DIRECT ayrı dallanır):
   - ESCROW (V1): Gelir = satılan lotlardan alıcı hizmet bedeli + satıcı komisyonu (KDV dahil).
     Platform ürün bedelini tahsil eder, komisyon keser.
-  - DIRECT (V2): Platform ürün bedelinden hiç pay almaz; TEK geliri satıcıların satın aldığı
-    "Müzayede Hakkı"dır. Gelir = dönem içinde ONAYLANAN hak satın almalarının toplamı.
+  - DIRECT (V2): Platform ürün bedelinden hiç pay almaz. İçindeki 2 alt model AYRI hesaplanır
+    (AŞAMA 3, 2026-08-07): KONTOR'da gelir = dönemde ONAYLANAN Müzayede Hakkı alımları toplamı;
+    HİZMET_BEDELİ'nde gelir = dönemde admin ONAYLANAN (serviceFeePaidAt) hizmet bedeli + KDV
+    toplamı (satıcıların satış sonrası SONRADAN ödediği bedel). İkisi asla aynı anda gelir
+    saymaz çünkü flag global ve tek an'da tek model aktif.
   Gider (Expense kayıtları) her iki modda da aynı şekilde platformun gerçek işletme gideridir.
   ?from=YYYY-MM-DD&to=YYYY-MM-DD — verilmezse içinde bulunulan ay.
 */
@@ -72,25 +76,49 @@ export async function GET(request: Request) {
 
     let totalIncome: number, incomeCollected: number, incomePending: number;
     let rightsInfo: { approvedRevenue: number; approvedCount: number; pendingRevenue: number; pendingCount: number } | null = null;
+    let serviceFeeInfo: { approvedRevenue: number; approvedCount: number; pendingRevenue: number; pendingCount: number } | null = null;
 
     if (mode === 'DIRECT') {
-      // DIRECT: platform ürün satışından pay almaz. Tek gelir = dönemde ONAYLANAN Müzayede Hakkı alımları.
-      const [approvedRights, pendingRights] = await Promise.all([
-        prisma.auctionRightPurchase.findMany({
-          where: { status: 'APPROVED', approvedAt: { gte: from, lte: to } },
-          select: { totalAmount: true },
-        }),
-        prisma.auctionRightPurchase.findMany({
-          where: { status: 'PENDING', createdAt: { gte: from, lte: to } },
-          select: { totalAmount: true },
-        }),
-      ]);
-      const approvedRevenue = round(approvedRights.reduce((s, r) => s + r.totalAmount, 0));
-      const pendingRevenue = round(pendingRights.reduce((s, r) => s + r.totalAmount, 0));
-      rightsInfo = { approvedRevenue, approvedCount: approvedRights.length, pendingRevenue, pendingCount: pendingRights.length };
-      totalIncome = approvedRevenue;
-      incomeCollected = approvedRevenue; // onaylı = admin ödemeyi teyit etmiş demektir, tahsil edilmiştir
-      incomePending = pendingRevenue; // henüz onaylanmamış (dolayısıyla henüz kesin gelir sayılmayan) talepler
+      const revenueModel = await getDirectRevenueModel();
+      if (revenueModel === 'HIZMET_BEDELI') {
+        // AŞAMA 3 (2026-08-07): tek gelir = dönemde admin ONAYLANAN (serviceFeePaidAt) hizmet
+        // bedeli + KDV. "Onay bekleyen" = satıcı bildirdi ama admin henüz onaylamadı (kontör'deki
+        // PENDING talebin karşılığı).
+        const [approvedFees, pendingFees] = await Promise.all([
+          prisma.payment.findMany({
+            where: { serviceFeeAmount: { not: null }, serviceFeePaidAt: { gte: from, lte: to } },
+            select: { serviceFeeAmount: true, serviceFeeKDV: true },
+          }),
+          prisma.payment.findMany({
+            where: { serviceFeeAmount: { not: null }, serviceFeeSellerReportedAt: { gte: from, lte: to }, serviceFeePaidAt: null },
+            select: { serviceFeeAmount: true, serviceFeeKDV: true },
+          }),
+        ]);
+        const approvedRevenue = round(approvedFees.reduce((s, p) => s + (p.serviceFeeAmount ?? 0) + (p.serviceFeeKDV ?? 0), 0));
+        const pendingRevenue = round(pendingFees.reduce((s, p) => s + (p.serviceFeeAmount ?? 0) + (p.serviceFeeKDV ?? 0), 0));
+        serviceFeeInfo = { approvedRevenue, approvedCount: approvedFees.length, pendingRevenue, pendingCount: pendingFees.length };
+        totalIncome = approvedRevenue;
+        incomeCollected = approvedRevenue;
+        incomePending = pendingRevenue;
+      } else {
+        // KONTOR: platform ürün satışından pay almaz. Tek gelir = dönemde ONAYLANAN Müzayede Hakkı alımları.
+        const [approvedRights, pendingRights] = await Promise.all([
+          prisma.auctionRightPurchase.findMany({
+            where: { status: 'APPROVED', approvedAt: { gte: from, lte: to } },
+            select: { totalAmount: true },
+          }),
+          prisma.auctionRightPurchase.findMany({
+            where: { status: 'PENDING', createdAt: { gte: from, lte: to } },
+            select: { totalAmount: true },
+          }),
+        ]);
+        const approvedRevenue = round(approvedRights.reduce((s, r) => s + r.totalAmount, 0));
+        const pendingRevenue = round(pendingRights.reduce((s, r) => s + r.totalAmount, 0));
+        rightsInfo = { approvedRevenue, approvedCount: approvedRights.length, pendingRevenue, pendingCount: pendingRights.length };
+        totalIncome = approvedRevenue;
+        incomeCollected = approvedRevenue; // onaylı = admin ödemeyi teyit etmiş demektir, tahsil edilmiştir
+        incomePending = pendingRevenue; // henüz onaylanmamış (dolayısıyla henüz kesin gelir sayılmayan) talepler
+      }
     } else {
       totalIncome = round(buyerPremium + sellerCommission);
       incomeCollected = collected;
@@ -115,7 +143,8 @@ export async function GET(request: Request) {
       income: {
         buyerPremium, sellerCommission, total: totalIncome,
         collected: incomeCollected, pending: incomePending, salesVolume, soldCount: soldLots.length,
-        rights: rightsInfo, // DIRECT'te dolu; ESCROW'da null
+        rights: rightsInfo, // DIRECT/KONTOR'da dolu; diğerlerinde null
+        serviceFee: serviceFeeInfo, // DIRECT/HİZMET_BEDELİ'nde dolu; diğerlerinde null
       },
       expense: { total: totalExpense, kdv: expenseKdv, count: expenses.length, byCategory: expenseByCategory },
       // Tahakkuk esaslı net (tahsil edilmemiş gelir dahil)
