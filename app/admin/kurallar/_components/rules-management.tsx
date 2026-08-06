@@ -140,9 +140,10 @@ export function RulesManagement() {
                 </label>
               </div>
               <p className="text-xs text-red-500 font-medium mt-3">
-                ⚠️ Alt yapı henüz eksik: borç artık hesaplanıyor ama satıcı cari ekranı, admin
-                kısıtlaması ve fatura/bildirim adımları (AŞAMA 3c-3e) kodlanana kadar bu ayarı
-                HİZMET BEDELİ'ne çevirmeyin — borç sessizce birikir, kimseye görünmez/hatırlatılmaz.
+                ⚠️ Alt yapı henüz eksik: borç hesaplanıyor, satıcı görüp "Ödedim" diyebiliyor —
+                ama admin onay ekranı ve yeni-müzayede kısıtlaması (AŞAMA 3d) henüz yok. Şimdilik
+                satıcının "Ödedim" bildirimini yalnızca uygulama-içi bildirimden görüp elle takip
+                edebilirsiniz; onaylama arayüzü olmadan bu ayarı HİZMET BEDELİ'ne çevirmeyin.
               </p>
             </div>
           )}

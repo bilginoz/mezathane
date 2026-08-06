@@ -545,12 +545,14 @@ model Payment {
   paymentReminderSentAt DateTime?     // Ödeme hatırlatma e-postası gönderildiği an (bir kez gönderilir, tekrar spam olmaz)
   chronicOverdueNotifiedAt DateTime?  // Vade 15+ gün geçtiğinde admin'e bildirim gönderildiği an (2026-08-01, bir kez gönderilir)
   // DIRECT/HİZMET_BEDELİ (AŞAMA 3, 2026-08-06) — satıcının SONRADAN bize ödeyeceği hizmet bedeli.
-  // Henüz hesaplanmıyor/kullanılmıyor (3b'de check-live borç hesabı eklenecek); şu an sadece alan var.
+  // Akış: 3b borcu hesaplar → satıcı "Ödedim" der (serviceFeeSellerReportedAt) → admin onaylar
+  // (serviceFeePaidAt, 3d) → 3e haftalık faturaya dahil olduğunda serviceFeeReportedAt yazılır.
   serviceFeeAmount      Float?        // Bu satıştan doğan hizmet bedeli tutarı (KDV hariç)
   serviceFeeKDV         Float?        // Hizmet bedelinin KDV'si (%20 sabit, ürün KDV'sinden bağımsız)
   serviceFeeDueDate     DateTime?     // Vade: sellerPaymentConfirmedAt + 7 gün (teslim/kargoya bağlı DEĞİL)
-  serviceFeeReportedAt  DateTime?     // Haftalık toplu faturaya dahil edildiği an (her Pazartesi)
-  serviceFeePaidAt      DateTime?     // Satıcının hizmet bedelini bize fiilen ödediği an
+  serviceFeeSellerReportedAt DateTime? // Satıcının "Ödedim" dediği an — admin onayı bekliyor (3c)
+  serviceFeeReportedAt  DateTime?     // Haftalık toplu faturaya dahil edildiği an (her Pazartesi, 3e)
+  serviceFeePaidAt      DateTime?     // Admin'in ödemeyi onayladığı an — borç fiilen kapandı (3d)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 

@@ -192,6 +192,41 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // AŞAMA 3c (2026-08-06): HİZMET_BEDELİ modelinde satıcı "hizmet bedelini ödedim" bildirir.
+    // Kendi kendine kapatmaz — sadece admin onayına düşer (serviceFeePaidAt, 3d'de eklenecek).
+    if (action === 'report_service_fee_paid') {
+      const outstanding = await prisma.payment.findMany({
+        where: {
+          lot: { auction: { sellerId: sellerProfile.id } },
+          serviceFeeAmount: { not: null },
+          serviceFeePaidAt: null,
+          serviceFeeSellerReportedAt: null,
+        },
+        select: { id: true, serviceFeeAmount: true, serviceFeeKDV: true },
+      });
+      if (outstanding.length === 0) {
+        return NextResponse.json({ error: 'Bildirilecek bakiye yok' }, { status: 400 });
+      }
+      const now = new Date();
+      await prisma.payment.updateMany({
+        where: { id: { in: outstanding.map((o) => o.id) } },
+        data: { serviceFeeSellerReportedAt: now },
+      });
+      const totalReported = outstanding.reduce((s, o) => s + (o.serviceFeeAmount ?? 0) + (o.serviceFeeKDV ?? 0), 0);
+
+      const { createInAppNotification } = await import('@/lib/notifications');
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+      await Promise.all(admins.map((a) => createInAppNotification({
+        userId: a.id,
+        title: '💳 Satıcı hizmet bedeli ödemesi bildirdi',
+        message: `${sellerProfile.companyName ?? 'Bir satıcı'} ${outstanding.length} sipariş için toplam ${totalReported.toLocaleString('tr-TR')} ₺ hizmet bedeli ödediğini bildirdi. Onay bekliyor.`,
+        type: 'ADMIN',
+        link: '/admin',
+      })));
+
+      return NextResponse.json({ success: true, reportedCount: outstanding.length, totalReported });
+    }
+
     if (!paymentId || !shippingStatus) {
       return NextResponse.json({ error: 'Eksik bilgi' }, { status: 400 });
     }

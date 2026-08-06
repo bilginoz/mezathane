@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { getDirectRevenueModel } from '@/lib/revenue-model';
 
 // Satıcı CARİ & İşletme özeti (DIRECT/V2). Sipariş bazlı ödeme takibi:
 // her alıcı bir "cari"; borç = siparişin alıcıya toplam tutarı; ödendi = satıcı "ödemeyi aldım" onayı;
@@ -93,6 +94,25 @@ export async function GET() {
 
     const round2 = (n: number) => Math.round(n * 100) / 100;
 
+    // AŞAMA 3c (2026-08-06): HİZMET_BEDELİ modelinde satıcının platforma borcu.
+    // KONTOR'da (varsayılan) tüm satışların serviceFeeAmount'ı null'dır, bu blok sıfır döner.
+    const revenueModel = await getDirectRevenueModel();
+    let owed = 0, reported = 0, paidToPlatform = 0, nextDueDate: Date | null = null;
+    for (const p of payments as any[]) {
+      if (p.serviceFeeAmount == null) continue;
+      const feeTotal = (p.serviceFeeAmount ?? 0) + (p.serviceFeeKDV ?? 0);
+      if (p.serviceFeePaidAt) {
+        paidToPlatform += feeTotal;
+      } else if (p.serviceFeeSellerReportedAt) {
+        reported += feeTotal; // "Ödedim" dedi, admin onayı bekliyor
+      } else {
+        owed += feeTotal; // henüz bildirilmedi
+        if (p.serviceFeeDueDate && (!nextDueDate || new Date(p.serviceFeeDueDate) < nextDueDate)) {
+          nextDueDate = p.serviceFeeDueDate;
+        }
+      }
+    }
+
     return NextResponse.json({
       summary: {
         totalCiro: round2(totalCiro),
@@ -105,6 +125,13 @@ export async function GET() {
         commissionIncome: round2(commissionIncome),
         kdvCollected: round2(kdvCollected),
         rightsExpense: round2(rightsExpense),
+      },
+      serviceFee: {
+        model: revenueModel,
+        owed: round2(owed),          // hiç bildirilmemiş, admin onayı da yok
+        reported: round2(reported),  // satıcı "ödedim" dedi, admin onayı bekliyor
+        paid: round2(paidToPlatform),
+        nextDueDate,
       },
       cariler: cariler.map((c) => ({ ...c, totalDebit: round2(c.totalDebit), totalPaid: round2(c.totalPaid), balance: round2(c.balance) })),
     });

@@ -17,20 +17,40 @@ export function SellerCari() {
   const [tab, setTab] = useState<'cari' | 'satis'>('cari');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [reporting, setReporting] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/seller/cari');
-        if (!res.ok) throw new Error();
-        setData(await res.json());
-      } catch {
-        toast.error('Cari yüklenemedi');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const loadCari = async () => {
+    try {
+      const res = await fetch('/api/seller/cari');
+      if (!res.ok) throw new Error();
+      setData(await res.json());
+    } catch {
+      toast.error('Cari yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadCari(); }, []);
+
+  const reportServiceFeePaid = async () => {
+    setReporting(true);
+    try {
+      const res = await fetch('/api/seller/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'report_service_fee_paid' }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d?.error || 'Hata oluştu'); return; }
+      toast.success('Ödemeniz bildirildi, admin onayı bekleniyor.');
+      await loadCari();
+    } catch {
+      toast.error('Bildirim gönderilemedi');
+    } finally {
+      setReporting(false);
+    }
+  };
 
   const cariler: any[] = data?.cariler ?? [];
   const filtered = cariler.filter((c) => !q.trim() || c.name.toLocaleLowerCase('tr-TR').includes(q.toLocaleLowerCase('tr-TR')));
@@ -55,6 +75,8 @@ export function SellerCari() {
 
   const s = data?.summary ?? {};
   const b = data?.business ?? {};
+  const sf = data?.serviceFee ?? {};
+  const showServiceFee = sf.model === 'HIZMET_BEDELI' && (sf.owed > 0 || sf.reported > 0);
 
   return (
     <main className="flex-1 py-8">
@@ -73,6 +95,32 @@ export function SellerCari() {
           <SummaryCard icon={Wallet} label="Bakiye (Alacak)" value={formatPrice(s.totalBalance)} tone="amber" />
           <SummaryCard icon={Users} label="Müşteri" value={String(s.customerCount ?? 0)} sub="cari" />
         </div>
+
+        {/* Platforma borç (AŞAMA 3, HİZMET_BEDELİ modeli) */}
+        {showServiceFee && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-5 mb-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2 mb-1"><Receipt className="h-4 w-4 text-red-400" /> Platforma Borcunuz</h3>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  {sf.owed > 0 && <span>Ödenmemiş: <strong className="font-mono text-red-500">{formatPrice(sf.owed)}</strong></span>}
+                  {sf.reported > 0 && <span>Bildirildi, onay bekliyor: <strong className="font-mono text-amber-500">{formatPrice(sf.reported)}</strong></span>}
+                </div>
+                {sf.nextDueDate && sf.owed > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Vade: {formatDate(sf.nextDueDate)}</p>
+                )}
+              </div>
+              {sf.owed > 0 && (
+                <button onClick={reportServiceFeePaid} disabled={reporting} className="rounded-lg bg-red-500 text-white px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50 shrink-0">
+                  {reporting ? 'Gönderiliyor...' : 'Ödedim'}
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Havale ile ödeyip "Ödedim" dediğinizde admin onayına düşer; onaylanınca borç kapanır.
+            </p>
+          </div>
+        )}
 
         {/* İşletme özeti */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
