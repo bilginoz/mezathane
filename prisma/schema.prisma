@@ -236,6 +236,11 @@ model SellerProfile {
   // alıcı bu oranı satıcıya doğrudan öder. ESCROW (V1) modda yok sayılır (platform %7 geçerli).
   // Varsayılan 7 → mevcut orana eşit, bir şey bozulmaz.
   buyerPremiumRate Float       @default(7.0)
+  // AŞAMA 3 (2026-08-07) — HİZMET_BEDELİ modelinde bu satıcıya özel oran (%). NULL = platform
+  // varsayılanı (PlatformSettings.serviceFeeRate) geçerli olur. Admin bazı satıcılara standart
+  // %7'den daha düşük bir oran uygulamak isteyebilir diye satıcı bazında override eklendi —
+  // commissionRate'in (ESCROW'daki satıcı bazlı oran) DIRECT/HİZMET_BEDELİ'deki karşılığı.
+  serviceFeeRate   Float?
   // Satıcının kendi satış/iade/teslimat şartları (DIRECT/V2 modelinde satıcı asıl SATICI taraf olduğu
   // için). İsteğe bağlı; boşsa platformun varsayılan çerçeve metni geçerli olur. Lot sayfasında ve
   // mesafeli satış sözleşmesinde gösterilir.

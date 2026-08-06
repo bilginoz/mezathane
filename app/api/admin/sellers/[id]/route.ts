@@ -21,6 +21,18 @@ export async function PATCH(
     const updateData: any = {};
     if (body.status !== undefined) updateData.status = body.status;
     if (body.commissionRate !== undefined) updateData.commissionRate = body.commissionRate;
+    // AŞAMA 3 (2026-08-07): HİZMET_BEDELİ'nde satıcıya özel oran. null/boş = platform varsayılanı.
+    if (body.serviceFeeRate !== undefined) {
+      if (body.serviceFeeRate === null || body.serviceFeeRate === '') {
+        updateData.serviceFeeRate = null;
+      } else {
+        const n = Number(body.serviceFeeRate);
+        if (!Number.isFinite(n) || n < 0 || n > 100) {
+          return NextResponse.json({ error: 'serviceFeeRate için 0-100 arası bir yüzde girin (veya boş bırakın).' }, { status: 400 });
+        }
+        updateData.serviceFeeRate = n;
+      }
+    }
     if (body.companyName !== undefined) updateData.companyName = body.companyName;
     if (body.companyAddress !== undefined) updateData.companyAddress = body.companyAddress || null;
     if (body.taxOffice !== undefined) updateData.taxOffice = body.taxOffice || null;

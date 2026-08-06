@@ -129,7 +129,7 @@ export function RulesManagement() {
                   <option value="HIZMET_BEDELI">HİZMET BEDELİ — satıcı satış sonrası öder</option>
                 </select>
                 <label className="flex items-center gap-2 text-sm">
-                  Oran (%)
+                  Standart Oran (%)
                   <input
                     type="number" min={0} max={100} step={0.1}
                     value={settings?.serviceFeeRate ?? ''}
@@ -139,13 +139,17 @@ export function RulesManagement() {
                 </label>
               </div>
               <p className="text-xs text-muted-foreground mt-3">
+                Bu, satıcı bazında özel bir oran belirtilmemişse geçerli olan varsayılan orandır.
+                Belirli bir satıcıya standarttan farklı (örn. daha düşük) bir oran uygulamak
+                isterseniz, <strong className="text-foreground">Satıcılar</strong> sayfasından o
+                satıcıyı düzenleyip "Hizmet Bedeli Oranı" alanına girin — boş bırakılırsa buradaki
+                standart oran geçerli olur.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
                 Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
                 sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.
-                Haftalık (her Pazartesi) otomatik hatırlatma cron'u kodlandı ama cron-job.org'a
-                henüz EKLENMEDİ — kullanıcı diğer hatırlatma görevlerindeki gibi
-                <code className="mx-1 px-1 rounded bg-muted">Authorization: Bearer CRON_SECRET</code>
-                başlığıyla haftalık bir görev kurmalı (endpoint: <code className="px-1 rounded bg-muted">/api/cron/service-fee-weekly</code>).
-                O eklenmeden model yine çalışır, sadece haftalık hatırlatma gitmez.
+                Haftalık (her Pazartesi 09:00) otomatik hatırlatma cron'u kuruldu ve aktif
+                (cron-job.org, jobId 8227178).
               </p>
             </div>
           )}

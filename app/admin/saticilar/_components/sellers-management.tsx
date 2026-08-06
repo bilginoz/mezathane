@@ -31,6 +31,7 @@ interface SellerData {
   status: string;
   isVerified: boolean;
   commissionRate: number;
+  serviceFeeRate: number | null;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -134,6 +135,7 @@ export function SellersManagement() {
       taxNumber: seller.taxNumber ?? '',
       description: seller.description ?? '',
       commissionRate: seller.commissionRate,
+      serviceFeeRate: seller.serviceFeeRate ?? '',
     });
   };
 
@@ -401,6 +403,23 @@ export function SellersManagement() {
                                     onChange={(e) => setEditForm({ ...editForm, commissionRate: parseFloat(e.target.value) || 0 })}
                                     className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50"
                                   />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-muted-foreground mb-1 block">Hizmet Bedeli Oranı (%) — boş = standart</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    placeholder="Standart (%7)"
+                                    value={editForm.serviceFeeRate}
+                                    onChange={(e) => setEditForm({ ...editForm, serviceFeeRate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50"
+                                  />
+                                  <p className="text-[11px] text-muted-foreground mt-1">
+                                    Sadece HİZMET BEDELİ modelinde geçerli. Bu satıcıya özel, standarttan düşük/yüksek
+                                    bir oran uygulamak isterseniz girin; boş bırakırsanız platform varsayılanı geçerli olur.
+                                  </p>
                                 </div>
                                 <div>
                                   <label className="text-xs text-muted-foreground mb-1 block">Firma Adresi</label>

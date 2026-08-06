@@ -170,7 +170,9 @@ export async function PATCH(request: Request) {
       const { model, rate } = await getServiceFeeSettings();
       if (model === 'HIZMET_BEDELI') {
         const { computeServiceFee } = await import('@/lib/sale-math');
-        const { serviceFeeAmount, serviceFeeKDV } = computeServiceFee(pay.amount, rate);
+        // Satıcıya özel oran varsa (SellerProfile.serviceFeeRate) o geçerli, yoksa platform varsayılanı.
+        const effectiveRate = sellerProfile.serviceFeeRate ?? rate;
+        const { serviceFeeAmount, serviceFeeKDV } = computeServiceFee(pay.amount, effectiveRate);
         updateData.serviceFeeAmount = serviceFeeAmount;
         updateData.serviceFeeKDV = serviceFeeKDV;
         updateData.serviceFeeDueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
