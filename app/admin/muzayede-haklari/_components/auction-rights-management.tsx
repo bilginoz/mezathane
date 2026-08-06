@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { ArrowLeft, Ticket, Loader2, CheckCircle2, XCircle, Hourglass } from 'lucide-react';
+import { ArrowLeft, Ticket, Loader2, CheckCircle2, XCircle, Hourglass, Gift, Search } from 'lucide-react';
 import { formatPrice, formatDateTime } from '@/lib/utils';
 
 interface Purchase {
@@ -15,6 +15,7 @@ interface Purchase {
   totalAmount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   remaining: number;
+  isTrial?: boolean;
   expiresAt: string | null;
   sellerNote: string | null;
   adminNote: string | null;
@@ -32,6 +33,59 @@ export function AuctionRightsManagement() {
   const [pendingCount, setPendingCount] = useState(0);
   const [filter, setFilter] = useState<'PENDING' | 'ALL'>('PENDING');
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Hediye hak verme formu
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [giftQuery, setGiftQuery] = useState('');
+  const [giftResults, setGiftResults] = useState<{ id: string; companyName: string; user: { fullName: string; email: string } }[]>([]);
+  const [giftSeller, setGiftSeller] = useState<{ id: string; companyName: string; email: string } | null>(null);
+  const [giftQty, setGiftQty] = useState('1');
+  const [giftDays, setGiftDays] = useState('60');
+  const [giftNote, setGiftNote] = useState('');
+  const [giftBusy, setGiftBusy] = useState(false);
+  const [giftSearching, setGiftSearching] = useState(false);
+
+  const searchSellers = async () => {
+    const q = giftQuery.trim();
+    if (q.length < 2) { toast.error('En az 2 harf yazın'); return; }
+    setGiftSearching(true);
+    try {
+      const res = await fetch(`/api/admin/sellers?status=APPROVED&search=${encodeURIComponent(q)}`);
+      const d = await res.json();
+      const list = (d?.sellers ?? []).map((s: any) => ({ id: s.id, companyName: s.companyName, user: { fullName: s.user?.fullName, email: s.user?.email } }));
+      setGiftResults(list);
+      if (list.length === 0) toast.info('Onaylı satıcı bulunamadı');
+    } catch {
+      toast.error('Arama başarısız');
+    } finally {
+      setGiftSearching(false);
+    }
+  };
+
+  const submitGift = async () => {
+    if (!giftSeller) { toast.error('Satıcı seçin'); return; }
+    const qty = Number(giftQty), days = Number(giftDays);
+    if (!Number.isInteger(qty) || qty < 1) { toast.error('Geçerli bir adet girin'); return; }
+    if (!Number.isInteger(days) || days < 1) { toast.error('Geçerli bir gün girin'); return; }
+    setGiftBusy(true);
+    try {
+      const res = await fetch('/api/admin/auction-rights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sellerId: giftSeller.id, quantity: qty, days, adminNote: giftNote.trim() || undefined }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || 'İşlem başarısız'); return; }
+      toast.success(`${giftSeller.companyName} → ${qty} hediye hak tanımlandı`);
+      setGiftOpen(false);
+      setGiftSeller(null); setGiftQuery(''); setGiftResults([]); setGiftQty('1'); setGiftDays('60'); setGiftNote('');
+      fetchData(filter);
+    } catch {
+      toast.error('İşlem başarısız');
+    } finally {
+      setGiftBusy(false);
+    }
+  };
 
   const fetchData = async (f: 'PENDING' | 'ALL') => {
     setLoading(true);
@@ -98,6 +152,82 @@ export function AuctionRightsManagement() {
           </div>
         </div>
 
+        {/* Hediye hak ver */}
+        <div className="mb-4">
+          <button onClick={() => setGiftOpen(o => !o)} className="inline-flex items-center gap-2 rounded-lg border border-[#d4af37]/50 bg-[#d4af37]/10 text-[#d4af37] px-3 py-1.5 text-sm font-medium hover:bg-[#d4af37]/20">
+            <Gift className="h-4 w-4" /> {giftOpen ? 'Hediye Hak Formunu Kapat' : 'Hediye Hak Ver'}
+          </button>
+
+          {giftOpen && (
+            <div className="mt-3 rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/5 p-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Bir satıcıya <strong className="text-foreground">ücretsiz</strong> müzayede hakkı tanımlayın (0 TL, anında aktif).
+                Örn. sadık satıcıyı ödüllendirmek veya sorun yaşayan satıcıyı telafi etmek için.
+              </p>
+
+              {/* Satıcı arama */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    value={giftQuery}
+                    onChange={e => setGiftQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); searchSellers(); } }}
+                    placeholder="Firma adı, isim veya e-posta ile ara…"
+                    className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none"
+                  />
+                </div>
+                <button onClick={searchSellers} disabled={giftSearching} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50">
+                  {giftSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ara'}
+                </button>
+              </div>
+
+              {/* Arama sonuçları */}
+              {giftResults.length > 0 && !giftSeller && (
+                <div className="rounded-lg border border-border divide-y divide-border max-h-52 overflow-auto">
+                  {giftResults.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setGiftSeller({ id: s.id, companyName: s.companyName || s.user.fullName, email: s.user.email }); setGiftResults([]); }}
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                    >
+                      <span className="font-medium">{s.companyName || s.user.fullName}</span>
+                      <span className="text-muted-foreground"> · {s.user.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Seçilen satıcı + adet/gün/not */}
+              {giftSeller && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg bg-background border border-border px-3 py-2">
+                    <span className="text-sm"><b>{giftSeller.companyName}</b> · {giftSeller.email}</span>
+                    <button onClick={() => setGiftSeller(null)} className="text-xs text-muted-foreground hover:text-foreground">Değiştir</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Adet (hak)</label>
+                      <input type="number" min={1} value={giftQty} onChange={e => setGiftQty(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Geçerlilik (gün)</label>
+                      <input type="number" min={1} value={giftDays} onChange={e => setGiftDays(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Not (isteğe bağlı, satıcı görmez — kayıt için)</label>
+                    <input value={giftNote} onChange={e => setGiftNote(e.target.value)} placeholder="Örn. sadakat ödülü" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none" />
+                  </div>
+                  <button onClick={submitGift} disabled={giftBusy} className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black px-4 py-2 text-sm font-semibold hover:bg-[#c9a430] disabled:opacity-50">
+                    {giftBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />} Hediye Ver
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-2 mb-4">
           <button onClick={() => setFilter('PENDING')} className={`rounded-lg px-3 py-1.5 text-sm ${filter === 'PENDING' ? 'bg-[#d4af37] text-black font-medium' : 'border border-border text-muted-foreground hover:bg-muted'}`}>Bekleyenler{pendingCount > 0 ? ` (${pendingCount})` : ''}</button>
           <button onClick={() => setFilter('ALL')} className={`rounded-lg px-3 py-1.5 text-sm ${filter === 'ALL' ? 'bg-[#d4af37] text-black font-medium' : 'border border-border text-muted-foreground hover:bg-muted'}`}>Hepsi</button>
@@ -120,7 +250,10 @@ export function AuctionRightsManagement() {
                     <p className="text-sm text-muted-foreground">{p.seller?.user?.email}</p>
                     <p className="text-sm mt-1">
                       <b>{p.planType === 'UNLIMITED_MONTHLY' ? '🔁 Aylık Sınırsız Paket' : `${p.quantity} hak`}</b>
-                      {' '}· {formatPrice(p.totalAmount)} + KDV · {formatDateTime(p.createdAt)}
+                      {' '}· {p.totalAmount > 0
+                        ? `${formatPrice(p.totalAmount)} + KDV`
+                        : (p.isTrial ? '🎁 Ücretsiz (deneme)' : '🎁 Ücretsiz (hediye)')}
+                      {' '}· {formatDateTime(p.createdAt)}
                     </p>
                     {p.status === 'APPROVED' && <p className="text-xs text-muted-foreground mt-1">Kalan: {p.remaining}{p.expiresAt ? ` · Son: ${formatDateTime(p.expiresAt)}` : ''}</p>}
                     {p.sellerNote && <p className="text-xs text-muted-foreground mt-1">Satıcı notu: {p.sellerNote}</p>}

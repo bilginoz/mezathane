@@ -30,6 +30,15 @@ export default async function HomePage() {
     console.error('SiteSettings error:', e);
   }
 
+  // Deneme hakkı kampanyası açık mı? (ana sayfada "ilk müzayeden ücretsiz" reklamı için)
+  let trialPromoOn = false;
+  try {
+    const ps = await prisma.platformSettings.findFirst({ select: { trialRightEnabled: true } });
+    trialPromoOn = ps?.trialRightEnabled !== false; // ayar yoksa varsayılan açık
+  } catch (e) {
+    console.error('PlatformSettings error:', e);
+  }
+
   try {
     [auctions, completedAuctions, categories, featuredLots] = await Promise.all([
       prisma.auction.findMany({
@@ -73,7 +82,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <HomeContent auctions={auctions ?? []} completedAuctions={completedAuctions ?? []} categories={categories ?? []} featuredLots={featuredLots ?? []} stats={stats} siteSettings={siteSettings} />
+      <HomeContent auctions={auctions ?? []} completedAuctions={completedAuctions ?? []} categories={categories ?? []} featuredLots={featuredLots ?? []} stats={stats} siteSettings={siteSettings} showTrialPromo={trialPromoOn} />
       <Footer />
     </div>
   );

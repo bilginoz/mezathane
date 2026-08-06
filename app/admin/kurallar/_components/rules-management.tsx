@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ShieldCheck, Save, ArrowLeft, Users, Wallet, Ban } from 'lucide-react';
+import { ShieldCheck, Save, ArrowLeft, Users, Wallet, Ban, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function RulesManagement() {
@@ -43,6 +43,7 @@ export function RulesManagement() {
           trustedUserMaxUnpaidCount: Number(settings.trustedUserMaxUnpaidCount),
           autoSuspendAfterDefaults: Number(settings.autoSuspendAfterDefaults),
           paymentMode: settings.paymentMode === 'DIRECT' ? 'DIRECT' : 'ESCROW',
+          trialRightEnabled: Boolean(settings.trialRightEnabled),
         }),
       });
       const data = await res.json();
@@ -106,6 +107,27 @@ export function RulesManagement() {
               Not: Mod değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Geri dönmek için tekrar
               ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
             </p>
+          </div>
+
+          {/* Deneme hakkı kampanyası (pazarlama) */}
+          <div className="rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/5 p-6">
+            <h2 className="font-semibold mb-1 flex items-center gap-2"><Gift className="h-5 w-5 text-[#d4af37]" /> Ücretsiz Deneme Hakkı Kampanyası</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Açıkken, <strong className="text-foreground">onayladığınız her yeni satıcıya</strong> otomatik olarak
+              <strong className="text-foreground"> 1 ücretsiz müzayede hakkı</strong> tanımlanır (30 gün geçerli, satıcı başına 1 kez).
+              Satıcı ilk müzayedesini ücretsiz açar. Kapatırsanız yeni onaylarda hak verilmez; verilmiş haklar etkilenmez.
+            </p>
+            <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={settings?.trialRightEnabled !== false}
+                onChange={e => updateField('trialRightEnabled', e.target.checked)}
+                className="h-5 w-5 rounded border-border accent-[#d4af37]"
+              />
+              <span className="text-sm font-medium">
+                {settings?.trialRightEnabled !== false ? 'Kampanya açık — yeni satıcılara deneme hakkı veriliyor' : 'Kampanya kapalı'}
+              </span>
+            </label>
           </div>
 
           {/* Açıklama */}

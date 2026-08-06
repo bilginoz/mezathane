@@ -5,7 +5,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { createInAppNotification } from '@/lib/notifications';
-import { AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_UNLIMITED_DAYS } from '@/lib/auction-rights';
+import { AUCTION_RIGHT_VALIDITY_DAYS, AUCTION_RIGHT_UNLIMITED_DAYS, AUCTION_RIGHT_MAX_QTY, grantGiftRight } from '@/lib/auction-rights';
+import { logAudit } from '@/lib/audit';
 
 // Admin: müzayede hakkı satın alma taleplerini listeler (varsayılan: bekleyenler önce).
 export async function GET(request: Request) {
@@ -32,6 +33,60 @@ export async function GET(request: Request) {
   } catch (e) {
     console.error('admin auction-rights GET error', e);
     return NextResponse.json({ error: 'Yüklenemedi' }, { status: 500 });
+  }
+}
+
+// Admin: bir satıcıya ücretsiz "hediye" müzayede hakkı tanımlar (0 TL, anında aktif).
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any)?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
+  }
+  const adminId = (session.user as any).id as string;
+  try {
+    const body = await request.json();
+    const { sellerId, quantity, days, adminNote } = body as {
+      sellerId?: string; quantity?: number; days?: number; adminNote?: string;
+    };
+    if (!sellerId) return NextResponse.json({ error: 'Satıcı seçin' }, { status: 400 });
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty < 1 || qty > AUCTION_RIGHT_MAX_QTY) {
+      return NextResponse.json({ error: `Adet 1–${AUCTION_RIGHT_MAX_QTY} arası bir tam sayı olmalı.` }, { status: 400 });
+    }
+    const validity = days === undefined ? AUCTION_RIGHT_VALIDITY_DAYS : Number(days);
+    if (!Number.isInteger(validity) || validity < 1 || validity > 365) {
+      return NextResponse.json({ error: 'Geçerlilik 1–365 gün arası olmalı.' }, { status: 400 });
+    }
+
+    const seller = await prisma.sellerProfile.findUnique({
+      where: { id: sellerId },
+      select: { id: true, companyName: true, userId: true },
+    });
+    if (!seller) return NextResponse.json({ error: 'Satıcı bulunamadı' }, { status: 404 });
+
+    await grantGiftRight(sellerId, qty, validity, adminNote, adminId);
+
+    await createInAppNotification({
+      userId: seller.userId,
+      title: '🎁 Hediye Müzayede Hakkı',
+      message: `Hesabınıza ${qty} ücretsiz müzayede hakkı tanımlandı (${validity} gün geçerli).`,
+      type: 'AUCTION_RIGHT',
+      link: '/satici/haklarim',
+    });
+
+    await logAudit({
+      userId: adminId,
+      userName: (session.user as any).fullName || (session.user as any).email,
+      action: 'GIFT_AUCTION_RIGHT',
+      entity: 'Seller',
+      entityId: sellerId,
+      details: { companyName: seller.companyName, quantity: qty, days: validity, adminNote: adminNote ?? null },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('admin auction-rights POST (gift) error', e);
+    return NextResponse.json({ error: 'Hediye hak verilemedi' }, { status: 500 });
   }
 }
 

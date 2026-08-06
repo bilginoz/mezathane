@@ -36,13 +36,14 @@ function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string })
   return <span ref={ref}>{count.toLocaleString('tr-TR')}{suffix}</span>;
 }
 
-export function HomeContent({ auctions, completedAuctions, categories, featuredLots, stats, siteSettings }: {
+export function HomeContent({ auctions, completedAuctions, categories, featuredLots, stats, siteSettings, showTrialPromo = false }: {
   auctions: any[];
   completedAuctions: any[];
   categories: any[];
   featuredLots: any[];
   stats: { users: number; auctions: number; soldLots: number };
   siteSettings?: any;
+  showTrialPromo?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -369,15 +370,21 @@ export function HomeContent({ auctions, completedAuctions, categories, featuredL
             className="rounded-2xl bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8"
           >
             <div className="flex-1 text-center md:text-left">
+              {showTrialPromo && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] px-3 py-1 text-xs sm:text-sm font-semibold mb-4">
+                  🎁 İlk müzayeden bizden — yeni satıcılara 1 ücretsiz müzayede hakkı
+                </span>
+              )}
               <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-white mb-4">
                 Siz de <span className="gold-text">Satıcı</span> Olun
               </h2>
               <p className="text-white/60 mb-6 text-sm sm:text-base">
-                Platformumuza katılın, müzayedelerinizi oluşturun ve binlerce alıcıya ulaşın.
-                Canlı müzayede yönetimi, otomatik teklif sistemi ve daha fazlası.
+                {showTrialPromo
+                  ? 'Satıştan komisyon yok. Üye olun, ilk müzayedenizi ücretsiz oluşturun ve binlerce alıcıya ulaşın — canlı müzayede yönetimi, otomatik teklif sistemi ve daha fazlası.'
+                  : 'Platformumuza katılın, müzayedelerinizi oluşturun ve binlerce alıcıya ulaşın. Canlı müzayede yönetimi, otomatik teklif sistemi ve daha fazlası.'}
               </p>
-              <Link href="/satici-basvuru" className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] px-6 py-3 font-bold text-black hover:bg-[#c9a430] transition-colors">
-                Hemen Başvurun <ArrowRight className="h-4 w-4" />
+              <Link href="/satici-ol" className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] px-6 py-3 font-bold text-black hover:bg-[#c9a430] transition-colors">
+                {showTrialPromo ? 'Ücretsiz Başlayın' : 'Hemen Başvurun'} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="hidden md:grid grid-cols-2 gap-4">

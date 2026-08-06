@@ -89,6 +89,7 @@ model AuctionRightPurchase {
   totalAmount  Float              // (quantity * unitPrice) + kdvAmount — ödenecek toplam
   status       AuctionRightStatus @default(PENDING)
   remaining    Int                @default(0) // onaylanınca = quantity; kullanıldıkça azalır (UNLIMITED_MONTHLY'de kullanılmaz)
+  isTrial      Boolean            @default(false) // otomatik "hoş geldin" deneme hakkı mı (satıcı başına 1 kez); ücretsiz hediyeler unitPrice=0 ama isTrial=false
   expiresAt    DateTime?          // onay anında = now + geçerlilik günü (null = süresiz, kullanılmaz)
   sellerNote   String?            // satıcının notu (havale açıklaması vb.)
   adminNote    String?            // admin notu / ret sebebi
@@ -573,6 +574,9 @@ model PlatformSettings {
   newUserMaxUnpaidCount       Int   @default(3)       // Yeni üye ödenmemiş sipariş ADET sınırı (50 tane ucuz ürün sabotajını keser)
   trustedUserMaxUnpaidCount   Int   @default(10)      // Güvenilir üye ödenmemiş sipariş ADET sınırı
   autoSuspendAfterDefaults    Int   @default(1)       // Kaç vadesi geçmiş ödenmemiş sipariş (default) sonrası hesap otomatik askıya alınsın
+  // Pazarlama: onaylanan her yeni satıcıya 1 kez ücretsiz "deneme" müzayede hakkı ver (30 gün geçerli).
+  // Panelden kapatılabilir (kod/deploy gerekmez); kapalıyken yeni onaylarda deneme hakkı verilmez.
+  trialRightEnabled           Boolean @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
