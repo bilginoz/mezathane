@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer';
 import { Search, ChevronDown, HelpCircle, ArrowLeft, Gavel, CreditCard, ShieldCheck, Truck, UserPlus, Clock, AlertTriangle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 type FAQCategory = {
   id: string;
@@ -216,23 +217,33 @@ const DIRECT_FAQ: Record<string, string> = {
   'Mezathane.tr\'yi kullanmak ücretsiz mi?': 'Platforma üye olmak, müzayedeleri incelemek ve takip etmek tamamen ücretsizdir. Müzayede kazandığınızda satış bedeline ek olarak, satıcının belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV eklenir. Bu tutarın tamamını doğrudan satıcıya ödersiniz. Toplam tutar teklif verme ekranında açıkça gösterilir.',
   'Hizmet bedeli nedir?': 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Kazanan alıcı, satış bedeline ek olarak satıcının belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Bu ödemenin tamamı doğrudan satıcıya yapılır; platform ürün bedelini tahsil etmez, aracı hizmet sağlayıcıdır. Toplam tutar teklif verme ekranında her zaman açıkça gösterilir.',
   'Ödemeyi nasıl yaparım?': 'Müzayedeyi kazandıktan sonra ödemenizi, satıcının banka hesabına havale/EFT yoluyla gerçekleştirirsiniz. Satıcının IBAN bilgisi sipariş/ödeme sayfanızda gösterilir. Ödeme yaparken açıklama kısmına üye numaranızı ve sipariş numaranızı yazmayı unutmayınız. Güvenliğiniz için IBAN\'ı yalnızca resmi ödeme sayfasından doğrulayın.',
-  'Satıcı komisyon oranı nedir?': 'Bu modelde platform, satılan üründen komisyon almaz; platformun geliri satıcının önceden aldığı Müzayede Hakkı bedelidir. Alıcıdan alınan komisyonun oranını satıcı kendisi belirler, lot ve ödeme sayfasında görünür ve bu tutar doğrudan satıcıya ödenir (üzerine %20 KDV eklenir).',
+  'Satıcı komisyon oranı nedir?': 'Bu modelde platform, satılan üründen komisyon almaz. Alıcıdan alınan komisyonun oranını satıcı kendisi belirler, lot ve ödeme sayfasında görünür ve bu tutar doğrudan satıcıya ödenir (üzerine %20 KDV eklenir).',
+};
+
+// AŞAMA 3 (2026-08-07): DIRECT içindeki gelir modeline (KONTOR|HİZMET_BEDELİ) göre değişen tek
+// cevap — "platformun geliri" nereden geliyor sorusu modele göre farklı. DIRECT_FAQ'ın üzerine
+// biner (sadece revenueModel===HİZMET_BEDELİ iken uygulanır).
+const HIZMET_BEDELI_FAQ: Record<string, string> = {
+  'Satıcı komisyon oranı nedir?': 'Bu modelde platform, satılan üründen doğrudan komisyon kesmez. Alıcıdan alınan komisyonun oranını satıcı kendisi belirler, lot ve ödeme sayfasında görünür ve bu tutar (üzerine %20 KDV ile) doğrudan satıcıya ödenir. Platformun geliri, satıcının gerçekleşen satışlar üzerinden SONRADAN (haftalık) platforma ödediği hizmet bedelidir — satıcı önceden bir "Müzayede Hakkı" satın almaz.',
 };
 
 export default function HelpPage() {
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const [searchQuery, setSearchQuery] = useState('');
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Moda göre kaynak SSS: DIRECT'te ilgili cevaplar override edilir.
+  // Moda göre kaynak SSS: DIRECT'te ilgili cevaplar override edilir; HİZMET_BEDELİ'nde
+  // (AŞAMA 3) bir katman daha üstüne biner (sadece "platformun geliri nereden" sorusu değişir).
   const sourceData = useMemo(() => {
     if (paymentMode !== 'DIRECT') return FAQ_DATA;
+    const overrides = revenueModel === 'HIZMET_BEDELI' ? { ...DIRECT_FAQ, ...HIZMET_BEDELI_FAQ } : DIRECT_FAQ;
     return FAQ_DATA.map(cat => ({
       ...cat,
-      questions: cat.questions.map(item => (DIRECT_FAQ[item.q] ? { ...item, a: DIRECT_FAQ[item.q] } : item)),
+      questions: cat.questions.map(item => (overrides[item.q] ? { ...item, a: overrides[item.q] } : item)),
     }));
-  }, [paymentMode]);
+  }, [paymentMode, revenueModel]);
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim() && !activeCategory) return sourceData;

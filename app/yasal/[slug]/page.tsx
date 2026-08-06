@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Scale, Shield, FileText, Cookie, Lock, Gavel, BookOpen, CreditCard, RotateCcw, Info, Banknote, Ban, ArrowLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { getPaymentMode } from '@/lib/payment-mode';
+import { getServiceFeeSettings } from '@/lib/revenue-model';
 
 // Banka bilgileri Site Ayarları'ndan CANLI okunur; sabit metin değil.
 export const dynamic = 'force-dynamic';
@@ -227,6 +228,21 @@ const DIRECT_OVERRIDES: Record<string, Record<string, string>> = {
   },
 };
 
+// AŞAMA 3 (2026-08-07): DIRECT içindeki HİZMET_BEDELİ gelir modeli için EK override katmanı.
+// DIRECT_OVERRIDES'ın üstüne biner (sadece directRevenueModel==='HIZMET_BEDELI' iken uygulanır).
+// Bu modelde BUYER'ın satıcıya ödemesi DEĞİŞMEZ (hâlâ doğrudan, satıcının kendi oranıyla) — sadece
+// platformun SATICIDAN aldığı bedelin kaynağı değişir: önden "Müzayede Hakkı" değil, satış sonrası
+// SONRADAN ödenen "hizmet bedeli". Bu yüzden sadece platformun kendi gelir kaynağını tanımlayan
+// 2 başlık değişir; alıcıya yönelik ödeme/iade/teslimat metinleri (DIRECT_OVERRIDES) aynı kalır.
+const HIZMET_BEDELI_OVERRIDES: Record<string, Record<string, string>> = {
+  'uyelik-sozlesmesi': {
+    '2. Tanımlar': '• Platform: Mezathane.tr internet sitesi ve mobil uygulamaları (aracı hizmet sağlayıcı)\n• Üye: Platforma kayıt olarak üyelik sözleşmesini kabul eden gerçek veya tüzel kişi\n• Satıcı: Platformda müzayede düzenleme yetkisi verilen onaylı üye; satışın asıl SATICI tarafı\n• Alıcı: Platformda teklif veren ve/veya müzayede kazanan üye\n• Müzayede: Platform üzerinden gerçekleştirilen online açık artırma\n• Lot: Müzayedede satışa sunulan her bir eser/ürün\n• Pey (Teklif): Bir lot için verilen fiyat teklifi\n• Satıcı Komisyonu (Alıcıdan): Müzayedeyi kazanan alıcıdan, satış bedeli üzerine SATICININ belirlediği oranda alınan ve üzerine %20 KDV eklenen komisyon. Alıcı bu tutarı doğrudan satıcıya öder; platform bu tutara taraf olarak dokunmaz.\n• Hizmet Bedeli (Satıcıdan): Satıcının, platform üzerinden gerçekleştirdiği her satıştan SONRA, satış bedeli üzerinden belirlenen oranda ve üzerine %20 KDV eklenerek platforma ödediği bedeldir; platformun bu modeldeki gelirini oluşturur. Satıcı, müzayede açmak için önceden bir ödeme yapmaz.',
+  },
+  'muzayede-sartnamesi': {
+    '6. Komisyon ve Ücretler': '• Satıcı komisyonu oranını SATICI belirler; bu oran lot ve ödeme ekranında açıkça gösterilir ve üzerine %20 KDV eklenir. Alıcı bu tutarı doğrudan satıcıya öder.\n• Platform, ürün bedelini taraf olarak tahsil etmez (bedelin tamamı doğrudan satıcıya ödenir). Ancak satıcı, platform üzerinden gerçekleştirdiği her satıştan SONRA, satış bedeli üzerinden belirlenen oranda hizmet bedelini (+%20 KDV) platforma öder; bu, platformun bu modeldeki gelir kaynağıdır.\n• Satışa ilişkin fatura satıcı tarafından düzenlenir; platform ürün satışının tarafı değildir, aracı hizmet sağlayıcıdır.',
+  },
+};
+
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: currentSlug } = await params;
   let page = LEGAL_PAGES[currentSlug];
@@ -241,6 +257,20 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
       ...page,
       sections: page.sections.map((s) => (ov[s.heading] ? { ...s, text: ov[s.heading] } : s)),
     };
+  }
+
+  // AŞAMA 3 (2026-08-07): DIRECT içinde HİZMET_BEDELİ aktifse, platformun kendi gelir kaynağını
+  // tanımlayan 2 başlık bir kez daha override edilir (bkz. yukarıdaki not — buyer'a yönelik metinler
+  // değişmez). KONTOR'da (varsayılan) bu blok hiç çalışmaz, DIRECT_OVERRIDES'taki metin geçerli kalır.
+  if (mode === 'DIRECT') {
+    const { model: revenueModel } = await getServiceFeeSettings();
+    if (revenueModel === 'HIZMET_BEDELI' && HIZMET_BEDELI_OVERRIDES[currentSlug]) {
+      const ov2 = HIZMET_BEDELI_OVERRIDES[currentSlug];
+      page = {
+        ...page,
+        sections: page.sections.map((s) => (ov2[s.heading] ? { ...s, text: ov2[s.heading] } : s)),
+      };
+    }
   }
 
   // Banka Hesap Bilgileri sayfası: IBAN vb. Site Ayarları'ndan okunup gösterilir.
