@@ -25,12 +25,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Lot ve kaynak müzayede bilgisi gerekli' }, { status: 400 });
     }
 
-    // Kaynak müzayedenin bu satıcıya ait ve COMPLETED olduğunu doğrula
+    // Kaynak müzayedenin bu satıcıya ait ve COMPLETED (süre doldu, satılmayan lotlar UNSOLD) veya
+    // CANCELLED (teklif gelmeden iptal edildi, lotlar PENDING) olduğunu doğrula. İkisinde de lotlar
+    // satılmadığı için taşınabilir — kaynak müzayedenin İPTAL etiketi/kaydı DEĞİŞMEDEN kalır, sadece
+    // içindeki satılmamış lotlar yeni bir taslağa kopyalanır.
     const sourceAuction = await prisma.auction.findFirst({
-      where: { id: sourceAuctionId, sellerId: seller.id, status: 'COMPLETED' },
+      where: { id: sourceAuctionId, sellerId: seller.id, status: { in: ['COMPLETED', 'CANCELLED'] } },
     });
     if (!sourceAuction) {
-      return NextResponse.json({ error: 'Kaynak müzayede bulunamadı veya tamamlanmamış' }, { status: 404 });
+      return NextResponse.json({ error: 'Kaynak müzayede bulunamadı veya uygun durumda değil' }, { status: 404 });
     }
 
     // Aktif müzayede sayısı kontrolü (max 3)

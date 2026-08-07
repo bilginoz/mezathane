@@ -601,7 +601,9 @@ export default function ManageAuctionContent() {
   if (!auction) return null;
 
   const statusInfo = STATUS_MAP[auction.status] ?? { label: auction.status, color: 'bg-muted text-muted-foreground' };
-  const isCompleted = auction.status === 'COMPLETED';
+  // COMPLETED: müzayede süresi doldu, satılmayan lotlar UNSOLD. CANCELLED: satıcı teklif gelmeden
+  // iptal etti, lotlar PENDING kaldı. İkisinde de lotlar satılmadı → yeni müzayedeye taşınabilir.
+  const canReauction = auction.status === 'COMPLETED' || auction.status === 'CANCELLED';
   const unsoldLots = auction.lots.filter(l => l.status === 'UNSOLD' || l.status === 'PENDING');
   const allUnsoldSelected = unsoldLots.length > 0 && unsoldLots.every(l => selectedLotIds.has(l.id));
 
@@ -1181,7 +1183,7 @@ export default function ManageAuctionContent() {
         )}
 
         {/* Yeni Müzayedeye Aktar Barı */}
-        {isCompleted && unsoldLots.length > 0 && (
+        {canReauction && unsoldLots.length > 0 && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <RotateCcw className="w-5 h-5 text-amber-500 flex-shrink-0" />
@@ -1244,7 +1246,7 @@ export default function ManageAuctionContent() {
                   {/* Normal View */}
                   {!isEditing && (
                     <div className="flex items-center gap-4 p-4">
-                      {isCompleted && (lot.status === 'UNSOLD' || lot.status === 'PENDING') && (
+                      {canReauction && (lot.status === 'UNSOLD' || lot.status === 'PENDING') && (
                         <button
                           onClick={() => toggleLotSelection(lot.id)}
                           className="flex-shrink-0 text-muted-foreground hover:text-amber-500 transition-colors"
