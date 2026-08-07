@@ -26,7 +26,7 @@ export function SellerDashboard() {
   const [auctionForm, setAuctionForm] = useState({
     title: '', description: '', startDate: '', endDate: '', liveDate: '',
     waitingTime: 20, fairWaitingTime: 5, liveDelayMinutes: 30, paymentDays: 5,
-    liveOnly: false, buyerPremiumRate: null as number | null, // null = profil varsayılanı kullanılır
+    liveOnly: false,
   });
   const [livePreset, setLivePreset] = useState<'fast' | 'normal' | 'relaxed' | 'custom'>('normal');
   const [creating, setCreating] = useState(false);
@@ -68,17 +68,6 @@ export function SellerDashboard() {
         .finally(() => setLoading(false));
     }
   }, [status, router, user?.role]);
-
-  // "Bu Müzayede İçin Alıcı Komisyonu" alanına, profil varsayılanını GERÇEK bir sayı olarak
-  // bir kez yazıyoruz. Önceden bu değer her render'da value={... ?? profilVarsayılanı} ile
-  // canlı hesaplanıyordu; kullanıcı alanı silip boşalttığında state null'a düştüğü an aynı
-  // varsayılan tekrar beliriyordu — yani alan hiç boşalmıyor, iki haneli yeni bir oran
-  // (ör. 10 -> 20) yazmak neredeyse imkansız hale geliyordu.
-  useEffect(() => {
-    if (data?.seller?.buyerPremiumRate != null && auctionForm.buyerPremiumRate === null) {
-      setAuctionForm(prev => ({ ...prev, buyerPremiumRate: data.seller.buyerPremiumRate }));
-    }
-  }, [data]);
 
   const handleCreateAuction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +116,6 @@ export function SellerDashboard() {
           waitingTime: auctionForm.waitingTime,
           fairWaitingTime: auctionForm.fairWaitingTime,
           paymentDays: auctionForm.paymentDays,
-          buyerPremiumRate: auctionForm.buyerPremiumRate ?? undefined, // null/dokunulmamışsa profil oranı kullanılır
           status: 'DRAFT',
         }),
       });
@@ -607,14 +595,9 @@ export function SellerDashboard() {
                   <div>
                     {paymentMode === 'DIRECT' ? (
                       <>
-                        <label className="text-sm font-medium mb-1 block">Bu Müzayede İçin Alıcı Komisyonu (%)</label>
-                        <input
-                          type="number" min={0} max={30} step="0.5"
-                          value={auctionForm.buyerPremiumRate ?? ''}
-                          onChange={(e) => setAuctionForm(p => ({ ...(p ?? {}), buyerPremiumRate: e.target.value === '' ? null : Number(e.target.value) }))}
-                          className="w-full rounded-lg border border-border bg-background py-2 px-3 text-sm focus:border-[#d4af37] focus:outline-none"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Varsayılan profil oranınızdır (%{data?.seller?.buyerPremiumRate ?? 7}); bu müzayedeye özel değiştirebilirsiniz.</p>
+                        <label className="text-sm font-medium mb-1 block">Hizmet Bedeli (%)</label>
+                        <div className="w-full rounded-lg border border-border bg-muted/50 py-2 px-3 text-sm font-mono">%{data?.seller?.serviceFeeRate ?? 7}</div>
+                        <p className="text-[10px] text-muted-foreground mt-1">Admin tarafından belirlenir. Alıcı bu tutarı satış bedeline ek olarak size öder.</p>
                       </>
                     ) : (
                       <>

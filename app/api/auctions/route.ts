@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
 import { consumeOneRight } from '@/lib/auction-rights';
-import { getDirectRevenueModel } from '@/lib/revenue-model';
+import { getDirectRevenueModel, getServiceFeeSettings } from '@/lib/revenue-model';
 
 export async function GET(request: Request) {
   try {
@@ -65,12 +65,14 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Alıcı komisyon oranı (DIRECT modda): müzayede bazında satıcının belirlediği oran,
-    // profildeki varsayılan orana ÖNCELİKLİDİR. Geçersiz/aralık dışıysa profil oranına düşer.
-    const customPremium = Number(body.buyerPremiumRate);
-    const resolvedPremiumRate = Number.isFinite(customPremium) && customPremium >= 0 && customPremium <= 30
-      ? customPremium
-      : ((seller as any).buyerPremiumRate ?? 7.0);
+    // (2026-08-08, kullanıcı kararı) Hizmet bedeli oranı artık SATICI tarafından belirlenmiyor —
+    // ne profilinden ne müzayede açarken. Tek bir "Hizmet Bedeli" kavramı var: alıcının satış
+    // bedeline ek ödediği (ve satıcıya giden) tutarla, satıcının satış sonrası platforma borçlanacağı
+    // tutar AYNI orandan hesaplanır. Bu oranı SADECE ADMİN, satıcı bazında belirler
+    // (SellerProfile.serviceFeeRate — boşsa platform varsayılanı). Body'den gelen buyerPremiumRate
+    // artık YOK SAYILIR (satıcı/istemci artık bu oranı gönderemez/etkileyemez).
+    const { rate: defaultServiceFeeRate } = await getServiceFeeSettings();
+    const resolvedPremiumRate = (seller as any).serviceFeeRate ?? defaultServiceFeeRate;
 
     const auctionData = {
       title: body.title,

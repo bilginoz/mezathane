@@ -145,6 +145,12 @@ export function RulesManagement() {
                 satıcıyı düzenleyip "Hizmet Bedeli Oranı" alanına girin — boş bırakılırsa buradaki
                 standart oran geçerli olur.
               </p>
+              <p className="text-xs text-amber-500 mt-2">
+                (2026-08-08) Bu oran KONTOR/HİZMET BEDELİ seçiminden bağımsız olarak HER ZAMAN
+                geçerli: alıcının satış bedeline ek ödeyip doğrudan satıcıya göndereceği tutar da
+                bu orandan hesaplanır. Satıcı bu oranı artık ne profilinden ne müzayede açarken
+                değiştiremez — tek belirleme yeri burası ve Satıcılar sayfasıdır.
+              </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
                 sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.

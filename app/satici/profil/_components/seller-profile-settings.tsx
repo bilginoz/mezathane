@@ -43,7 +43,6 @@ export function SellerProfileSettings() {
     companyAddress: '',
     description: '',
     logoUrl: '',
-    buyerPremiumRate: '7',
     salesTerms: '',
     iban: '',
     phone: '',
@@ -64,6 +63,7 @@ export function SellerProfileSettings() {
   const [newDocLabel, setNewDocLabel] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [serviceFeeRate, setServiceFeeRate] = useState<number | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/giris');
@@ -77,12 +77,12 @@ export function SellerProfileSettings() {
       const res = await fetch('/api/seller/profile');
       if (res.ok) {
         const data = await res.json();
+        setServiceFeeRate(data.serviceFeeRate ?? null);
         setForm({
           companyName: data.companyName ?? '',
           companyAddress: data.companyAddress ?? '',
           description: data.description ?? '',
           logoUrl: data.logoUrl ?? '',
-          buyerPremiumRate: data.buyerPremiumRate != null ? String(data.buyerPremiumRate) : '7',
           salesTerms: data.salesTerms ?? '',
           iban: data.iban ?? '',
           phone: data.phone ?? '',
@@ -199,7 +199,6 @@ export function SellerProfileSettings() {
         body: JSON.stringify({
           description: form.description,
           logoUrl: form.logoUrl,
-          buyerPremiumRate: parseFloat(form.buyerPremiumRate) || 0,
           salesTerms: form.salesTerms,
         }),
       });
@@ -467,15 +466,9 @@ export function SellerProfileSettings() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Alıcı Komisyon Oranınız (%)</label>
-              <input
-                type="number" min={0} max={30} step="0.5"
-                value={form.buyerPremiumRate}
-                onChange={(e) => setForm(prev => ({ ...prev, buyerPremiumRate: e.target.value }))}
-                className={inputClass}
-                placeholder="7"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Kazanan alıcının, satış bedeline ek olarak size ödeyeceği hizmet komisyonu oranı (0–30). Alıcı bu tutarı <b>doğrudan size</b> öder; lot ve ödeme sayfasında görünür. Yeni ödeme modeli (doğrudan ödeme) devreye girince geçerli olur.</p>
+              <label className="text-sm font-medium mb-1.5 block">Hizmet Bedeli Oranınız (%)</label>
+              <div className={`${inputClass} bg-muted/50`}>%{serviceFeeRate ?? 7}</div>
+              <p className="text-xs text-muted-foreground mt-1">Bu oran admin tarafından belirlenir, siz değiştiremezsiniz. Kazanan alıcı, satış bedeline ek olarak bu tutarı size öder; siz de satış sonrası bu tutarı platforma hizmet bedeli olarak ödersiniz.</p>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Satış / İade / Teslimat Şartlarım (isteğe bağlı)</label>
