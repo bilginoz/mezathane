@@ -18,10 +18,11 @@ const LOTS_PER_PAGE = 20;
 type SortOption = 'lot-asc' | 'lot-desc' | 'price-asc' | 'price-desc' | 'bids-desc' | 'newest';
 
 export function AuctionDetailContent({ auction }: { auction: any }) {
-  // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcının oranı "satıcı komisyonu".
+  // Hizmet Bedeli: ESCROW'da sabit %7; DIRECT'te admin tarafından satıcı bazında belirlenen oran
+  // (2026-08-08 — satıcı belirlemez, ayrı bir "komisyon" kavramı yok).
   const paymentMode = usePaymentMode();
   const premiumRatePct = paymentMode === 'DIRECT' ? (auction?.buyerPremiumRate ?? 7) : 7;
-  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
+  const premiumLabel = 'Hizmet Bedeli';
   const exBase = 100;
   const exPrem = exBase * (premiumRatePct / 100);
   const exKdv = exPrem * 0.20;

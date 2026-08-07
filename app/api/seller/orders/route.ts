@@ -163,18 +163,18 @@ export async function PATCH(request: Request) {
         paidAt: pay.paidAt ?? now,
         paymentMethod: pay.paymentMethod ?? 'DIRECT_HAVALE',
       };
-      // AŞAMA 3b (2026-08-06): HİZMET_BEDELİ modelinde hizmet bedeli borcu tam bu anda doğar —
-      // vade kararı (2026-08-06) teslim/kargoya değil, alıcının ödemesinin onaylandığı bu ana bağlı.
-      // KONTOR'da (varsayılan) hiçbir şey hesaplanmaz, davranış değişmez.
-      const { getServiceFeeSettings } = await import('@/lib/revenue-model');
-      const { model, rate } = await getServiceFeeSettings();
+      // AŞAMA 3b (2026-08-06), düzeltme (2026-08-08): HİZMET_BEDELİ modelinde hizmet bedeli borcu
+      // tam bu anda doğar — vade teslim/kargoya değil, alıcının ödemesinin onaylandığı bu ana bağlı.
+      // KULLANICI KARARI (2026-08-08): "tek bir hizmet bedeli" var — satıcının platforma borçlanacağı
+      // tutar, alıcının o satış için ZATEN ÖDEDİĞİ buyerPremiumAmount/KDV İLE BİREBİR AYNI olmalı
+      // (yeniden/güncel orandan hesaplanmaz — admin oranı auction açıldıktan sonra değiştirse bile
+      // bu satışın borcu, satış anında kilitlenen tutarla tutarlı kalır). KONTOR'da (varsayılan)
+      // hiçbir şey hesaplanmaz, davranış değişmez.
+      const { getDirectRevenueModel } = await import('@/lib/revenue-model');
+      const model = await getDirectRevenueModel();
       if (model === 'HIZMET_BEDELI') {
-        const { computeServiceFee } = await import('@/lib/sale-math');
-        // Satıcıya özel oran varsa (SellerProfile.serviceFeeRate) o geçerli, yoksa platform varsayılanı.
-        const effectiveRate = sellerProfile.serviceFeeRate ?? rate;
-        const { serviceFeeAmount, serviceFeeKDV } = computeServiceFee(pay.amount, effectiveRate);
-        updateData.serviceFeeAmount = serviceFeeAmount;
-        updateData.serviceFeeKDV = serviceFeeKDV;
+        updateData.serviceFeeAmount = pay.buyerPremiumAmount ?? 0;
+        updateData.serviceFeeKDV = pay.buyerPremiumKDV ?? 0;
         updateData.serviceFeeDueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       }
       await prisma.payment.update({

@@ -2,8 +2,13 @@
 // hesabı saf ve test edilebilir olur (bkz. lib/sale-math.test.ts).
 //
 // ESCROW (V1): platform satıcıdan komisyon alır; alıcı hizmet bedeli sabit %7 (platform geliri).
-// DIRECT (V2): platform üründen komisyon almaz (0); alıcı komisyonu = SATICININ belirlediği oran,
-//              tamamı doğrudan satıcıya. Her iki modelde de hizmet bedeli/komisyon KDV'si sabit %20.
+// DIRECT (V2): platform üründen komisyon almaz (0); alıcının ödediği Hizmet Bedeli oranı artık
+//              ADMİN tarafından satıcı bazında belirlenir (SellerProfile.serviceFeeRate,
+//              2026-08-08 kararı — satıcı bunu kendisi belirleyemez), tamamı doğrudan satıcıya
+//              gider. HİZMET_BEDELİ alt modelinde satıcı bu AYNI tutarı SONRADAN platforma öder
+//              (bkz. app/api/seller/orders confirm_payment — yeniden hesaplanmaz, satıştaki
+//              buyerPremiumAmount/KDV ile birebir aynıdır, "tek bir hizmet bedeli" ilkesi).
+//              Her iki modelde de hizmet bedeli/komisyon KDV'si sabit %20.
 
 export type SaleMode = 'ESCROW' | 'DIRECT';
 
@@ -17,7 +22,7 @@ export interface SalePaymentInput {
   mode: SaleMode;
   hammer: number;               // kazanan teklif (çekiç fiyatı, KDV dahil satış bedeli)
   sellerCommissionRate: number; // satıcının platform komisyon oranı (%) — ESCROW'da kullanılır
-  sellerPremiumRate: number | null | undefined; // satıcının alıcı komisyon oranı (%) — DIRECT'te kullanılır
+  sellerPremiumRate: number | null | undefined; // Hizmet Bedeli oranı (%) — DIRECT'te kullanılır, artık admin belirler
 }
 
 export interface SalePaymentResult {
@@ -26,21 +31,6 @@ export interface SalePaymentResult {
   buyerPremiumAmount: number;  // alıcı komisyon tutarı
   buyerPremiumKDV: number;     // komisyon üzerinden %20 KDV
   totalAmount: number;         // alıcının ödeyeceği toplam
-}
-
-export interface ServiceFeeResult {
-  serviceFeeAmount: number; // platforma borçlanılan hizmet bedeli (KDV hariç)
-  serviceFeeKDV: number;    // hizmet bedelinin KDV'si (sabit %20)
-}
-
-// AŞAMA 3 (HİZMET_BEDELİ modeli, 2026-08-06): DIRECT'te para satıcıya gider, platform üründen
-// pay almaz (commissionAmount=0). Bu modelde platform payını SONRADAN satıcıdan tahsil eder;
-// bu fonksiyon o borcu hammer fiyatı üzerinden hesaplar (ESCROW'daki komisyon mantığının aynısı,
-// sadece kesme değil borçlandırma).
-export function computeServiceFee(hammer: number, serviceFeeRate: number): ServiceFeeResult {
-  const serviceFeeAmount = round2(hammer * (serviceFeeRate / 100));
-  const serviceFeeKDV = round2(serviceFeeAmount * KDV_RATE);
-  return { serviceFeeAmount, serviceFeeKDV };
 }
 
 export function computeSalePayment(input: SalePaymentInput): SalePaymentResult {

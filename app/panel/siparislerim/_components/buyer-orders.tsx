@@ -208,7 +208,7 @@ export function BuyerOrders() {
                           <span className="font-mono">{formatPrice(order.amount)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">{paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli'} (%{order.buyerPremiumRate})</span>
+                          <span className="text-muted-foreground">Hizmet Bedeli (%{order.buyerPremiumRate})</span>
                           <span className="font-mono">{formatPrice(order.buyerPremiumAmount)}</span>
                         </div>
                         <div className="flex justify-between">

@@ -58,7 +58,7 @@ export function SellerAnalytics() {
     { icon: Eye, label: 'Toplam Görüntülenme', value: o.totalViews ?? 0, color: 'text-sky-400' },
     { icon: Heart, label: 'Favori Sayısı', value: o.watchlistCount ?? 0, color: 'text-red-400' },
     paymentMode === 'DIRECT'
-      ? { icon: Percent, label: 'Alıcı Komisyonunuz', value: `%${o.buyerPremiumRate ?? 7}`, color: 'text-[#d4af37]' }
+      ? { icon: Percent, label: 'Hizmet Bedeli Oranınız', value: `%${o.buyerPremiumRate ?? 7}`, color: 'text-[#d4af37]' }
       : { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 0}`, color: 'text-[#d4af37]' },
   ];
 

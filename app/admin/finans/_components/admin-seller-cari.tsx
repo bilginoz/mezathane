@@ -58,7 +58,7 @@ export function AdminSellerCari({ sellerId }: { sellerId: string }) {
           <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] text-black px-3 py-2 text-sm font-semibold hover:brightness-110 shrink-0"><Download className="h-4 w-4" /><span className="hidden sm:inline">Rapor (CSV)</span></button>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-          <div><p className="text-xs text-muted-foreground">Alıcı Komisyonu</p><p className="font-mono font-semibold">%{seller.buyerPremiumRate ?? 7}</p></div>
+          <div><p className="text-xs text-muted-foreground">Hizmet Bedeli</p><p className="font-mono font-semibold">%{seller.buyerPremiumRate ?? 7}</p></div>
           <div><p className="text-xs text-muted-foreground">IBAN</p><p className="font-mono text-xs break-all">{seller.iban || '—'}</p></div>
           <div><p className="text-xs text-muted-foreground">E-posta</p><p className="text-xs break-all">{seller.email || '—'}</p></div>
           <div><p className="text-xs text-muted-foreground">Telefon</p><p className="text-xs">{seller.phone || '—'}</p></div>

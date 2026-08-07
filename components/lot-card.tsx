@@ -25,11 +25,12 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
   const imageUrl = lot?.images?.[0]?.imageUrl ?? '/logo.png';
   const categoryName = lot?.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot?.category?.name ?? '');
 
-  // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcı oranı "satıcı komisyonu".
+  // Hizmet Bedeli: ESCROW'da sabit %7; DIRECT'te admin tarafından satıcı bazında belirlenen oran
+  // (2026-08-08 — satıcı belirlemez, ayrı bir "komisyon" kavramı yok).
   const paymentMode = usePaymentMode();
   const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
   const premiumRate = premiumRatePct / 100;
-  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
+  const premiumLabel = 'Hizmet Bedeli';
   const bidCount = lot?._count?.bids ?? lot?.bidCount ?? 0;
   const watchCount = lot?._count?.watchlist ?? lot?.watchCount ?? 0;
   const startingPrice = lot?.startingPrice ?? 0;

@@ -192,7 +192,7 @@ const FAQ_DATA: FAQCategory[] = [
         a: 'Satıcı olmak için önce platforma üye olmanız, ardından "Satıcı Ol" sayfasından başvuru yapmanız gerekmektedir. Başvuru formunda şirket bilgileri, vergi dairesi, vergi numarası, IBAN ve varsa Mersis numaranızı doldurmanız gerekir. Vergi levhanızı yüklemeniz de zorunludur. Başvurunuz admin tarafından değerlendirilecektir.',
       },
       {
-        q: 'Satıcı komisyon oranı nedir?',
+        q: 'Hizmet bedeli oranını kim belirler?',
         a: 'Platform, satıcılardan hizmet komisyonu almaktadır. Komisyon oranı satıcı onayı sırasında platform ile satıcı arasında belirlenir ve satıcı panelinde görüntülenebilir. Alıcılardan ayrıca %7 hizmet bedeli + %20 KDV alınır.',
       },
       {
@@ -214,17 +214,17 @@ const FAQ_DATA: FAQCategory[] = [
 // DIRECT (doğrudan ödeme) modunda değişen SSS cevapları (soru metnine göre eşleşir).
 // ESCROW'da FAQ_DATA olduğu gibi kalır.
 const DIRECT_FAQ: Record<string, string> = {
-  'Mezathane.tr\'yi kullanmak ücretsiz mi?': 'Platforma üye olmak, müzayedeleri incelemek ve takip etmek tamamen ücretsizdir. Müzayede kazandığınızda satış bedeline ek olarak, satıcının belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV eklenir. Bu tutarın tamamını doğrudan satıcıya ödersiniz. Toplam tutar teklif verme ekranında açıkça gösterilir.',
-  'Hizmet bedeli nedir?': 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Kazanan alıcı, satış bedeline ek olarak satıcının belirlediği oranda satıcı komisyonu ve bu komisyon üzerinden %20 KDV öder. Bu ödemenin tamamı doğrudan satıcıya yapılır; platform ürün bedelini tahsil etmez, aracı hizmet sağlayıcıdır. Toplam tutar teklif verme ekranında her zaman açıkça gösterilir.',
+  'Mezathane.tr\'yi kullanmak ücretsiz mi?': 'Platforma üye olmak, müzayedeleri incelemek ve takip etmek tamamen ücretsizdir. Müzayede kazandığınızda satış bedeline ek olarak, platform tarafından satıcı bazında belirlenen oranda Hizmet Bedeli ve bu bedel üzerinden %20 KDV eklenir. Bu tutarın tamamını doğrudan satıcıya ödersiniz. Toplam tutar teklif verme ekranında açıkça gösterilir.',
+  'Hizmet bedeli nedir?': 'Müzayedede verilen pey (teklif) tutarı, eserin KDV dahil satış bedelidir. Kazanan alıcı, satış bedeline ek olarak platform tarafından satıcı bazında belirlenen oranda Hizmet Bedeli ve bu bedel üzerinden %20 KDV öder. Bu ödemenin tamamı doğrudan satıcıya yapılır; platform ürün bedelini tahsil etmez, aracı hizmet sağlayıcıdır. Toplam tutar teklif verme ekranında her zaman açıkça gösterilir.',
   'Ödemeyi nasıl yaparım?': 'Müzayedeyi kazandıktan sonra ödemenizi, satıcının banka hesabına havale/EFT yoluyla gerçekleştirirsiniz. Satıcının IBAN bilgisi sipariş/ödeme sayfanızda gösterilir. Ödeme yaparken açıklama kısmına üye numaranızı ve sipariş numaranızı yazmayı unutmayınız. Güvenliğiniz için IBAN\'ı yalnızca resmi ödeme sayfasından doğrulayın.',
-  'Satıcı komisyon oranı nedir?': 'Bu modelde platform, satılan üründen komisyon almaz. Alıcıdan alınan komisyonun oranını satıcı kendisi belirler, lot ve ödeme sayfasında görünür ve bu tutar doğrudan satıcıya ödenir (üzerine %20 KDV eklenir).',
+  'Hizmet bedeli oranını kim belirler?': 'Bu modelde platform, satılan üründen komisyon almaz. Hizmet Bedeli oranını satıcı DEĞİL, platform (admin) satıcı bazında belirler; oran lot ve ödeme sayfasında görünür ve bu tutar doğrudan satıcıya ödenir (üzerine %20 KDV eklenir).',
 };
 
 // AŞAMA 3 (2026-08-07): DIRECT içindeki gelir modeline (KONTOR|HİZMET_BEDELİ) göre değişen tek
 // cevap — "platformun geliri" nereden geliyor sorusu modele göre farklı. DIRECT_FAQ'ın üzerine
 // biner (sadece revenueModel===HİZMET_BEDELİ iken uygulanır).
 const HIZMET_BEDELI_FAQ: Record<string, string> = {
-  'Satıcı komisyon oranı nedir?': 'Bu modelde platform, satılan üründen doğrudan komisyon kesmez. Alıcıdan alınan komisyonun oranını satıcı kendisi belirler, lot ve ödeme sayfasında görünür ve bu tutar (üzerine %20 KDV ile) doğrudan satıcıya ödenir. Platformun geliri, satıcının gerçekleşen satışlar üzerinden SONRADAN (haftalık) platforma ödediği hizmet bedelidir — satıcı önceden bir "Müzayede Hakkı" satın almaz.',
+  'Hizmet bedeli oranını kim belirler?': 'Bu modelde platform, satılan üründen doğrudan komisyon kesmez. Hizmet Bedeli oranını satıcı DEĞİL, platform (admin) satıcı bazında belirler; oran lot ve ödeme sayfasında görünür ve bu tutar (üzerine %20 KDV ile) doğrudan satıcıya ödenir. Satıcı, alıcıdan tahsil ettiği bu AYNI Hizmet Bedelini gerçekleşen satışlar üzerinden SONRADAN (haftalık) platforma öder — önceden bir "Müzayede Hakkı" satın almaz.',
 };
 
 export default function HelpPage() {

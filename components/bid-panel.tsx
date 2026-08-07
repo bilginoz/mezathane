@@ -37,12 +37,13 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
   const minIncrement = getMinBidIncrement(currentPrice, lot?.customBidIncrement);
   const minBid = currentPrice + minIncrement;
 
-  // Alıcı komisyonu görünümü moda göre: ESCROW → sabit %7 "Hizmet Bedeli" (platform),
-  // DIRECT → satıcının kendi oranı "Satıcı Komisyonu". KDV yine %20 (bkz. 2e kararı).
+  // Hizmet Bedeli: ESCROW'da sabit %7 (platform geliri); DIRECT'te platform (admin) tarafından
+  // satıcı bazında belirlenen oran (2026-08-08 kararı — satıcı belirlemez, tek kavram, "komisyon"
+  // diye ayrı bir isim yok). KDV yine %20.
   const paymentMode = usePaymentMode();
   const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
   const premiumRate = premiumRatePct / 100;
-  const premiumLabel = paymentMode === 'DIRECT' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
+  const premiumLabel = 'Hizmet Bedeli';
 
   useEffect(() => {
     setBidAmount(minBid);
