@@ -165,10 +165,10 @@ export function ExpensesManagement() {
         {pl?.mode === 'DIRECT' && (
           <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-2.5 mb-6 text-xs text-muted-foreground">
             {pl.income.serviceFee ? (
-              <>Doğrudan ödeme modelinde platform ürün satışından pay almaz; buradaki gelir, satıcıların
+              <><strong className="text-foreground">V3 — Hizmet Bedeli Sistemi:</strong> platform ürün satışından pay almaz; buradaki gelir, satıcıların
                 gerçekleşen satışlar üzerinden SONRADAN ödediği <strong className="text-foreground">hizmet bedeli</strong> tutarıdır.</>
             ) : (
-              <>Doğrudan ödeme modelinde platform ürün satışından pay almaz; buradaki gelir yalnızca
+              <><strong className="text-foreground">V2 — Kontör Sistemi:</strong> platform ürün satışından pay almaz; buradaki gelir yalnızca
                 satıcıların satın aldığı <strong className="text-foreground">Müzayede Hakkı</strong> tutarıdır.</>
             )}
           </div>

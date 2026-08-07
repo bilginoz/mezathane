@@ -61,7 +61,7 @@ export function AdminDirectFinance() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <Ticket className="h-6 w-6 text-[#d4af37]" />
-          <h1 className="font-display text-2xl font-bold">Finans (Doğrudan Ödeme Modeli)</h1>
+          <h1 className="font-display text-2xl font-bold">Finans ({revenueModel === 'HIZMET_BEDELI' ? 'V3 — Hizmet Bedeli Sistemi' : 'V2 — Kontör Sistemi'})</h1>
         </div>
 
         {/* Sekmeler */}

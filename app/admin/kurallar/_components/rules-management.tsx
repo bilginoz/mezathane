@@ -82,62 +82,67 @@ export function RulesManagement() {
         </div>
 
         <div className="space-y-6">
-          {/* Ödeme Modu (sürüm anahtarı) */}
+          {/* Aktif Sürüm — TEK üst-seviye seçici (2026-08-08 kararı: V3, V2'nin içine gömülü bir
+              alt-ayar DEĞİL, V1/V2 gibi kendi başına bağımsız bir sürümdür). Perde arkasında hâlâ
+              2 flag var (paymentMode + directRevenueModel) ama admin'e TEK, atomik bir seçim olarak
+              sunulur — admin'in yanlışlıkla geçersiz bir kombinasyon (örn. Emanet + Hizmet Bedeli)
+              seçmesi mümkün değildir. */}
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
-            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-amber-400" /> Ödeme Modu (Sürüm)</h2>
+            <h2 className="font-semibold mb-1 flex items-center gap-2"><Wallet className="h-5 w-5 text-amber-400" /> Aktif Sürüm</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              <strong className="text-foreground">ESCROW (V1):</strong> Para platform hesabına gelir,
-              cari/hakediş işler, satıcıya biz öderiz. <br />
-              <strong className="text-foreground">DIRECT (V2):</strong> Para doğrudan satıcının hesabına
-              gider; gelirimiz "Müzayede Hakkı"dır. Alıcı satıcının IBAN'ına öder, satıcı onaylar.
+              <strong className="text-foreground">V1 — Emanet Sistemi:</strong> Para platform hesabına gelir,
+              cari/hakediş işler, satıcıya biz öderiz.<br />
+              <strong className="text-foreground">V2 — Kontör Sistemi:</strong> Para doğrudan satıcının hesabına
+              gider; satıcı müzayede açmadan önce "Müzayede Hakkı" satın alır, gelirimiz bu.<br />
+              <strong className="text-foreground">V3 — Hizmet Bedeli Sistemi:</strong> Para doğrudan satıcının
+              hesabına gider (V2 ile aynı); ama satıcı önden ödemez, her satıştan SONRA hizmet bedelini bize öder.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <select
-                value={settings?.paymentMode === 'DIRECT' ? 'DIRECT' : 'ESCROW'}
-                onChange={e => updateField('paymentMode', e.target.value)}
+                value={settings?.paymentMode !== 'DIRECT' ? 'V1' : (settings?.directRevenueModel === 'HIZMET_BEDELI' ? 'V3' : 'V2')}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === 'V1') setSettings((prev: any) => ({ ...prev, paymentMode: 'ESCROW' }));
+                  else if (v === 'V2') setSettings((prev: any) => ({ ...prev, paymentMode: 'DIRECT', directRevenueModel: 'KONTOR' }));
+                  else setSettings((prev: any) => ({ ...prev, paymentMode: 'DIRECT', directRevenueModel: 'HIZMET_BEDELI' }));
+                }}
                 className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none"
               >
-                <option value="ESCROW">ESCROW (V1) — para platformdan geçer</option>
-                <option value="DIRECT">DIRECT (V2) — para doğrudan satıcıya</option>
+                <option value="V1">V1 — Emanet Sistemi</option>
+                <option value="V2">V2 — Kontör Sistemi</option>
+                <option value="V3">V3 — Hizmet Bedeli Sistemi</option>
               </select>
               {settings?.paymentMode === 'DIRECT' && (
-                <span className="text-xs text-amber-500 font-medium">⚠️ V2 aktif — kaydettikten sonra geçerli olur.</span>
+                <span className="text-xs text-amber-500 font-medium">
+                  ⚠️ {settings?.directRevenueModel === 'HIZMET_BEDELI' ? 'V3' : 'V2'} aktif — kaydettikten sonra geçerli olur.
+                </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              Not: Mod değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Geri dönmek için tekrar
-              ESCROW seçip kaydetmeniz yeterli — cari/ödeme takip anında geri gelir.
+              Not: Sürüm değiştirmek eski kodu SİLMEZ; sadece akışı değiştirir. Hangi sürüme geçseniz
+              de geri dönmek için tekrar o sürümü seçip kaydetmeniz yeterli — cari/ödeme takip/borç
+              kayıtları anında geri gelir.
             </p>
           </div>
 
-          {/* DIRECT içi gelir modeli (AŞAMA 3, 2026-08-06) — henüz sadece alt yapı */}
+          {/* V3 (Hizmet Bedeli) seçiliyken görünen ek bilgiler + oran girişi */}
           {settings?.paymentMode === 'DIRECT' && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
-              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-amber-400" /> DIRECT Gelir Modeli</h2>
+              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-amber-400" /> Hizmet Bedeli Oranı</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                <strong className="text-foreground">KONTOR:</strong> Satıcı önden Müzayede Hakkı satın alır (mevcut). <br />
-                <strong className="text-foreground">HİZMET BEDELİ:</strong> Satıcı önden ödemez, her satıştan sonra
-                hizmet bedelini SONRADAN haftalık toplu fatura ile öder.
+                Alıcının satış bedeline ek ödeyip doğrudan satıcıya göndereceği tutar bu orandan
+                hesaplanır — <strong className="text-foreground">hem V2 hem V3'te aynı şekilde</strong>.
+                Satıcı bu oranı artık ne profilinden ne müzayede açarken değiştiremez.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <select
-                  value={settings?.directRevenueModel === 'HIZMET_BEDELI' ? 'HIZMET_BEDELI' : 'KONTOR'}
-                  onChange={e => updateField('directRevenueModel', e.target.value)}
-                  className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-[#d4af37] focus:outline-none"
-                >
-                  <option value="KONTOR">KONTOR — satıcı önden hak satın alır</option>
-                  <option value="HIZMET_BEDELI">HİZMET BEDELİ — satıcı satış sonrası öder</option>
-                </select>
-                <label className="flex items-center gap-2 text-sm">
-                  Standart Oran (%)
-                  <input
-                    type="number" min={0} max={100} step={0.1}
-                    value={settings?.serviceFeeRate ?? ''}
-                    onChange={e => updateField('serviceFeeRate', e.target.value)}
-                    className="w-20 rounded-lg border border-border bg-muted/50 px-2 py-1.5 text-sm focus:border-[#d4af37] focus:outline-none"
-                  />
-                </label>
-              </div>
+              <label className="flex items-center gap-2 text-sm">
+                Standart Oran (%)
+                <input
+                  type="number" min={0} max={100} step={0.1}
+                  value={settings?.serviceFeeRate ?? ''}
+                  onChange={e => updateField('serviceFeeRate', e.target.value)}
+                  className="w-20 rounded-lg border border-border bg-muted/50 px-2 py-1.5 text-sm focus:border-[#d4af37] focus:outline-none"
+                />
+              </label>
               <p className="text-xs text-muted-foreground mt-3">
                 Bu, satıcı bazında özel bir oran belirtilmemişse geçerli olan varsayılan orandır.
                 Belirli bir satıcıya standarttan farklı (örn. daha düşük) bir oran uygulamak
@@ -145,18 +150,14 @@ export function RulesManagement() {
                 satıcıyı düzenleyip "Hizmet Bedeli Oranı" alanına girin — boş bırakılırsa buradaki
                 standart oran geçerli olur.
               </p>
-              <p className="text-xs text-amber-500 mt-2">
-                (2026-08-08) Bu oran KONTOR/HİZMET BEDELİ seçiminden bağımsız olarak HER ZAMAN
-                geçerli: alıcının satış bedeline ek ödeyip doğrudan satıcıya göndereceği tutar da
-                bu orandan hesaplanır. Satıcı bu oranı artık ne profilinden ne müzayede açarken
-                değiştiremez — tek belirleme yeri burası ve Satıcılar sayfasıdır.
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
-                sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.
-                Haftalık (her Pazartesi 09:00) otomatik hatırlatma cron'u kuruldu ve aktif
-                (cron-job.org, jobId 8227178).
-              </p>
+              {settings?.directRevenueModel === 'HIZMET_BEDELI' && (
+                <p className="text-xs text-muted-foreground mt-2 border-t border-border/60 pt-2">
+                  <strong className="text-foreground">V3'e özel:</strong> Borç hesaplanıyor, satıcı
+                  "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli sekmesinden onaylıyorsunuz;
+                  onaylamadığınız sürece satıcı yeni müzayede açamaz. Haftalık (her Pazartesi 09:00)
+                  otomatik hatırlatma cron'u kuruldu ve aktif (cron-job.org, jobId 8227178).
+                </p>
+              )}
             </div>
           )}
 

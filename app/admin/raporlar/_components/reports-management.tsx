@@ -105,10 +105,10 @@ export function ReportsManagement() {
 
         {paymentMode === 'DIRECT' && (
           <div className="rounded-xl border border-sky-500/30 bg-sky-500/5 p-3 mb-4 text-xs text-muted-foreground">
-            <strong className="text-foreground">Doğrudan ödeme modeli aktif:</strong> Bu modelde platform üründen komisyon almaz;
-            aşağıdaki "Komisyon Geliri" gibi kalemler yalnızca eski (ESCROW) kayıtları yansıtır. Platform geliri{' '}
+            <strong className="text-foreground">{revenueModel === 'HIZMET_BEDELI' ? 'V3 — Hizmet Bedeli Sistemi aktif' : 'V2 — Kontör Sistemi aktif'}:</strong> Bu sürümde platform üründen komisyon almaz;
+            aşağıdaki "Komisyon Geliri" gibi kalemler yalnızca eski (V1 — Emanet Sistemi) kayıtları yansıtır. Platform geliri{' '}
             {revenueModel === 'HIZMET_BEDELI' ? 'satış sonrası hizmet bedelidir' : "Müzayede Hakkı'dır"}
-            {' '}(Finans sayfasında görülür). Teklif/kullanıcı istatistikleri her iki modelde de geçerlidir.
+            {' '}(Finans sayfasında görülür). Teklif/kullanıcı istatistikleri her sürümde de geçerlidir.
           </div>
         )}
 
