@@ -159,7 +159,7 @@ export function LotDetailContent({ lot }: { lot: any }) {
     return () => clearInterval(poll);
   }, [lot?.id]);
   const hasImages = (images?.length ?? 0) > 0;
-  const defaultImg = '/logo.png';
+  const defaultImg = '/images/logo.png';
 
   const handleWatch = async () => {
     if (!session?.user) {

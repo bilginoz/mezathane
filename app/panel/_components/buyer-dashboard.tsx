@@ -182,7 +182,7 @@ export function BuyerDashboard() {
                 <Link key={bid?.id} href={`/lot/${bid?.lotId ?? ''}`} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
                   <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <Image
-                      src={bid?.lot?.images?.[0]?.imageUrl ?? '/logo.png'}
+                      src={bid?.lot?.images?.[0]?.imageUrl ?? '/images/logo.png'}
                       alt="" fill className="object-cover" sizes="48px"
                     />
                   </div>

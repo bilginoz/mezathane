@@ -23,7 +23,7 @@ interface LotCardProps {
 export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = false }: LotCardProps) {
   const { data: session } = useSession() || {};
   const router = useRouter();
-  const imageUrl = lot?.images?.[0]?.imageUrl ?? '/logo.png';
+  const imageUrl = lot?.images?.[0]?.imageUrl ?? '/images/logo.png';
   const categoryName = lot?.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot?.category?.name ?? '');
 
   // ESCROW → sabit %7 "Hizmet Bedeli". DIRECT+KONTOR (V2) → satıcının kendi "Satıcı Komisyonu"su.

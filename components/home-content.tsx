@@ -83,7 +83,7 @@ export function HomeContent({ auctions, completedAuctions, categories, featuredL
       <section className="relative min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src={siteSettings?.heroImageUrl || "/logo.png"}
+            src={siteSettings?.heroImageUrl || "/images/logo.png"}
             alt="Premium müzayede salonu"
             fill
             className="object-cover"
@@ -280,7 +280,7 @@ export function HomeContent({ auctions, completedAuctions, categories, featuredL
                 <Link href={`/muzayedeler?category=${cat?.slug ?? ''}&view=lots`}>
                   <div className="group relative rounded-xl overflow-hidden aspect-[4/3] bg-muted">
                     <Image
-                      src={cat?.imageUrl ?? '/logo.png'}
+                      src={cat?.imageUrl ?? '/images/logo.png'}
                       alt={`${cat?.name ?? 'Kategori'} kategorisi - Mezathane.tr açık artırma`}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-500"

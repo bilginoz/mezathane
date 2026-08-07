@@ -165,7 +165,7 @@ export function BuyerAccount() {
                     <div key={it.paymentId} className="flex items-center gap-4 p-4 hover:bg-muted/40 transition-colors">
                       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                         <Image
-                          src={it.lotImage ?? '/logo.png'}
+                          src={it.lotImage ?? '/images/logo.png'}
                           alt={it.lotTitle} fill className="object-cover" sizes="56px"
                         />
                       </div>

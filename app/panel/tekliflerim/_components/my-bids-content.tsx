@@ -44,7 +44,7 @@ export function MyBidsContent() {
             {(bids ?? []).map((bid: any) => (
               <Link key={bid?.id} href={`/lot/${bid?.lotId ?? ''}`} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
                 <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  <Image src={bid?.lot?.images?.[0]?.imageUrl ?? '/logo.png'} alt="" fill className="object-cover" sizes="56px" />
+                  <Image src={bid?.lot?.images?.[0]?.imageUrl ?? '/images/logo.png'} alt="" fill className="object-cover" sizes="56px" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{bid?.lot?.title ?? ''}</p>

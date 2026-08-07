@@ -17,7 +17,7 @@ interface SellerProfileContentProps {
 
 export function SellerProfileContent({ seller, stats, showTermsLink }: SellerProfileContentProps) {
   const auctions = seller?.auctions ?? [];
-  const defaultLogo = '/logo.png';
+  const defaultLogo = '/images/logo.png';
 
   return (
     <main className="flex-1 py-8">
