@@ -199,12 +199,12 @@ export function LotDetailContent({ lot }: { lot: any }) {
       <div className="mx-auto max-w-[1200px] px-4">
         {/* Breadcrumb + Geri */}
         <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          <Link
+            href={`/muzayede/${lot?.auction?.id ?? ''}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Geri
-          </button>
+          </Link>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Link href={`/muzayede/${lot?.auction?.id ?? ''}`} className="hover:text-[#d4af37] transition-colors">
               {lot?.auction?.title ?? 'Müzayede'}

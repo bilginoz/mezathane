@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Calendar, CalendarPlus, Clock, Eye, Layers, Search, Store, Radio, Share2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowLeft, Info, CreditCard } from 'lucide-react';
 import { AuctionBanner } from '@/components/auction-banner';
 import { formatDate, formatDateTime, formatPrice } from '@/lib/utils';
@@ -19,7 +18,6 @@ const LOTS_PER_PAGE = 20;
 type SortOption = 'lot-asc' | 'lot-desc' | 'price-asc' | 'price-desc' | 'bids-desc' | 'newest';
 
 export function AuctionDetailContent({ auction }: { auction: any }) {
-  const router = useRouter();
   // Alıcı komisyonu görünümü moda göre (bkz. 2e): ESCROW %7 "hizmet bedeli", DIRECT satıcının oranı "satıcı komisyonu".
   const paymentMode = usePaymentMode();
   const premiumRatePct = paymentMode === 'DIRECT' ? (auction?.buyerPremiumRate ?? 7) : 7;
@@ -93,12 +91,12 @@ export function AuctionDetailContent({ auction }: { auction: any }) {
     <main className="flex-1">
       {/* Geri Butonu */}
       <div className="mx-auto max-w-[1200px] px-4 pt-4">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        <Link
+          href="/muzayedeler"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Geri
-        </button>
+          <ArrowLeft className="h-4 w-4" /> Müzayedeler
+        </Link>
       </div>
       {/* Hero Banner */}
       <div className="relative h-64 md:h-80 overflow-hidden mt-3">

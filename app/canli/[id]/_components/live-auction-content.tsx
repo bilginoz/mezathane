@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import * as Ably from 'ably';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gavel, Clock, Users, TrendingUp, CheckCircle, XCircle, ArrowRight, ArrowLeft, Radio, Zap, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck } from 'lucide-react';
@@ -338,9 +339,9 @@ export function LiveAuctionContent({ auctionId }: { auctionId: string }) {
       <div className="mx-auto max-w-[1200px] px-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.back()} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
+          <Link href={`/muzayede/${auctionId}`} className="rounded-lg border border-border p-2 hover:bg-muted transition-colors">
             <ArrowLeft className="h-4 w-4" />
-          </button>
+          </Link>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-bold animate-pulse">
             <Radio className="h-4 w-4" /> CANLI
           </div>
