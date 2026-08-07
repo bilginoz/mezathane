@@ -65,14 +65,24 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // (2026-08-08, kullanıcı kararı) Hizmet bedeli oranı artık SATICI tarafından belirlenmiyor —
-    // ne profilinden ne müzayede açarken. Tek bir "Hizmet Bedeli" kavramı var: alıcının satış
-    // bedeline ek ödediği (ve satıcıya giden) tutarla, satıcının satış sonrası platforma borçlanacağı
-    // tutar AYNI orandan hesaplanır. Bu oranı SADECE ADMİN, satıcı bazında belirler
-    // (SellerProfile.serviceFeeRate — boşsa platform varsayılanı). Body'den gelen buyerPremiumRate
-    // artık YOK SAYILIR (satıcı/istemci artık bu oranı gönderemez/etkileyemez).
-    const { rate: defaultServiceFeeRate } = await getServiceFeeSettings();
-    const resolvedPremiumRate = (seller as any).serviceFeeRate ?? defaultServiceFeeRate;
+    // (2026-08-08, düzeltme) V2 (Kontör) ve V3 (Hizmet Bedeli) TAMAMEN AYRI sistemler — V2'nin
+    // "Alıcı Komisyonu"su satıcının KENDİ belirlediği, kendi kârı olan bir orandır, platformla
+    // ilgisi yoktur ve HİÇ DEĞİŞMEDİ. V3'te ise tek bir "Hizmet Bedeli" var: admin satıcı bazında
+    // belirler, satıcı değiştiremez, alıcının ödediği bu tutarı satıcı sonradan platforma öder.
+    const revenueModel = await getDirectRevenueModel();
+    let resolvedPremiumRate: number;
+    if (revenueModel === 'HIZMET_BEDELI') {
+      // V3: SADECE ADMİN belirler (SellerProfile.serviceFeeRate, boşsa platform varsayılanı).
+      const { rate: defaultServiceFeeRate } = await getServiceFeeSettings();
+      resolvedPremiumRate = (seller as any).serviceFeeRate ?? defaultServiceFeeRate;
+    } else {
+      // V2 (KONTOR, orijinal davranış): satıcı müzayede bazında belirler, profildeki varsayılan
+      // orana ÖNCELİKLİDİR. Geçersiz/aralık dışıysa profil oranına düşer.
+      const customPremium = Number(body.buyerPremiumRate);
+      resolvedPremiumRate = Number.isFinite(customPremium) && customPremium >= 0 && customPremium <= 30
+        ? customPremium
+        : ((seller as any).buyerPremiumRate ?? 7.0);
+    }
 
     const auctionData = {
       title: body.title,
@@ -93,7 +103,6 @@ export async function POST(request: Request) {
       isPublic: body.isPublic ?? true,
     };
 
-    const revenueModel = await getDirectRevenueModel();
     let auction;
 
     if (revenueModel === 'HIZMET_BEDELI') {

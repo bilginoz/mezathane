@@ -405,7 +405,7 @@ export function SellersManagement() {
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-muted-foreground mb-1 block">Hizmet Bedeli Oranı (%) — boş = standart</label>
+                                  <label className="text-xs text-muted-foreground mb-1 block">Hizmet Bedeli Oranı (%) — boş = standart, sadece V3</label>
                                   <input
                                     type="number"
                                     min="0"
@@ -417,10 +417,11 @@ export function SellersManagement() {
                                     className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50"
                                   />
                                   <p className="text-[11px] text-muted-foreground mt-1">
-                                    (2026-08-08) Artık canlıda da geçerli: alıcının satış bedeline ek ödeyeceği ve
-                                    doğrudan satıcıya gideceği tutar bu orandan hesaplanır — satıcı bunu kendisi
-                                    değiştiremez. Bu satıcıya özel, standarttan düşük/yüksek bir oran uygulamak
-                                    isterseniz girin; boş bırakırsanız platform varsayılanı geçerli olur.
+                                    (2026-08-08 düzeltme) Bu alan SADECE V3 (Hizmet Bedeli Sistemi) aktifken
+                                    geçerlidir — V2'nin (Kontör) kendi "Alıcı Komisyonu" alanıyla ilgisi yoktur.
+                                    V3'te: alıcının satış bedeline ek ödeyeceği ve doğrudan satıcıya gideceği
+                                    tutar bu orandan hesaplanır, satıcı sonra AYNI tutarı platforma öder; satıcı
+                                    bu oranı kendisi değiştiremez. Boş bırakırsanız platform varsayılanı geçerli olur.
                                   </p>
                                 </div>
                                 <div>

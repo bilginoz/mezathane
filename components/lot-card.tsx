@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { BidConfirmModal } from './bid-confirm-modal';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 interface LotCardProps {
   lot: any;
@@ -25,12 +26,13 @@ export function LotCard({ lot, index = 0, showQuickBid = false, showSoldBadge = 
   const imageUrl = lot?.images?.[0]?.imageUrl ?? '/logo.png';
   const categoryName = lot?.lotCategories?.length ? lot.lotCategories.map((lc: any) => lc.category?.name).filter(Boolean).join(', ') : (lot?.category?.name ?? '');
 
-  // Hizmet Bedeli: ESCROW'da sabit %7; DIRECT'te admin tarafından satıcı bazında belirlenen oran
-  // (2026-08-08 — satıcı belirlemez, ayrı bir "komisyon" kavramı yok).
+  // ESCROW → sabit %7 "Hizmet Bedeli". DIRECT+KONTOR (V2) → satıcının kendi "Satıcı Komisyonu"su.
+  // DIRECT+HİZMET_BEDELİ (V3) → admin'in satıcı bazında belirlediği "Hizmet Bedeli" (2026-08-08).
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
   const premiumRate = premiumRatePct / 100;
-  const premiumLabel = 'Hizmet Bedeli';
+  const premiumLabel = paymentMode === 'DIRECT' && revenueModel === 'KONTOR' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
   const bidCount = lot?._count?.bids ?? lot?.bidCount ?? 0;
   const watchCount = lot?._count?.watchlist ?? lot?.watchCount ?? 0;
   const startingPrice = lot?.startingPrice ?? 0;

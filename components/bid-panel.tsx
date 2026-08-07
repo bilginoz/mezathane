@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { CountdownTimer } from './countdown-timer';
 import { BidConfirmModal } from './bid-confirm-modal';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 interface BidPanelProps {
   lot: any;
@@ -37,13 +38,14 @@ export function BidPanel({ lot, onBidPlaced }: BidPanelProps) {
   const minIncrement = getMinBidIncrement(currentPrice, lot?.customBidIncrement);
   const minBid = currentPrice + minIncrement;
 
-  // Hizmet Bedeli: ESCROW'da sabit %7 (platform geliri); DIRECT'te platform (admin) tarafından
-  // satıcı bazında belirlenen oran (2026-08-08 kararı — satıcı belirlemez, tek kavram, "komisyon"
-  // diye ayrı bir isim yok). KDV yine %20.
+  // ESCROW → sabit %7 "Hizmet Bedeli" (platform geliri). DIRECT+KONTOR (V2) → satıcının KENDİ
+  // belirlediği "Satıcı Komisyonu" (platformla ilgisi yok). DIRECT+HİZMET_BEDELİ (V3) → admin'in
+  // satıcı bazında belirlediği tek "Hizmet Bedeli" (2026-08-08 — V2/V3 tamamen ayrı kavramlar).
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const premiumRatePct = paymentMode === 'DIRECT' ? (lot?.auction?.buyerPremiumRate ?? 7) : 7;
   const premiumRate = premiumRatePct / 100;
-  const premiumLabel = 'Hizmet Bedeli';
+  const premiumLabel = paymentMode === 'DIRECT' && revenueModel === 'KONTOR' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
 
   useEffect(() => {
     setBidAmount(minBid);

@@ -12,17 +12,19 @@ import { SellerRating } from '@/components/seller-rating';
 import { SocialShare } from '@/components/social-share';
 import { VerifiedBadge } from '@/components/verified-badge';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 const LOTS_PER_PAGE = 20;
 
 type SortOption = 'lot-asc' | 'lot-desc' | 'price-asc' | 'price-desc' | 'bids-desc' | 'newest';
 
 export function AuctionDetailContent({ auction }: { auction: any }) {
-  // Hizmet Bedeli: ESCROW'da sabit %7; DIRECT'te admin tarafından satıcı bazında belirlenen oran
-  // (2026-08-08 — satıcı belirlemez, ayrı bir "komisyon" kavramı yok).
+  // ESCROW → sabit %7 "Hizmet Bedeli". DIRECT+KONTOR (V2) → satıcının kendi "Satıcı Komisyonu"su.
+  // DIRECT+HİZMET_BEDELİ (V3) → admin'in satıcı bazında belirlediği "Hizmet Bedeli" (2026-08-08).
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const premiumRatePct = paymentMode === 'DIRECT' ? (auction?.buyerPremiumRate ?? 7) : 7;
-  const premiumLabel = 'Hizmet Bedeli';
+  const premiumLabel = paymentMode === 'DIRECT' && revenueModel === 'KONTOR' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli';
   const exBase = 100;
   const exPrem = exBase * (premiumRatePct / 100);
   const exKdv = exPrem * 0.20;

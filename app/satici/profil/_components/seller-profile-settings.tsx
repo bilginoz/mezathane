@@ -13,6 +13,7 @@ import {
   Upload, Paperclip, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { validateIBAN } from '@/lib/iban';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 type ChangeRequest = { id: string; fieldName: string; status: string; requestedValue: string; createdAt: string };
 
@@ -30,6 +31,7 @@ const LOCKED_SELLER_FIELDS: Record<string, { label: string; modelName: string }>
 export function SellerProfileSettings() {
   const { data: session, status, update: updateSession } = useSession() || {};
   const router = useRouter();
+  const { model: revenueModel } = useRevenueModel();
   const user = session?.user as any;
   const [loading, setLoading] = useState(true);
   const [emailStep, setEmailStep] = useState<'idle' | 'editing' | 'code'>('idle');
@@ -43,6 +45,7 @@ export function SellerProfileSettings() {
     companyAddress: '',
     description: '',
     logoUrl: '',
+    buyerPremiumRate: '7', // yalnızca V2/Kontör'de kullanılır
     salesTerms: '',
     iban: '',
     phone: '',
@@ -83,6 +86,7 @@ export function SellerProfileSettings() {
           companyAddress: data.companyAddress ?? '',
           description: data.description ?? '',
           logoUrl: data.logoUrl ?? '',
+          buyerPremiumRate: data.buyerPremiumRate != null ? String(data.buyerPremiumRate) : '7',
           salesTerms: data.salesTerms ?? '',
           iban: data.iban ?? '',
           phone: data.phone ?? '',
@@ -200,6 +204,7 @@ export function SellerProfileSettings() {
           description: form.description,
           logoUrl: form.logoUrl,
           salesTerms: form.salesTerms,
+          ...(revenueModel !== 'HIZMET_BEDELI' ? { buyerPremiumRate: parseFloat(form.buyerPremiumRate) || 0 } : {}),
         }),
       });
       if (res.ok) {
@@ -466,9 +471,25 @@ export function SellerProfileSettings() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Hizmet Bedeli Oranınız (%)</label>
-              <div className={`${inputClass} bg-muted/50`}>%{serviceFeeRate ?? 7}</div>
-              <p className="text-xs text-muted-foreground mt-1">Bu oran admin tarafından belirlenir, siz değiştiremezsiniz. Kazanan alıcı, satış bedeline ek olarak bu tutarı size öder; siz de satış sonrası bu tutarı platforma hizmet bedeli olarak ödersiniz.</p>
+              {revenueModel === 'HIZMET_BEDELI' ? (
+                <>
+                  <label className="text-sm font-medium mb-1.5 block">Hizmet Bedeli Oranınız (%)</label>
+                  <div className={`${inputClass} bg-muted/50`}>%{serviceFeeRate ?? 7}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Bu oran admin tarafından belirlenir, siz değiştiremezsiniz. Kazanan alıcı, satış bedeline ek olarak bu tutarı size öder; siz de satış sonrası bu tutarı platforma hizmet bedeli olarak ödersiniz.</p>
+                </>
+              ) : (
+                <>
+                  <label className="text-sm font-medium mb-1.5 block">Alıcı Komisyon Oranınız (%)</label>
+                  <input
+                    type="number" min={0} max={30} step="0.5"
+                    value={form.buyerPremiumRate}
+                    onChange={(e) => setForm(prev => ({ ...prev, buyerPremiumRate: e.target.value }))}
+                    className={inputClass}
+                    placeholder="7"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Kazanan alıcının, satış bedeline ek olarak size ödeyeceği hizmet komisyonu oranı (0–30). Alıcı bu tutarı <b>doğrudan size</b> öder; lot ve ödeme sayfasında görünür.</p>
+                </>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Satış / İade / Teslimat Şartlarım (isteğe bağlı)</label>

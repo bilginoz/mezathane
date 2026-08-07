@@ -12,9 +12,11 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { usePaymentMode } from '@/hooks/use-payment-mode';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 export function SellerAnalytics() {
   const paymentMode = usePaymentMode();
+  const { model: revenueModel } = useRevenueModel();
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -58,7 +60,7 @@ export function SellerAnalytics() {
     { icon: Eye, label: 'Toplam Görüntülenme', value: o.totalViews ?? 0, color: 'text-sky-400' },
     { icon: Heart, label: 'Favori Sayısı', value: o.watchlistCount ?? 0, color: 'text-red-400' },
     paymentMode === 'DIRECT'
-      ? { icon: Percent, label: 'Hizmet Bedeli Oranınız', value: `%${o.buyerPremiumRate ?? 7}`, color: 'text-[#d4af37]' }
+      ? { icon: Percent, label: revenueModel === 'KONTOR' ? 'Alıcı Komisyonunuz' : 'Hizmet Bedeli Oranınız', value: `%${o.buyerPremiumRate ?? 7}`, color: 'text-[#d4af37]' }
       : { icon: Percent, label: 'Komisyon Oranı', value: `%${o.commissionRate ?? 0}`, color: 'text-[#d4af37]' },
   ];
 

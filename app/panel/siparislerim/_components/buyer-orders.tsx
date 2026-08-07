@@ -14,6 +14,7 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
+import { useRevenueModel } from '@/hooks/use-revenue-model';
 
 interface Order {
   paymentId: string;
@@ -50,6 +51,7 @@ export function BuyerOrders() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [paymentMode, setPaymentMode] = useState<'ESCROW' | 'DIRECT'>('ESCROW');
+  const { model: revenueModel } = useRevenueModel();
   const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [bankInfo, setBankInfo] = useState({ bankName: '', bankAccountHolder: '', bankIban: '' });
@@ -208,7 +210,7 @@ export function BuyerOrders() {
                           <span className="font-mono">{formatPrice(order.amount)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Hizmet Bedeli (%{order.buyerPremiumRate})</span>
+                          <span className="text-muted-foreground">{paymentMode === 'DIRECT' && revenueModel === 'KONTOR' ? 'Satıcı Komisyonu' : 'Hizmet Bedeli'} (%{order.buyerPremiumRate})</span>
                           <span className="font-mono">{formatPrice(order.buyerPremiumAmount)}</span>
                         </div>
                         <div className="flex justify-between">

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/prisma';
+import { getDirectRevenueModel } from '@/lib/revenue-model';
 
 export async function GET() {
   try {
@@ -28,6 +29,7 @@ export async function GET() {
         logoUrl: true,
         iban: true,
         mersisNo: true,
+        buyerPremiumRate: true,
         serviceFeeRate: true,
         salesTerms: true,
         status: true,
@@ -69,9 +71,21 @@ export async function PATCH(request: Request) {
       updateData.salesTerms = t || null;
     }
 
-    // (2026-08-08) Hizmet bedeli oranı artık satıcı tarafından belirlenmiyor — sadece admin,
-    // satıcı bazında belirler (SellerProfile.serviceFeeRate, admin/saticilar ekranından).
-    // body.buyerPremiumRate artık kabul edilmiyor.
+    // (2026-08-08, düzeltme) V2 (Kontör): Alıcı Komisyonu satıcının KENDİ kararıdır, hiç değişmedi
+    // — serbestçe düzenlenebilir (0-30 arası). V3 (Hizmet Bedeli)'nde ise bu SADECE ADMİN'İN
+    // belirlediği ayrı bir kavramdır (SellerProfile.serviceFeeRate) — satıcı o modda bu alanı
+    // değiştiremez, bu yüzden V3 aktifken body.buyerPremiumRate reddedilir.
+    if (body.buyerPremiumRate !== undefined) {
+      const revenueModel = await getDirectRevenueModel();
+      if (revenueModel === 'HIZMET_BEDELI') {
+        return NextResponse.json({ error: 'Bu modelde hizmet bedeli oranını yalnızca admin belirleyebilir.' }, { status: 400 });
+      }
+      const r = Number(body.buyerPremiumRate);
+      if (!Number.isFinite(r) || r < 0 || r > 30) {
+        return NextResponse.json({ error: 'Alıcı komisyon oranı 0 ile 30 arasında olmalı.' }, { status: 400 });
+      }
+      updateData.buyerPremiumRate = r;
+    }
 
     // phone ve companyAddress artık kilitli — Değişiklik Talebi gerekir
 

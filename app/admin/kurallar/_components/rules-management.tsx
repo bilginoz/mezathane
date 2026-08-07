@@ -125,14 +125,16 @@ export function RulesManagement() {
             </p>
           </div>
 
-          {/* V3 (Hizmet Bedeli) seçiliyken görünen ek bilgiler + oran girişi */}
-          {settings?.paymentMode === 'DIRECT' && (
+          {/* Sadece V3 (Hizmet Bedeli) aktifken görünür — V2'nin (Kontör) kendi "Alıcı Komisyonu"
+              mekanizmasıyla İLGİSİ YOKTUR (2026-08-08 düzeltmesi: bunlar TAMAMEN AYRI kavramlar). */}
+          {settings?.paymentMode === 'DIRECT' && settings?.directRevenueModel === 'HIZMET_BEDELI' && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
-              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-amber-400" /> Hizmet Bedeli Oranı</h2>
+              <h2 className="font-semibold mb-1 flex items-center gap-2"><Receipt className="h-5 w-5 text-amber-400" /> Hizmet Bedeli Oranı (V3'e özel)</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Alıcının satış bedeline ek ödeyip doğrudan satıcıya göndereceği tutar bu orandan
-                hesaplanır — <strong className="text-foreground">hem V2 hem V3'te aynı şekilde</strong>.
-                Satıcı bu oranı artık ne profilinden ne müzayede açarken değiştiremez.
+                hesaplanır; satıcı da satış sonrası AYNI tutarı platforma öder. Satıcı bu oranı
+                ne profilinden ne müzayede açarken değiştiremez — <strong className="text-foreground">
+                sadece V3'te geçerlidir, V2/Kontör'ün kendi "Alıcı Komisyonu"nu etkilemez.</strong>
               </p>
               <label className="flex items-center gap-2 text-sm">
                 Standart Oran (%)
@@ -150,14 +152,12 @@ export function RulesManagement() {
                 satıcıyı düzenleyip "Hizmet Bedeli Oranı" alanına girin — boş bırakılırsa buradaki
                 standart oran geçerli olur.
               </p>
-              {settings?.directRevenueModel === 'HIZMET_BEDELI' && (
-                <p className="text-xs text-muted-foreground mt-2 border-t border-border/60 pt-2">
-                  <strong className="text-foreground">V3'e özel:</strong> Borç hesaplanıyor, satıcı
-                  "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli sekmesinden onaylıyorsunuz;
-                  onaylamadığınız sürece satıcı yeni müzayede açamaz. Haftalık (her Pazartesi 09:00)
-                  otomatik hatırlatma cron'u kuruldu ve aktif (cron-job.org, jobId 8227178).
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-2 border-t border-border/60 pt-2">
+                Borç hesaplanıyor, satıcı "Ödedim" diyebiliyor, siz Finans → Hizmet Bedeli
+                sekmesinden onaylıyorsunuz; onaylamadığınız sürece satıcı yeni müzayede açamaz.
+                Haftalık (her Pazartesi 09:00) otomatik hatırlatma cron'u kuruldu ve aktif
+                (cron-job.org, jobId 8227178).
+              </p>
             </div>
           )}
 
