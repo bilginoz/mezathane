@@ -11,7 +11,10 @@ export const dynamic = 'force-dynamic';
 // Satıcının KENDİ satış/iade/teslimat şartları — ayrı bir sayfa olarak, platformun /yasal
 // sayfalarıyla AYNI görsel dilde ama bizim yasal metinlerimizle KARIŞMADAN. İçerik serbest metin
 // olarak satıcı profilinden gelir (SellerProfile.salesTerms); DIRECT modelde satışın asıl tarafı
-// satıcı olduğu için bu şartlar bağlayıcıdır. Metin boşsa platform genel şartlarına yönlendirilir.
+// satıcı olduğu için bu şartlar bağlayıcıdır. Metin boşsa (2026-08-08'den itibaren) platformun
+// /yasal/mesafeli-satis vb. sayfalarına YÖNLENDİRİLMEZ — o sayfalar artık platform↔satıcı
+// standardını anlatıyor, alıcıya yönelik değil (bkz. app/yasal/[slug]/page.tsx). Sadece genel
+// Kullanım Koşulları'na link verilir, satıcıyla iletişime geçilmesi önerilir.
 export default async function SellerTermsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -64,15 +67,10 @@ export default async function SellerTermsPage({ params }: { params: Promise<{ id
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   <strong className="text-foreground">{seller.companyName}</strong> henüz kendi özel satış/iade/teslimat şartlarını eklemedi.
-                  Bu satıcıdan yapılan alışverişlerde platformun genel şartları geçerlidir:
+                  Bu satıcının Mesafeli Satış Sözleşmesi ve İptal/İade Koşulları için lütfen satın almadan önce satıcıyla iletişime geçin.
+                  Platformun genel kullanım koşulları her durumda geçerlidir:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Link href="/yasal/mesafeli-satis" className="inline-flex items-center gap-1.5 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors">
-                    Mesafeli Satış Sözleşmesi
-                  </Link>
-                  <Link href="/yasal/iptal-iade" className="inline-flex items-center gap-1.5 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors">
-                    İptal ve İade Koşulları
-                  </Link>
                   <Link href="/yasal/kullanim-kosullari" className="inline-flex items-center gap-1.5 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/5 px-3 py-1.5 text-xs font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors">
                     Kullanım Koşulları
                   </Link>

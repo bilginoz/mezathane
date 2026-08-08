@@ -501,7 +501,7 @@ export function SellerProfileSettings() {
                 maxLength={8000}
                 placeholder="Kendi satış, iade ve teslimat şartlarınızı buraya yazın. Örn: kargo süresi, iade koşulları, ürün garanti/orijinallik beyanı..."
               />
-              <p className="text-xs text-muted-foreground mt-1">Doğrudan ödeme modelinde satışın asıl tarafı sizsiniz. Buraya yazdığınız şartlar lotlarınızda ve mesafeli satış sözleşmesinde alıcıya gösterilir. <b>Boş bırakırsanız</b> platformun varsayılan çerçeve metni geçerli olur. Hukuki bağlayıcılığı size aittir.</p>
+              <p className="text-xs text-muted-foreground mt-1">Doğrudan ödeme modelinde satışın asıl tarafı sizsiniz. Buraya yazdığınız şartlar (Mesafeli Satış Sözleşmesi, Ön Bilgilendirme, İptal/İade dahil) lotlarınızda alıcıya gösterilir; hukuki bağlayıcılığı size aittir. <b>Boş bırakırsanız</b> alıcıya bu konularda özel bir metin gösterilmez, sadece platformun genel Kullanım Koşulları geçerli olur — bu yüzden doldurmanızı öneririz. Nereden başlayacağınızı bilmiyorsanız <a href="/satici/yasal-referans/mesafeli-satis" target="_blank" className="text-[#d4af37] hover:underline">örnek metinlere buradan bakabilirsiniz</a>.</p>
             </div>
           </div>
         </motion.div>
