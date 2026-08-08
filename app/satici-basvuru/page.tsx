@@ -523,7 +523,8 @@ export default function SellerApplyPage() {
                     <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 rounded border-border" id="terms" />
                     <label htmlFor="terms" className="text-xs text-muted-foreground">
                       <Link href="/yasal/uyelik-sozlesmesi" target="_blank" className="text-[#d4af37] hover:underline">Üyelik Sözleşmesi</Link>,{' '}
-                      <Link href="/yasal/muzayede-sartnamesi" target="_blank" className="text-[#d4af37] hover:underline">Müzayede Şartnamesi</Link> ve{' '}
+                      <Link href="/yasal/muzayede-sartnamesi" target="_blank" className="text-[#d4af37] hover:underline">Müzayede Şartnamesi</Link>,{' '}
+                      <Link href="/yasal/satici-sozlesmesi" target="_blank" className="text-[#d4af37] hover:underline">Satıcı Sözleşmesi</Link> ve{' '}
                       <Link href="/yasal/kvkk" target="_blank" className="text-[#d4af37] hover:underline">KVKK Aydınlatma Metni</Link>&apos;ni okudum, kabul ediyorum.
                     </label>
                   </div>

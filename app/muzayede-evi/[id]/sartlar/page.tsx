@@ -58,8 +58,7 @@ export default async function SellerTermsPage({ params }: { params: Promise<{ id
                   <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
                     Bu şartlar <strong className="text-foreground">{seller.companyName}</strong> tarafından belirlenmiştir ve yalnızca bu satıcının
-                    ürünlerinin satışı için geçerlidir. Platformun kendi genel şartları (<Link href="/yasal/mesafeli-satis" className="text-[#d4af37] hover:underline">Mesafeli Satış Sözleşmesi</Link>,{' '}
-                    <Link href="/yasal/kullanim-kosullari" className="text-[#d4af37] hover:underline">Kullanım Koşulları</Link>) ayrıca geçerlidir.
+                    ürünlerinin satışı için geçerlidir. Platformun genel <Link href="/yasal/kullanim-kosullari" className="text-[#d4af37] hover:underline">Kullanım Koşulları</Link>&apos;ı ayrıca geçerlidir.
                   </p>
                 </div>
               </>

@@ -102,11 +102,7 @@ export function Footer() {
             <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
             <Link href="/yasal/yasakli-urunler" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Yasaklı Ürünler</Link>
             <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
-            <Link href="/yasal/mesafeli-satis" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Mesafeli Satış Sözleşmesi</Link>
-            <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
-            <Link href="/yasal/on-bilgilendirme" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Ön Bilgilendirme Formu</Link>
-            <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
-            <Link href="/yasal/iptal-iade" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">İptal ve İade</Link>
+            <Link href="/yasal/satici-sozlesmesi" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Satıcı Sözleşmesi</Link>
             <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
             <Link href="/yasal/gizlilik" className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Gizlilik Politikası</Link>
             <span className="text-xs text-gray-300 dark:text-gray-700">|</span>
